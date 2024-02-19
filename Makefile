@@ -4,7 +4,7 @@ CURL ?= $(shell command -v curl 2> /dev/null)
 MM_DEBUG ?=
 MANIFEST_FILE ?= plugin.json
 GOPATH ?= $(shell go env GOPATH)
-GO_TEST_FLAGS ?= -race
+GO_TEST_FLAGS ?= -race -gcflags=-l
 GO_BUILD_FLAGS ?=
 MM_UTILITIES_DIR ?= ../mattermost-utilities
 DLV_DEBUG_PORT := 2346
@@ -84,7 +84,7 @@ endif
 ## Ensures NPM dependencies are installed without having to run this all the time.
 webapp/node_modules: $(wildcard webapp/package.json)
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) install
+	cd webapp && $(NPM) install --verbose
 	touch $@
 endif
 
@@ -130,7 +130,7 @@ dist:	server webapp bundle
 ## Builds and installs the plugin to a server.
 .PHONY: deploy
 deploy: dist
-	./build/bin/pluginctl deploy $(PLUGIN_ID) dist/$(BUNDLE_NAME)
+	./build/bin/deploy deploy $(PLUGIN_ID) dist/$(BUNDLE_NAME)
 
 ## Builds and installs the plugin to a server, updating the webapp automatically when changed.
 .PHONY: watch

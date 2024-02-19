@@ -29,7 +29,6 @@ linters:
     - ineffassign
     - misspell
     - nakedret
-    - revive
     - staticcheck
     - stylecheck
     - typecheck

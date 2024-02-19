@@ -28,3 +28,23 @@ export const subscriptionEditModal = (state = {}, action) => {
         return state;
     }
 };
+
+export function installedInstances(state = [], action) {
+    // We're notified of the instance status at startup (through getConnected)
+    // and when we get a websocket instance_status event
+    switch (action.type) {
+    case Constants.ACTION_TYPES.RECEIVED_INSTANCE_STATUS:
+        return action.data.instances ? action.data.instances : [];
+    default:
+        return state;
+    }
+}
+
+export function userConnected(state = false, action) {
+    switch (action.type) {
+    case Constants.ACTION_TYPES.RECEIVED_CONNECTED:
+        return action.data.is_connected;
+    default:
+        return state;
+    }
+}

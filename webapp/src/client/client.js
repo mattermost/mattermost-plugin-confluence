@@ -2,6 +2,7 @@ import request from 'superagent';
 import Cookies from 'js-cookie';
 
 import Constants from '../constants';
+import {encodeToBase64} from '../utils';
 
 import {id} from '../manifest';
 
@@ -18,17 +19,24 @@ export default class Client {
     }
 
     saveChannelSubscription = (channelSubscription) => {
-        const url = `${this.pluginApiUrl}/${channelSubscription.channelID}/subscription/${channelSubscription.subscriptionType}`;
+        const instanceID = encodeToBase64(channelSubscription.baseURL);
+        const url = `${this.pluginApiUrl}/instance/${instanceID}/${channelSubscription.channelID}/subscription/${channelSubscription.subscriptionType}`;
         return this.doPost(url, channelSubscription);
     };
 
     editChannelSubscription = (channelSubscription) => {
-        const url = `${this.pluginApiUrl}/${channelSubscription.channelID}/subscription/${channelSubscription.subscriptionType}`;
+        const instanceID = encodeToBase64(channelSubscription.baseURL);
+        const url = `${this.pluginApiUrl}/instance/${instanceID}/${channelSubscription.channelID}/subscription/${channelSubscription.subscriptionType}/${channelSubscription.oldSubscription.subscriptionType}`;
         return this.doPut(url, channelSubscription);
     };
 
     getChannelSubscription = (channelID, alias) => {
         const url = `${this.pluginApiUrl}/${channelID}/subscription?alias=${alias}`;
+        return this.doGet(url);
+    };
+
+    getConnected = () => {
+        const url = `${this.pluginApiUrl}/userinfo`;
         return this.doGet(url);
     };
 

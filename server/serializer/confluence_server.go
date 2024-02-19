@@ -3,31 +3,30 @@ package serializer
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
-	"github.com/mattermost/mattermost/server/public/model"
-
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
+	"github.com/mattermost/mattermost-plugin-confluence/server/utils"
 )
 
 const (
-	ConfluenceContentTypePage                     = "page"
-	ConfluenceContentTypeBlogPost                 = "blogpost"
-	ConfluenceContentTypeComment                  = "comment"
-	confluenceServerPageCreatedMessage            = "%s published a new page in %s."
-	confluenceServerPageCreatedWithoutBodyMessage = "%s published a new page %s in %s."
-	confluenceServerPageUpdatedMessage            = "%s updated %s in %s."
-	confluenceServerPageTrashedMessage            = "%s trashed %s in %s."
-	confluenceServerPageRestoredMessage           = "%s restored %s in %s."
-	confluenceServerPageRemovedMessage            = "%s removed **%s** in %s."
+	ConfluenceContentTypePage     = "page"
+	ConfluenceContentTypeBlogPost = "blogpost"
+	ConfluenceContentTypeComment  = "comment"
 
-	confluenceServerCommentCreatedMessage      = "%s commented on %s in %s."
-	confluenceServerEmptyCommentCreatedMessage = "%s [commented](%s) on %s in %s."
-	confluenceServerCommentReplyCreatedMessage = "%s replied to a comment on %s in %s."
-	confluenceServerCommentUpdatedMessage      = "%s updated a comment on %s in %s."
-	confluenceServerEmptyCommentUpdatedMessage = "%s updated a [comment](%s) on %s in %s."
-	confluenceServerCommentRemovedMessage      = "%s removed a comment on %s in %s."
+	ConfluencePageCreatedMessage            = "%s published a new page in %s."
+	ConfluencePageCreatedWithoutBodyMessage = "%s published a new page %s in %s."
+	ConfluencePageUpdatedMessage            = "%s updated %s in %s."
+	ConfluencePageTrashedMessage            = "%s trashed %s in %s."
+	ConfluencePageRestoredMessage           = "%s restored %s in %s."
+	ConfluencePageRemovedMessage            = "%s removed **%s** in."
+	ConfluenceCommentCreatedMessage         = "%s commented on %s in %s."
+	ConfluenceEmptyCommentCreatedMessage    = "%s [commented](%s) on %s in %s."
+	ConfluenceCommentReplyCreatedMessage    = "%s replied to a comment on %s in %s."
+	ConfluenceCommentUpdatedMessage         = "%s updated a comment on %s in %s."
+	ConfluenceEmptyCommentUpdatedMessage    = "%s updated a [comment](%s) on %s in %s."
+	ConfluenceCommentRemovedMessage         = "%s removed a comment on %s in %s."
+	ConfluenceSpaceUpdatedMessage           = "A space titled [%s](%s) was updated."
 )
 
 type ConfluenceServerUser struct {
@@ -113,7 +112,7 @@ type ConfluenceServerComment struct {
 	ContentType      string                         `json:"content_type"`
 	UpdatedAt        int64                          `json:"updated_at"`
 	UpdatedBy        ConfluenceServerUser           `json:"updated_by"`
-	ID               string                         `json:"id"`
+	ID               int64                          `json:"id"`
 	Excerpt          string                         `json:"excerpt"`
 	Status           string                         `json:"status"`
 }
@@ -150,18 +149,42 @@ type ConfluenceServerEvent struct {
 	User           *ConfluenceServerUser     `json:"user"`
 	Space          ConfluenceServerSpace     `json:"space"`
 	Timestamp      int64                     `json:"timestamp"`
+	UserKey        string                    `json:"userKey"`
 }
 
-func ConfluenceServerEventFromJSON(data io.Reader) *ConfluenceServerEvent {
-	var confluenceServerEvent ConfluenceServerEvent
-	if err := json.NewDecoder(data).Decode(&confluenceServerEvent); err != nil {
-		config.Mattermost.LogError("Unable to decode JSON for ConfluenceServerEvent.", "Error", err.Error())
+type CommentPayload struct {
+	ID int64 `json:"id"`
+}
+
+type PagePayload struct {
+	ID int64 `json:"id"`
+}
+
+type SpacePayload struct {
+	ID       int64  `json:"id"`
+	SpaceKey string `json:"spaceKey"`
+}
+
+type ConfluenceServerWebhookPayload struct {
+	Timestamp int64          `json:"timestamp"`
+	Event     string         `json:"event"`
+	UserKey   string         `json:"userKey"`
+	Comment   CommentPayload `json:"comment"`
+	Page      PagePayload    `json:"page"`
+	Space     SpacePayload   `json:"space"`
+}
+
+func ConfluenceServerEventFromJSON(body []byte) *ConfluenceServerWebhookPayload {
+	var confluenceServerWebhookPayload *ConfluenceServerWebhookPayload
+	err := json.Unmarshal(body, &confluenceServerWebhookPayload)
+	if err != nil {
+		config.Mattermost.LogError("Error occurred while unmarshalling confluence server webhook payload.", "Error", err.Error())
 	}
-	return &confluenceServerEvent
+	return confluenceServerWebhookPayload
 }
 
 func (e *ConfluenceServerEvent) GetUserDisplayName(withLink bool) string {
-	name := "Someone"
+	name := utils.Someone
 	if e.User == nil {
 		return name
 	}
@@ -228,107 +251,6 @@ func (e *ConfluenceServerEvent) GetCommentPageOrBlogDisplayName(withLink bool) s
 		commentedOn = e.GetBlogDisplayName(withLink)
 	}
 	return commentedOn
-}
-
-func (e ConfluenceServerEvent) GetNotificationPost(eventType string) *model.Post {
-	var attachment *model.SlackAttachment
-	post := &model.Post{
-		UserId: config.BotUserID,
-	}
-
-	switch e.Event {
-	case PageCreatedEvent:
-		message := fmt.Sprintf(confluenceServerPageCreatedMessage, e.GetUserDisplayName(true), e.GetSpaceDisplayName(true))
-		if strings.TrimSpace(e.Page.Excerpt) != "" {
-			attachment = &model.SlackAttachment{
-				Fallback:  message,
-				Pretext:   message,
-				Title:     e.Page.Title,
-				TitleLink: e.Page.TinyURL,
-				Text:      fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Excerpt), e.Page.TinyURL),
-			}
-		} else {
-			post.Message = fmt.Sprintf(confluenceServerPageCreatedWithoutBodyMessage, e.GetUserDisplayName(true), e.GetPageDisplayName(true), e.GetSpaceDisplayName(true))
-		}
-
-	case PageUpdatedEvent:
-		message := fmt.Sprintf(confluenceServerPageUpdatedMessage, e.GetUserDisplayName(true), e.GetPageDisplayName(true), e.GetSpaceDisplayName(true))
-		if strings.TrimSpace(e.VersionComment) != "" {
-			attachment = &model.SlackAttachment{
-				Fallback: message,
-				Pretext:  message,
-				Text:     fmt.Sprintf("**What’s Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.VersionComment), e.Page.TinyURL),
-			}
-		} else {
-			post.Message = message
-		}
-
-	case PageTrashedEvent:
-		post.Message = fmt.Sprintf(confluenceServerPageTrashedMessage, e.GetUserDisplayName(true), e.GetPageDisplayName(true), e.GetSpaceDisplayName(true))
-
-	case PageRestoredEvent:
-		post.Message = fmt.Sprintf(confluenceServerPageRestoredMessage, e.GetUserDisplayName(true), e.GetPageDisplayName(true), e.GetSpaceDisplayName(true))
-
-	case PageRemovedEvent:
-		// No link for page since the page was removed
-		post.Message = fmt.Sprintf(confluenceServerPageRemovedMessage, e.GetUserDisplayName(true), e.GetPageDisplayName(false), e.GetSpaceDisplayName(true))
-
-	case CommentCreatedEvent:
-		message := fmt.Sprintf(confluenceServerCommentCreatedMessage, e.GetUserDisplayName(true), e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-
-		text := ""
-		if strings.TrimSpace(e.Comment.Excerpt) != "" {
-			text += fmt.Sprintf("**%s wrote:**\n> %s\n\n", e.GetUserFirstName(), strings.TrimSpace(e.Comment.Excerpt))
-		}
-		if e.Comment.ParentComment != nil && strings.TrimSpace(e.Comment.ParentComment.Excerpt) != "" {
-			message = fmt.Sprintf(confluenceServerCommentReplyCreatedMessage, e.GetUserDisplayName(true), e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-			text += fmt.Sprintf("**In Reply to:**\n> %s\n", strings.TrimSpace(e.Comment.ParentComment.Excerpt))
-		}
-
-		if text != "" {
-			attachment = &model.SlackAttachment{
-				Fallback: message,
-				Pretext:  message,
-				Text:     fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", text, e.Comment.URL),
-			}
-		} else {
-			post.Message = fmt.Sprintf(confluenceServerEmptyCommentCreatedMessage, e.GetUserDisplayName(true), e.Comment.URL, e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-		}
-
-	case CommentUpdatedEvent:
-		message := fmt.Sprintf(confluenceServerCommentUpdatedMessage, e.GetUserDisplayName(true), e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-		if strings.TrimSpace(e.Comment.Excerpt) != "" {
-			attachment = &model.SlackAttachment{
-				Fallback: message,
-				Pretext:  message,
-				Text:     fmt.Sprintf("**Updated Comment:**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Comment.Excerpt), e.Comment.URL),
-			}
-		} else {
-			post.Message = fmt.Sprintf(confluenceServerEmptyCommentUpdatedMessage, e.GetUserDisplayName(true), e.Comment.URL, e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-		}
-
-	case CommentRemovedEvent:
-		// No link since the comment was removed.
-		message := fmt.Sprintf(confluenceServerCommentRemovedMessage, e.GetUserDisplayName(true), e.GetCommentPageOrBlogDisplayName(true), e.GetSpaceDisplayName(true))
-		if strings.TrimSpace(e.Comment.Excerpt) != "" {
-			attachment = &model.SlackAttachment{
-				Fallback: message,
-				Pretext:  message,
-				Text:     fmt.Sprintf("**Deleted Comment:**\n> %s", strings.TrimSpace(e.Comment.Excerpt)),
-			}
-		} else {
-			post.Message = message
-		}
-
-	default:
-		return nil
-	}
-
-	if attachment != nil {
-		model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
-	}
-
-	return post
 }
 
 func (e ConfluenceServerEvent) GetURL() string {

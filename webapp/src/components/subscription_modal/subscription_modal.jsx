@@ -16,7 +16,7 @@ const initialState = {
     spaceKey: '',
     pageID: '',
     subscriptionType: Constants.SUBSCRIPTION_TYPE[0],
-    events: Constants.CONFLUENCE_EVENTS,
+    events: Constants.CONFLUENCE_SPACE_EVENTS,
     error: '',
     saving: false,
 };
@@ -59,7 +59,7 @@ export default class SubscriptionModal extends React.PureComponent {
                 baseURL,
                 spaceKey,
                 pageID,
-                events: Constants.CONFLUENCE_EVENTS.filter((option) => events.includes(option.value)),
+                events: pageID ? Constants.CONFLUENCE_PAGE_EVENTS.filter((option) => events.includes(option.value)) : Constants.CONFLUENCE_SPACE_EVENTS.filter((option) => events.includes(option.value)),
                 subscriptionType: pageID ? Constants.SUBSCRIPTION_TYPE[1] : Constants.SUBSCRIPTION_TYPE[0],
             });
         }
@@ -106,11 +106,21 @@ export default class SubscriptionModal extends React.PureComponent {
         if (subscriptionType === this.state.subscriptionType) {
             return;
         }
-        this.setState({
-            subscriptionType,
-            pageID: '',
-            spaceKey: '',
-        });
+        if (subscriptionType === Constants.SUBSCRIPTION_TYPE[1]) {
+            this.setState({
+                subscriptionType,
+                pageID: '',
+                spaceKey: '',
+                events: Constants.CONFLUENCE_PAGE_EVENTS,
+            });
+        } else {
+            this.setState({
+                subscriptionType,
+                pageID: '',
+                spaceKey: '',
+                events: Constants.CONFLUENCE_SPACE_EVENTS,
+            });
+        }
     };
 
     handleSubmit = async () => {
@@ -131,6 +141,13 @@ export default class SubscriptionModal extends React.PureComponent {
             pageID: pageID ? pageID.trim() : '',
             channelID: currentChannelID,
             events: events ? events.map((event) => event.value) : [],
+            oldSubscription: {
+                subscriptionType: subscriptionType.value,
+                alias: alias.trim(),
+                baseURL: baseURL.trim().toLowerCase(),
+                spaceKey: spaceKey ? spaceKey.trim() : '',
+                pageID: pageID ? pageID.trim() : '',
+            },
         };
         this.setState({
             saving: true,
@@ -139,6 +156,13 @@ export default class SubscriptionModal extends React.PureComponent {
 
         let response;
         if (subscription && subscription.alias) {
+            channelSubscription.oldSubscription = {
+                subscriptionType: subscription.subscriptionType,
+                baseURL: subscription.baseURL,
+                alias: subscription.alias,
+                spaceKey: subscription.spaceKey,
+                pageID: subscription.pageID,
+            };
             response = await editChannelSubscription(channelSubscription);
         } else {
             response = await saveChannelSubscription(channelSubscription);
@@ -173,6 +197,22 @@ export default class SubscriptionModal extends React.PureComponent {
                 onChange={this.handleSpaceKey}
             />
         );
+        let eventSelect = (
+            <ConfluenceField
+                isMulti={true}
+                label={'Events'}
+                name={'events'}
+                fieldType={'dropDown'}
+                required={true}
+                theme={this.props.theme}
+                options={Constants.CONFLUENCE_SPACE_EVENTS}
+                value={this.state.events}
+                addValidation={this.validator.addValidation}
+                removeValidation={this.validator.removeValidation}
+                onChange={this.handleEvents}
+            />
+        );
+
         if (subscriptionType === Constants.SUBSCRIPTION_TYPE[1]) {
             typeField = (
                 <ConfluenceField
@@ -189,25 +229,44 @@ export default class SubscriptionModal extends React.PureComponent {
                     onChange={this.handlePageID}
                 />
             );
-        }
-        const innerFields = (
-            <div style={getStyle.innerFields}>
+
+            eventSelect = (
                 <ConfluenceField
-                    formGroupStyle={getStyle.subscriptionType}
-                    isSearchable={false}
-                    isMulti={false}
-                    label={'Subscribe To'}
-                    name={'type'}
+                    isMulti={true}
+                    label={'Events'}
+                    name={'events'}
                     fieldType={'dropDown'}
                     required={true}
                     theme={this.props.theme}
-                    options={Constants.SUBSCRIPTION_TYPE}
-                    value={this.state.subscriptionType}
+                    options={Constants.CONFLUENCE_PAGE_EVENTS}
+                    value={this.state.events}
                     addValidation={this.validator.addValidation}
                     removeValidation={this.validator.removeValidation}
-                    onChange={this.handleSubscriptionType}
+                    onChange={this.handleEvents}
                 />
-                {typeField}
+            );
+        }
+        const innerFields = (
+            <div>
+                <div style={getStyle.innerFields}>
+                    <ConfluenceField
+                        formGroupStyle={getStyle.subscriptionType}
+                        isSearchable={false}
+                        isMulti={false}
+                        label={'Subscribe To'}
+                        name={'type'}
+                        fieldType={'dropDown'}
+                        required={true}
+                        theme={this.props.theme}
+                        options={Constants.SUBSCRIPTION_TYPE}
+                        value={this.state.subscriptionType}
+                        addValidation={this.validator.addValidation}
+                        removeValidation={this.validator.removeValidation}
+                        onChange={this.handleSubscriptionType}
+                    />
+                    {typeField}
+                </div>
+                {eventSelect}
             </div>
         );
         let createError = null;
@@ -222,7 +281,6 @@ export default class SubscriptionModal extends React.PureComponent {
                 </p>
             );
         }
-
         return (
             <Modal
                 show={isModalVisible}
@@ -259,19 +317,6 @@ export default class SubscriptionModal extends React.PureComponent {
                             onChange={this.handleBaseURLChange}
                         />
                         {innerFields}
-                        <ConfluenceField
-                            isMulti={true}
-                            label={'Events'}
-                            name={'events'}
-                            fieldType={'dropDown'}
-                            required={true}
-                            theme={this.props.theme}
-                            options={Constants.CONFLUENCE_EVENTS}
-                            value={this.state.events}
-                            addValidation={this.validator.addValidation}
-                            removeValidation={this.validator.removeValidation}
-                            onChange={this.handleEvents}
-                        />
                         {createError}
                     </div>
                 </Modal.Body>

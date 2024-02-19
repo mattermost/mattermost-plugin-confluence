@@ -10,3 +10,7 @@ export const splitArgs = (command) => {
     } while (match != null);
     return myArray;
 };
+
+export const encodeToBase64 = (baseURL) => {
+    return Buffer.from(baseURL).toString('base64');
+};

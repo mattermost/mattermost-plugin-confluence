@@ -1,6 +1,6 @@
 import {changeOpacity} from 'mattermost-redux/utils/theme_utils';
 
-// from https://github.com/mattermost/mattermost-plugin-jira/blob/master/webapp/src/utils/styles.js#L6
+// from https://github.com/mattermost/mattermost-plugin-confluence/blob/master/webapp/src/utils/styles.js#L6
 export const getStyleForReactSelect = (theme) => {
     if (!theme) {
         return null;

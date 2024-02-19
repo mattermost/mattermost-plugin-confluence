@@ -19,7 +19,8 @@ var (
 )
 
 type Configuration struct {
-	Secret string `json:"Secret"`
+	Secret            string `json:"Secret"`
+	MattermostSiteURL string
 }
 
 func GetConfig() *Configuration {

@@ -28,7 +28,47 @@
             "type": "generated",
             "help_text": "The secret used to authenticate the webhook to Mattermost.",
             "regenerate_help_text": "Regenerates the secret for the webhook URL endpoint. Regenerating the secret invalidates your existing Confluence integrations."
-        }
+        },
+        {
+          "key": "RolesAllowedToEditConfluenceSubscriptions",
+          "display_name": "Mattermost Roles Allowed to Edit Confluence Subscriptions:",
+          "type": "radio",
+          "help_text": "Mattermost users who can subscribe channels to Confluence space or page.",
+          "placeholder": "",
+          "default": "system_admin",
+          "options": [
+              {
+                  "display_name": "All users",
+                  "value": "users"
+              },
+              {
+                  "display_name": "Users who can manage channel settings",
+                  "value": "channel_admin"
+              },
+              {
+                  "display_name": "Users who can manage teams",
+                  "value": "team_admin"
+              },
+              {
+                  "display_name": "System Admins",
+                  "value": "system_admin"
+              }
+          ]
+      },
+      {
+          "key": "GroupsAllowedToEditConfluenceSubscriptions",
+          "display_name": "Confluence Groups Allowed to Edit Confluence Subscriptions:",
+          "type": "text",
+          "help_text": "Comma-separated list of Group Names. List the Confluence user groups that can create subscriptions. If none are specified, any Confluence user can create a subscription.",
+          "placeholder": "",
+          "default": ""
+      },
+      {
+          "key": "tokens",
+          "display_name": "Confluence Config:",
+          "type": "custom",
+          "default": []
+      }
     ]
   }
 }

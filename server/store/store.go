@@ -10,10 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
-	"github.com/mattermost/mattermost-plugin-confluence/server/util"
+	"github.com/mattermost/mattermost-plugin-confluence/server/utils"
 )
 
-const ConfluenceSubscriptionKeyPrefix = "confluence_subs"
+const ConfluenceSubscriptionKeyPrefix = "confluence_subscription"
+const OldConfluenceSubscriptionKeyPrefix = "confluence_subs"
 
 func GetURLSpaceKeyCombinationKey(url, spaceKey string) string {
 	u, _ := url2.Parse(url)
@@ -26,10 +27,14 @@ func GetURLPageIDCombinationKey(url, pageID string) string {
 }
 
 func GetSubscriptionKey() string {
-	return util.GetKeyHash(ConfluenceSubscriptionKeyPrefix)
+	return utils.GetKeyHash(ConfluenceSubscriptionKeyPrefix)
 }
 
-// from https://github.com/mattermost/mattermost-plugin-jira/blob/master/server/subscribe.go#L625
+func GetOldSubscriptionKey() string {
+	return utils.GetKeyHash(OldConfluenceSubscriptionKeyPrefix)
+}
+
+// from https://github.com/mattermost/mattermost-plugin-confluence/blob/master/server/subscribe.go#L625
 func AtomicModify(key string, modify func(initialValue []byte) ([]byte, error)) error {
 	readModify := func() ([]byte, []byte, error) {
 		initialBytes, appErr := config.Mattermost.KVGet(key)

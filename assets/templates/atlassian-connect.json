@@ -54,6 +54,18 @@
             {
                 "event": "page_updated",
                 "url": "/cloud/page_updated?secret={{ .SharedSecret }}"
+            },
+            {
+                "event": "space_created",
+                "url": "/cloud/space_created?secret={{ .SharedSecret }}"
+            },
+            {
+                "event": "space_updated",
+                "url": "/cloud/space_updated?secret={{ .SharedSecret }}"
+            },
+            {
+                "event": "space_removed",
+                "url": "/cloud/space_removed?secret={{ .SharedSecret }}"
             }
         ]
     }

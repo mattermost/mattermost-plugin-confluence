@@ -1,6 +1,6 @@
 import {getCurrentUser} from 'mattermost-redux/selectors/entities/users';
 
-import {openSubscriptionModal, getChannelSubscription} from '../actions';
+import {openSubscriptionModal, getChannelSubscription, getConnected} from '../actions';
 
 import {splitArgs} from '../utils';
 import {sendEphemeralPost} from '../actions/subscription_modal';
@@ -26,12 +26,8 @@ export default class Hooks {
 
         const state = this.store.getState();
         const user = getCurrentUser(state);
-        if (!user.roles.includes(Constants.SYSTEM_ADMIN_ROLE)) {
-            this.store.dispatch(sendEphemeralPost(Constants.COMMAND_ADMIN_ONLY, contextArgs.channel_id, user.id));
-            return Promise.resolve({});
-        }
-
-        if (commandTrimmed && commandTrimmed === '/confluence subscribe') {
+        if (commandTrimmed && commandTrimmed.startsWith('/confluence subscribe')) {
+            this.store.dispatch(getConnected());
             this.store.dispatch(openSubscriptionModal());
             return Promise.resolve({});
         } else if (commandTrimmed && commandTrimmed.startsWith('/confluence edit')) {

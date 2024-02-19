@@ -56,37 +56,129 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
         type="text"
         value=""
       />
-      <div
-        style={
-          Object {
-            "display": "flex",
+      <div>
+        <div
+          style={
+            Object {
+              "display": "flex",
+            }
           }
-        }
-      >
+        >
+          <ConfluenceField
+            addValidation={[Function]}
+            fieldType="dropDown"
+            formControlStyle={Object {}}
+            formGroupStyle={
+              Object {
+                "flex": "1",
+                "marginRight": "20px",
+              }
+            }
+            isMulti={false}
+            isSearchable={false}
+            label="Subscribe To"
+            name="type"
+            onChange={[Function]}
+            options={
+              Array [
+                Object {
+                  "label": "Space",
+                  "value": "space_subscription",
+                },
+                Object {
+                  "label": "Page",
+                  "value": "page_subscription",
+                },
+              ]
+            }
+            readOnly={false}
+            removeValidation={[Function]}
+            required={true}
+            theme={Object {}}
+            value={
+              Object {
+                "label": "Space",
+                "value": "space_subscription",
+              }
+            }
+          />
+          <ConfluenceField
+            addValidation={[Function]}
+            fieldType="input"
+            formControlStyle={
+              Object {
+                "height": "38px",
+              }
+            }
+            formGroupStyle={
+              Object {
+                "flex": "1",
+              }
+            }
+            label="Space Key"
+            onChange={[Function]}
+            placeholder="Enter the Confluence Space Key."
+            readOnly={false}
+            removeValidation={[Function]}
+            required={true}
+            type="text"
+            value=""
+          />
+        </div>
         <ConfluenceField
           addValidation={[Function]}
           fieldType="dropDown"
           formControlStyle={Object {}}
-          formGroupStyle={
-            Object {
-              "flex": "1",
-              "marginRight": "20px",
-            }
-          }
-          isMulti={false}
-          isSearchable={false}
-          label="Subscribe To"
-          name="type"
+          formGroupStyle={Object {}}
+          isMulti={true}
+          label="Events"
+          name="events"
           onChange={[Function]}
           options={
             Array [
               Object {
-                "label": "Space",
-                "value": "space_subscription",
+                "label": "Comment Create",
+                "value": "comment_created",
               },
               Object {
-                "label": "Page",
-                "value": "page_subscription",
+                "label": "Comment Update",
+                "value": "comment_updated",
+              },
+              Object {
+                "label": "Comment Remove",
+                "value": "comment_removed",
+              },
+              Object {
+                "label": "Page Create",
+                "value": "page_created",
+              },
+              Object {
+                "label": "Page Update",
+                "value": "page_updated",
+              },
+              Object {
+                "label": "Page Trash",
+                "value": "page_trashed",
+              },
+              Object {
+                "label": "Page Restore",
+                "value": "page_restored",
+              },
+              Object {
+                "label": "Page Remove",
+                "value": "page_removed",
+              },
+              Object {
+                "label": "Space Created",
+                "value": "space_created",
+              },
+              Object {
+                "label": "Space Removed",
+                "value": "space_removed",
+              },
+              Object {
+                "label": "Space Updated",
+                "value": "space_updated",
               },
             ]
           }
@@ -95,121 +187,55 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
           required={true}
           theme={Object {}}
           value={
-            Object {
-              "label": "Space",
-              "value": "space_subscription",
-            }
+            Array [
+              Object {
+                "label": "Comment Create",
+                "value": "comment_created",
+              },
+              Object {
+                "label": "Comment Update",
+                "value": "comment_updated",
+              },
+              Object {
+                "label": "Comment Remove",
+                "value": "comment_removed",
+              },
+              Object {
+                "label": "Page Create",
+                "value": "page_created",
+              },
+              Object {
+                "label": "Page Update",
+                "value": "page_updated",
+              },
+              Object {
+                "label": "Page Trash",
+                "value": "page_trashed",
+              },
+              Object {
+                "label": "Page Restore",
+                "value": "page_restored",
+              },
+              Object {
+                "label": "Page Remove",
+                "value": "page_removed",
+              },
+              Object {
+                "label": "Space Created",
+                "value": "space_created",
+              },
+              Object {
+                "label": "Space Removed",
+                "value": "space_removed",
+              },
+              Object {
+                "label": "Space Updated",
+                "value": "space_updated",
+              },
+            ]
           }
-        />
-        <ConfluenceField
-          addValidation={[Function]}
-          fieldType="input"
-          formControlStyle={
-            Object {
-              "height": "38px",
-            }
-          }
-          formGroupStyle={
-            Object {
-              "flex": "1",
-            }
-          }
-          label="Space Key"
-          onChange={[Function]}
-          placeholder="Enter the Confluence Space Key."
-          readOnly={false}
-          removeValidation={[Function]}
-          required={true}
-          type="text"
-          value=""
         />
       </div>
-      <ConfluenceField
-        addValidation={[Function]}
-        fieldType="dropDown"
-        formControlStyle={Object {}}
-        formGroupStyle={Object {}}
-        isMulti={true}
-        label="Events"
-        name="events"
-        onChange={[Function]}
-        options={
-          Array [
-            Object {
-              "label": "Comment Create",
-              "value": "comment_created",
-            },
-            Object {
-              "label": "Comment Update",
-              "value": "comment_updated",
-            },
-            Object {
-              "label": "Comment Remove",
-              "value": "comment_removed",
-            },
-            Object {
-              "label": "Page Create",
-              "value": "page_created",
-            },
-            Object {
-              "label": "Page Update",
-              "value": "page_updated",
-            },
-            Object {
-              "label": "Page Trash",
-              "value": "page_trashed",
-            },
-            Object {
-              "label": "Page Restore",
-              "value": "page_restored",
-            },
-            Object {
-              "label": "Page Remove",
-              "value": "page_removed",
-            },
-          ]
-        }
-        readOnly={false}
-        removeValidation={[Function]}
-        required={true}
-        theme={Object {}}
-        value={
-          Array [
-            Object {
-              "label": "Comment Create",
-              "value": "comment_created",
-            },
-            Object {
-              "label": "Comment Update",
-              "value": "comment_updated",
-            },
-            Object {
-              "label": "Comment Remove",
-              "value": "comment_removed",
-            },
-            Object {
-              "label": "Page Create",
-              "value": "page_created",
-            },
-            Object {
-              "label": "Page Update",
-              "value": "page_updated",
-            },
-            Object {
-              "label": "Page Trash",
-              "value": "page_trashed",
-            },
-            Object {
-              "label": "Page Restore",
-              "value": "page_restored",
-            },
-            Object {
-              "label": "Page Remove",
-              "value": "page_removed",
-            },
-          ]
-        }
-      />
     </div>
   </ModalBody>
   <ModalFooter>

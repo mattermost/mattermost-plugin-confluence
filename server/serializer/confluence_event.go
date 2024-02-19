@@ -5,8 +5,8 @@ import (
 )
 
 type ConfluenceEvent interface {
-	GetNotificationPost(string) *model.Post
-	GetURL() string
-	GetSpaceKey() string
+	GetNotificationPost(string, string, string) *model.Post
 	GetPageID() string
+	GetSpaceKey() string
+	GetURL() string
 }

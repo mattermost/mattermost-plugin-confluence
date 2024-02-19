@@ -8,7 +8,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 )
 
-const generalError = "some error occurred. Please try again after some time"
+const (
+	generalError         = "some error occurred. Please try again after some time"
+	subscriptionNotFound = "subscription with name **%s** not found"
+)
 
 func GetChannelSubscription(channelID, alias string) (serializer.Subscription, int, error) {
 	channelSubscriptions, gErr := GetSubscriptionsByChannelID(channelID)

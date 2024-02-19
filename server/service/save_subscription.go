@@ -9,20 +9,15 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 )
 
-const (
-	generalSaveError        = "an error occurred attempting to save a subscription"
-	aliasAlreadyExist       = "a subscription with the same name already exists in this channel"
-	urlSpaceKeyAlreadyExist = "a subscription with the same url and space key already exists in this channel"
-	urlPageIDAlreadyExist   = "a subscription with the same url and page id already exists in this channel"
-)
+const generalSaveError = "an error occurred while attempting to save a subscription"
 
 func SaveSubscription(subscription serializer.Subscription) (int, error) {
-	subs, gErr := GetSubscriptions()
-	if gErr != nil {
+	subs, err := GetSubscriptions()
+	if err != nil {
 		return http.StatusInternalServerError, errors.New(generalSaveError)
 	}
-	if vErr := subscription.ValidateSubscription(&subs); vErr != nil {
-		return http.StatusBadRequest, vErr
+	if err = subscription.ValidateSubscription(&subs); err != nil {
+		return http.StatusBadRequest, err
 	}
 	key := store.GetSubscriptionKey()
 	if err := store.AtomicModify(key, func(initialBytes []byte) ([]byte, error) {

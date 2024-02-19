@@ -42,7 +42,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_SPACE_EVENTS,
             error: '',
             saving: false,
             pageID: '',
@@ -54,10 +54,17 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
+            events: Constants.CONFLUENCE_SPACE_EVENTS.map((event) => event.value),
             channelID: 'abcabcabcabcabc',
             pageID: '',
             subscriptionType: 'space_subscription',
+            oldSubscription: {
+                subscriptionType: 'space_subscription',
+                alias: 'Abc',
+                baseURL: 'https://test.com',
+                spaceKey: 'test',
+                pageID: '',
+            },
         });
 
         expect(props.editChannelSubscription).not.toHaveBeenCalled();
@@ -68,7 +75,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_SPACE_EVENTS,
             pageID: '',
             subscriptionType: Constants.SUBSCRIPTION_TYPE[0].value,
         };
@@ -83,7 +90,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_SPACE_EVENTS,
             error: '',
             saving: false,
             pageID: '',
@@ -95,10 +102,17 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
+            events: Constants.CONFLUENCE_SPACE_EVENTS.map((event) => event.value),
             channelID: 'abcabcabcabcabc',
             pageID: '',
             subscriptionType: 'space_subscription',
+            oldSubscription: {
+                subscriptionType: 'space_subscription',
+                alias: 'Abc',
+                baseURL: 'https://test.com',
+                spaceKey: 'test',
+                pageID: '',
+            },
         });
         expect(props.saveChannelSubscription).not.toHaveBeenCalled();
     });
@@ -115,7 +129,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_PAGE_EVENTS,
             error: '',
             saving: false,
             pageID: '1234',
@@ -127,10 +141,17 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',
-            events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
+            events: Constants.CONFLUENCE_PAGE_EVENTS.map((event) => event.value),
             channelID: 'abcabcabcabcabc',
             pageID: '1234',
             subscriptionType: 'page_subscription',
+            oldSubscription: {
+                subscriptionType: 'page_subscription',
+                alias: 'Abc',
+                baseURL: 'https://test.com',
+                spaceKey: '',
+                pageID: '1234',
+            },
         });
 
         expect(props.editChannelSubscription).not.toHaveBeenCalled();
@@ -141,7 +162,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_PAGE_EVENTS,
             pageID: '1234',
             subscriptionType: Constants.SUBSCRIPTION_TYPE[1].value,
         };
@@ -156,7 +177,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_PAGE_EVENTS,
             error: '',
             saving: false,
             pageID: '1234',
@@ -168,10 +189,17 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',
-            events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
+            events: Constants.CONFLUENCE_PAGE_EVENTS.map((event) => event.value),
             channelID: 'abcabcabcabcabc',
             pageID: '1234',
             subscriptionType: 'page_subscription',
+            oldSubscription: {
+                subscriptionType: 'page_subscription',
+                alias: 'Abc',
+                baseURL: 'https://test.com',
+                spaceKey: 'test',
+                pageID: '1234',
+            },
         });
         expect(props.saveChannelSubscription).not.toHaveBeenCalled();
     });
@@ -188,7 +216,7 @@ describe('components/ChannelSettingsModal', () => {
             alias: '   Abc   ',
             baseURL: 'https://teST.com',
             spaceKey: 'test       ',
-            events: Constants.CONFLUENCE_EVENTS,
+            events: Constants.CONFLUENCE_SPACE_EVENTS,
             error: '',
             saving: false,
             pageID: '',
@@ -200,10 +228,17 @@ describe('components/ChannelSettingsModal', () => {
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
-            events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
+            events: Constants.CONFLUENCE_SPACE_EVENTS.map((event) => event.value),
             channelID: 'abcabcabcabcabc',
             pageID: '',
             subscriptionType: 'space_subscription',
+            oldSubscription: {
+                subscriptionType: 'space_subscription',
+                alias: 'Abc',
+                baseURL: 'https://test.com',
+                spaceKey: 'test',
+                pageID: '',
+            },
         });
 
         expect(props.editChannelSubscription).not.toHaveBeenCalled();

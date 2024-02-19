@@ -27,9 +27,17 @@ A Mattermost plugin for Confluence. Supports Confluence Cloud, Server, and Data 
 With the Confluence plugin, you can subscribe to a variety of events in Confluence, and specify which channels the associated notifications will appear in. 
 
 - In a Mattermost channel, setup subscriptions to get updates from Confluence and manage your notification subscriptions directly within Mattermost.
-- Notify a channel whenever something occurs on a Confluence object:
-  - Confluence spaces, including those created, updated, deleted, and restored, and those with added comments.
-  - Confluence pages, including those created, updated, deleted, restored, and those with added, deleted, or updated comments.
+- Notify a channel whenever something occurs on a Confluence object, we support the following events:
+  - space_updated
+  - page_created
+  - page_restored
+  - page_trashed
+  - page_updated
+  - comment_created
+  - comment_updated
+- Users can only create subscriptions for the spaces and pages for which they have permission and same for the notifications as well. 
+- Admins can change permissions for both Mattermost and Confluence side from the plugin configuration.
+    ![image](https://github.com/Brightscout/mattermost-plugin-confluence-fork/assets/90389917/b94fbf84-f345-4ded-aa8d-21de1b870062)
 
 ## Configure notifications
 
@@ -46,9 +54,13 @@ With the Confluence plugin, you can subscribe to a variety of events in Confluen
     ![image](https://github.com/mattermost/mattermost-plugin-confluence/assets/74422101/9314abd2-8562-456e-9661-7f23c91db206)
     
 - `Events` are the internal confluence events that will trigger a notification from Confluence. The following events are currently included:
-    - Confluence spaces, including those created, updated, deleted, and restored, and those with added comments.
-    - Confluence pages, inlcuidng those created, updated, deleted, restored, and those with added, deleted, or updated comments.
-
+  - space_updated
+  - page_created
+  - page_restored
+  - page_trashed
+  - page_updated
+  - comment_created
+  - comment_updated
 Example of a configured notification:
 
 ![image](https://github.com/mattermost/mattermost-plugin-confluence/assets/74422101/33bc67f8-8d36-4e79-a386-7791f4dcd1ee)
