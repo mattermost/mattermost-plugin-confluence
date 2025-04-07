@@ -1,8 +1,7 @@
 module github.com/mattermost/mattermost-plugin-confluence
 
 go 1.22.0
-
-toolchain go1.22.8
+toolchain go1.24.1
 
 require (
 	bou.ke/monkey v1.0.2
@@ -13,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/atomic v1.11.0
-	golang.org/x/oauth2 v0.25.0
+	golang.org/x/oauth2 v0.29.0
 )
 
 require (
