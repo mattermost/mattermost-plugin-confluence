@@ -28,18 +28,24 @@ const (
 var ErrNotFound = errors.New("not found")
 
 // lint is suggesting to rename the function names from `storeConnection` to `Connection` so that when the function is accessed from any other package
-// it looks like `store.Connnection, but this reduces the readibility within the function`
+// it looks like `store.Connection, but this reduces the readability within the function`
 
 // revive:disable:exported
 
 func GetURLSpaceKeyCombinationKey(url, spaceKey string) string {
 	u, _ := url2.Parse(url)
-	return fmt.Sprintf("%s/%s/%s", ConfluenceSubscriptionKeyPrefix, u.Hostname(), spaceKey)
+	return fmt.Sprintf("%s/%s/%s",
+		url2.PathEscape(ConfluenceSubscriptionKeyPrefix),
+		url2.PathEscape(u.Hostname()),
+		url2.PathEscape(spaceKey))
 }
 
 func GetURLPageIDCombinationKey(url, pageID string) string {
 	u, _ := url2.Parse(url)
-	return fmt.Sprintf("%s/%s/%s", ConfluenceSubscriptionKeyPrefix, u.Hostname(), pageID)
+	return fmt.Sprintf("%s/%s/%s",
+		url2.PathEscape(ConfluenceSubscriptionKeyPrefix),
+		url2.PathEscape(u.Hostname()),
+		url2.PathEscape(pageID))
 }
 
 func GetSubscriptionKey() string {
