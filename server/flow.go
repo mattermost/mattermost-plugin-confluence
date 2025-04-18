@@ -248,7 +248,7 @@ func (fm *FlowManager) stepCSversionGreaterthan9() flow.Step {
 func (fm *FlowManager) stepWebhookInstructions() flow.Step {
 	return flow.NewStep(stepWebhookInstructions).
 		WithText(
-			"You have successfully connected your Mattermost acoount to Confluence server. To finish the configuration, add a Webhook in your Confluence server following these steps:\n" +
+			"You have successfully connected your Mattermost account to Confluence server. To finish the configuration, add a Webhook in your Confluence server following these steps:\n" +
 				"1. Go to [**Settings > Plugins > Servlet > Webhooks**]({{ .ConfluenceURL }}/plugins/servlet/webhooks/)\n" +
 				"2. Select **Create Webhook**.\n" +
 				"4. On the **Create Webhook** screen, set the following values:\n" +
