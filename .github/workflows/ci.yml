@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - master
-      - main
 
 jobs:
   plugin-ci:
-    uses: mattermost/actions-workflows/.github/workflows/community-plugin-ci.yml@139a051e8651e6246e3764fe342297b73120e590
+    uses: mattermost/actions-workflows/.github/workflows/plugin-ci.yml@f53a9d32cc670c0319d95332e07c68c00b332928
     secrets: inherit
