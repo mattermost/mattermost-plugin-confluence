@@ -222,7 +222,7 @@ func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, _ ...string) *m
 	return &model.CommandResponse{}
 }
 
-func showInstallServerHelp(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func showInstallServerHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
@@ -274,7 +274,7 @@ func deleteSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *
 	return &model.CommandResponse{}
 }
 
-func listChannelSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func listChannelSubscription(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)

@@ -56,7 +56,7 @@ func NormalizeConfluenceURL(confluenceURL string) (string, error) {
 
 // CheckConfluenceURL checks if the `/status` endpoint of the Confluence URL is accessible
 // and responding with the correct state which is "RUNNING"
-func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, requireHTTPS bool) (string, error) {
+func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, _ bool) (string, error) {
 	confluenceURL, err := NormalizeConfluenceURL(confluenceURL)
 	if err != nil {
 		return "", fmt.Errorf("unable to normalize confluence url. Confluence URL %s. %w", confluenceURL, err)
