@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/pkg/errors"
 )
 
@@ -59,6 +60,7 @@ func NormalizeConfluenceURL(confluenceURL string) (string, error) {
 func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, requireHTTPS bool) (string, error) {
 	confluenceURL, err := NormalizeConfluenceURL(confluenceURL)
 	if err != nil {
+		config.Mattermost.LogError("Error normalizing confluence URL", "ConfluenceURL", confluenceURL, "error", err.Error())
 		return "", fmt.Errorf("unable to normalize confluence url. Confluence URL %s. %w", confluenceURL, err)
 	}
 
@@ -68,6 +70,7 @@ func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, requireHTTPS bo
 
 	var status ConfluenceStatus
 	if _, statusCode, err := CallJSON(confluenceURL, http.MethodGet, "/status", nil, &status, &http.Client{}); err != nil {
+		config.Mattermost.LogError("Error making call to get confluence server status", "Confluence URL", confluenceURL, "StatusCode", statusCode, err.Error())
 		return "", fmt.Errorf("error making call to get confluence server status. Confluence URL: %s. StatusCode:  %d, %w", confluenceURL, statusCode, err)
 	}
 
@@ -90,6 +93,7 @@ func CallJSONWithURL(instanceURL, path, method string, in, out interface{}, http
 func GetEndpointURL(instanceURL, path string) (string, error) {
 	endpointURL, err := url.Parse(strings.TrimSpace(fmt.Sprintf("%s%s", instanceURL, path)))
 	if err != nil {
+		config.Mattermost.LogError("Error parsing URL", "Instance URL", instanceURL, "Path", path, err.Error())
 		return "", err
 	}
 

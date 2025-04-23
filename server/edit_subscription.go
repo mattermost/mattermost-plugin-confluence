@@ -44,7 +44,7 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, _ *Pl
 	}
 	if err := service.EditSubscription(subscription); err != nil {
 		config.Mattermost.LogError(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to edit subscription", http.StatusBadRequest)
 		return
 	}
 	post := &model.Post{

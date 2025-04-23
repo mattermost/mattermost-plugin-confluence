@@ -132,17 +132,6 @@ func set(key string, v interface{}) (returnErr error) {
 	return nil
 }
 
-func Load(key string) ([]byte, error) {
-	data, appErr := config.Mattermost.KVGet(key)
-	if appErr != nil {
-		return nil, errors.WithMessage(appErr, "failed plugin KVGet")
-	}
-	if data == nil {
-		return nil, errors.Wrap(ErrNotFound, key)
-	}
-	return data, nil
-}
-
 func StoreOAuth2State(state string) error {
 	if appErr := config.Mattermost.KVSetWithExpiry(hashkey(prefixOneTimeSecret, state), []byte(state), expiryStoreTimeoutSeconds); appErr != nil {
 		return errors.WithMessage(appErr, "failed to store state "+state)
@@ -165,6 +154,7 @@ func VerifyOAuth2State(state string) error {
 
 func StoreConnection(instanceID, mattermostUserID string, connection *types.Connection) (returnErr error) {
 	if err := set(keyWithInstanceID(instanceID, mattermostUserID), connection); err != nil {
+		
 		return err
 	}
 
@@ -207,6 +197,7 @@ func LoadConnection(instanceID, mattermostUserID string) (*types.Connection, err
 func DeleteConnection(instanceID, mattermostUserID string) (returnErr error) {
 	c, err := LoadConnection(instanceID, mattermostUserID)
 	if err != nil {
+		config.Mattermost.LogError("Error loading the connection", "UserID", mattermostUserID, "error", err.Error())
 		return err
 	}
 

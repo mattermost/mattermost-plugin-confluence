@@ -44,7 +44,7 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, _ *Plugin) {
 	}
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
 		config.Mattermost.LogError(sErr.Error())
-		http.Error(w, sErr.Error(), statusCode)
+		http.Error(w, "Failed to save subscription", statusCode)
 		return
 	}
 	post := &model.Post{

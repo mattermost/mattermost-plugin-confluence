@@ -20,7 +20,7 @@ var autocompleteGetChannelSubscriptions = &Endpoint{
 	Execute: handleGetChannelSubscriptions,
 }
 
-func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, _ *Plugin) {
+func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	mattermostUserID := r.Header.Get("Mattermost-User-Id")
 	if mattermostUserID == "" {
 		_, _ = respondErr(w, http.StatusUnauthorized, errors.New("not authorized"))
@@ -39,7 +39,8 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, _ *Pl
 				return
 			}
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			p.client.Log.Error("Error loading connnection for the user", "UserID", mattermostUserID, "error", err.Error())
+			http.Error(w, "Failed to get subscriptions for the channel", http.StatusInternalServerError)
 			return
 		}
 
@@ -55,7 +56,8 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, _ *Pl
 	channelID := r.FormValue("channel_id")
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		p.client.Log.Error("Error getting subscriptions for the channel", "ChannelID", channelID, "error", err.Error())
+		http.Error(w, "Failed to get subscription for the channel", http.StatusInternalServerError)
 		return
 	}
 
