@@ -29,8 +29,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 	if status, err := verifyHTTPSecret(config.GetConfig().Secret, r.FormValue("secret")); err != nil {
 		p.client.Log.Error("Error verifying secret for the confluence server webhook", "error", err.Error())
-		http.Error(w, "Failed to verify secret for the confluence server webhhok", status)
-		return
+		http.Error(w, "Failed to verify secret for the confluence server webhook", status)
 	}
 
 	pluginConfig := config.GetConfig()
