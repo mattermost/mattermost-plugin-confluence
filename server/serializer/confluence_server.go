@@ -252,7 +252,7 @@ func (e *ConfluenceServerEvent) GetCommentPageOrBlogDisplayName(withLink bool) s
 	return commentedOn
 }
 
-func (e ConfluenceServerEvent) GetNotificationPost(eventType string) *model.Post {
+func (e ConfluenceServerEvent) GetNotificationPost(_ string) *model.Post {
 	var attachment *model.SlackAttachment
 	post := &model.Post{
 		UserId: config.BotUserID,
