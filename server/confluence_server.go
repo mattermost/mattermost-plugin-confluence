@@ -150,7 +150,7 @@ func (p *Plugin) GetClientFromUserKey(instanceID, eventUserKey string) (Client, 
 	}
 	connection, err := store.LoadConnection(instanceID, *mmUserID)
 	if err != nil {
-		p.client.Log.Error("Error loading  the connection", "UserID", *mmUserID, "InstanceURL", instanceID, "error", err.Error())
+		p.client.Log.Error("Error loading the connection", "UserID", *mmUserID, "InstanceURL", instanceID, "error", err.Error())
 		return nil, nil, err
 	}
 

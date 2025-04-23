@@ -10,8 +10,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 )
 
 const ErrorStatusNotFound = "No content found"

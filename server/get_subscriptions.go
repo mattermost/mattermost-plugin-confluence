@@ -39,7 +39,7 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 				return
 			}
 
-			p.client.Log.Error("Error loading connnection for the user", "UserID", mattermostUserID, "error", err.Error())
+			p.client.Log.Error("Error loading connection for the user", "UserID", mattermostUserID, "error", err.Error())
 			http.Error(w, "Failed to get subscriptions for the channel", http.StatusInternalServerError)
 			return
 		}

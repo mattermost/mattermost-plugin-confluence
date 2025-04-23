@@ -189,7 +189,7 @@ func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *mode
 		return p.responsef(context,
 			"You already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect.")
 	} else if err != nil {
-		p.client.Log.Error("Error loading connnection for the user", "UserID", context.UserId, "error", err.Error())
+		p.client.Log.Error("Error loading connection for the user", "UserID", context.UserId, "error", err.Error())
 		return p.responsef(context, "Failed to complete the **connection** request. Error: %v", err)
 	}
 

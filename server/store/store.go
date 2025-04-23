@@ -28,7 +28,7 @@ const (
 var ErrNotFound = errors.New("not found")
 
 // lint is suggesting to rename the function names from `storeConnection` to `Connection` so that when the function is accessed from any other package
-// it looks like `store.Connnection, but this reduces the readibility within the function`
+// it looks like `store.Connection, but this reduces the readibility within the function`
 
 // revive:disable:exported
 
@@ -154,7 +154,6 @@ func VerifyOAuth2State(state string) error {
 
 func StoreConnection(instanceID, mattermostUserID string, connection *types.Connection) (returnErr error) {
 	if err := set(keyWithInstanceID(instanceID, mattermostUserID), connection); err != nil {
-		
 		return err
 	}
 
