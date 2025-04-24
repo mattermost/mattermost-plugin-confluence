@@ -193,7 +193,7 @@ func (p *Plugin) GetSpaceKeyFromSpaceIDWithAPIToken(spaceID int64, pluginConfig 
 		start += pageSize
 	}
 
-	return "", fmt.Errorf("Confluence GetSpaceKeyFromSpaceIDUsingAPIToken: no space found for the space key")
+	return "", fmt.Errorf("confluence GetSpaceKeyFromSpaceIDUsingAPIToken: no space found for the space key")
 }
 
 func (p *Plugin) GetEventDataWithAPIToken(webhookPayload *serializer.ConfluenceServerWebhookPayload, pluginConfig *config.Configuration) (*ConfluenceServerEvent, error) {

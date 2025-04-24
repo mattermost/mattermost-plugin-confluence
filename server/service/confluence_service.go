@@ -76,7 +76,7 @@ func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, requireHTTPS bo
 	}
 
 	if status.State != "RUNNING" {
-		return "", fmt.Errorf("Confluence server is not in correct state, it should be up and running: %q", confluenceURL)
+		return "", fmt.Errorf("confluence server is not in correct state, it should be up and running: %q", confluenceURL)
 	}
 
 	return confluenceURL, nil
