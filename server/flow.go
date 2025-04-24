@@ -203,7 +203,7 @@ func (fm *FlowManager) stepServerVersionQuestion() flow.Step {
 		WithButton(flow.Button{
 			Name:  "Yes",
 			Color: flow.ColorPrimary,
-			OnClick: func(f *flow.Flow) (flow.Name, flow.State, error) {
+			OnClick: func(_ *flow.Flow) (flow.Name, flow.State, error) {
 				pluginConfig := config.GetConfig()
 				pluginConfig.ServerVersionGreaterthan9 = true
 				config.SetConfig(pluginConfig)
@@ -214,7 +214,7 @@ func (fm *FlowManager) stepServerVersionQuestion() flow.Step {
 		WithButton(flow.Button{
 			Name:  "No",
 			Color: flow.ColorDefault,
-			OnClick: func(f *flow.Flow) (flow.Name, flow.State, error) {
+			OnClick: func(_ *flow.Flow) (flow.Name, flow.State, error) {
 				pluginConfig := config.GetConfig()
 				pluginConfig.ServerVersionGreaterthan9 = false
 				config.SetConfig(pluginConfig)
@@ -302,7 +302,7 @@ func (fm *FlowManager) stepInstanceURL() flow.Step {
 		WithButton(cancelButton())
 }
 
-func (fm *FlowManager) submitConfluenceURL(f *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
+func (fm *FlowManager) submitConfluenceURL(_ *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
 	errorList := map[string]string{}
 
 	confluenceURLRaw, ok := submitted["confluence_url"]
@@ -372,7 +372,7 @@ func (fm *FlowManager) stepOAuthInput() flow.Step {
 		WithButton(cancelButton())
 }
 
-func (fm *FlowManager) submitOAuthConfig(f *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
+func (fm *FlowManager) submitOAuthConfig(_ *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
 	errorList := map[string]string{}
 
 	clientIDRaw, ok := submitted["client_id"]

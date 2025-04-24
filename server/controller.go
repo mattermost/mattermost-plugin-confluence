@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	model "github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
@@ -93,11 +93,7 @@ func ReturnStatusOK(w io.Writer) {
 }
 
 func verifyHTTPSecret(expected, got string) (status int, err error) {
-	for {
-		if subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1 {
-			break
-		}
-
+	for subtle.ConstantTimeCompare([]byte(got), []byte(expected)) != 1 {
 		unescaped, _ := url.QueryUnescape(got)
 		if unescaped == got {
 			return http.StatusForbidden, errors.New("request URL: secret did not match")
