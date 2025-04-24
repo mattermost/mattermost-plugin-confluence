@@ -177,9 +177,9 @@ func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *mode
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ConfluenceURL == "" || !pluginConfig.IsOAuthConfigured() {
 		if isAdmin {
-			return p.responsef(context, "OAuth config not set for confluence plugin. Please run `/confluence install server`")
+			return p.responsef(context, "OAuth config not set for Confluence plugin. Please run `/confluence install server`")
 		}
-		return p.responsef(context, "OAuth config not set for confluence plugin. Please ask the admin to setup OAuth for the plugin")
+		return p.responsef(context, "OAuth config not set for Confluence plugin. Please ask the admin to setup OAuth for the plugin")
 	}
 	confluenceURL := pluginConfig.GetConfluenceBaseURL()
 	confluenceURL = strings.TrimSuffix(confluenceURL, "/")
@@ -208,7 +208,7 @@ func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, args ...string) *
 	disconnected, err := p.DisconnectUser(confluenceURL, commArgs.UserId)
 	if err != nil {
 		if errors.Cause(err) == store.ErrNotFound {
-			return p.responsef(commArgs, "Your account is not connected to Confluence. Please use `/confluence connect` to connect your account.")
+			return p.responsef(commArgs, "Your account is not connected to Confluence.")
 		}
 
 		p.client.Log.Error("Error disconnecting the user", "UserID", commArgs.UserId, "error", err.Error())

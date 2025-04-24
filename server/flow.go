@@ -202,7 +202,7 @@ func (fm *FlowManager) stepWelcome() flow.Step {
 }
 
 func (fm *FlowManager) stepServerVersionQuestion() flow.Step {
-	delegateQuestionText := "Are you using confluence server version greater than or equal to 9?"
+	delegateQuestionText := "Are you using Confluence server version greater than or equal to 9?"
 	return flow.NewStep(stepServerVersionQuestion).
 		WithText(delegateQuestionText).
 		WithButton(flow.Button{

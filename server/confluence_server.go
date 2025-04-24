@@ -25,11 +25,12 @@ var confluenceServerWebhook = &Endpoint{
 }
 
 func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Plugin) {
-	p.client.Log.Info("Received confluence server event.")
+	p.client.Log.Info("Received Confluence server event.")
 
 	if status, err := verifyHTTPSecret(config.GetConfig().Secret, r.FormValue("secret")); err != nil {
-		p.client.Log.Error("Error verifying secret for the confluence server webhook", "error", err.Error())
-		http.Error(w, "Failed to verify secret for the confluence server webhook", status)
+		p.client.Log.Error("Error verifying secret for the Confluence server webhook", "error", err.Error())
+		http.Error(w, "Failed to verify secret for the Confluence server webhook", status)
+		return
 	}
 
 	pluginConfig := config.GetConfig()
@@ -37,8 +38,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 	if pluginConfig.ServerVersionGreaterthan9 {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			p.client.Log.Error("Error reading body of the confluence server webhook", "error", err.Error())
-			http.Error(w, "Failed to read body for the confluence server webhook", http.StatusBadRequest)
+			p.client.Log.Error("Error reading body of the Confluence server webhook", "error", err.Error())
+			http.Error(w, "Failed to read body for the Confluence server webhook", http.StatusBadRequest)
 			return
 		}
 
@@ -75,7 +76,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 					spaceKey, err = p.GetSpaceKeyFromSpaceIDWithAPIToken(event.Space.ID, pluginConfig)
 					if err != nil {
 						p.client.Log.Error("Error getting space key using space ID with API token", "error", err)
-						http.Error(w, "Failed to send confluence notification using API Token", http.StatusInternalServerError)
+						http.Error(w, "Failed to send Confluence notification using API Token", http.StatusInternalServerError)
 						return
 					}
 					event.Space.SpaceKey = spaceKey
@@ -85,7 +86,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 				eventData, err = p.GetEventDataWithAPIToken(event, pluginConfig)
 				if err != nil {
 					p.client.Log.Error("Error getting event data with API token", "error", err)
-					http.Error(w, "Failed to send confluence notification using API Token", http.StatusInternalServerError)
+					http.Error(w, "Failed to send Confluence notification using API Token", http.StatusInternalServerError)
 					return
 				}
 
@@ -106,7 +107,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 			spaceKey, err = client.(*confluenceServerClient).GetSpaceKeyFromSpaceID(event.Space.ID)
 			if err != nil {
 				p.client.Log.Error("Failed to get Space Key from the Space ID", "Space ID", event.Space.ID, "error", err.Error())
-				http.Error(w, "Failed to send notification for confluence server webhook", http.StatusInternalServerError)
+				http.Error(w, "Failed to send notification for Confluence server webhook", http.StatusInternalServerError)
 				return
 			}
 			event.Space.SpaceKey = spaceKey
@@ -114,8 +115,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData, err := p.GetEventData(event, client)
 		if err != nil {
-			p.client.Log.Error("Error getting event data for the confluence server webhook", "error", err.Error())
-			http.Error(w, "Failed to send notification for confluence server webhook", http.StatusInternalServerError)
+			p.client.Log.Error("Error getting event data for the Confluence server webhook", "error", err.Error())
+			http.Error(w, "Failed to send notification for Confluence server webhook", http.StatusInternalServerError)
 			return
 		}
 
@@ -192,7 +193,7 @@ func (p *Plugin) GetSpaceKeyFromSpaceIDWithAPIToken(spaceID int64, pluginConfig 
 		start += pageSize
 	}
 
-	return "", fmt.Errorf("confluence GetSpaceKeyFromSpaceIDUsingAPIToken: no space found for the space key")
+	return "", fmt.Errorf("Confluence GetSpaceKeyFromSpaceIDUsingAPIToken: no space found for the space key")
 }
 
 func (p *Plugin) GetEventDataWithAPIToken(webhookPayload *serializer.ConfluenceServerWebhookPayload, pluginConfig *config.Configuration) (*ConfluenceServerEvent, error) {

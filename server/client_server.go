@@ -205,7 +205,7 @@ func (csc *confluenceServerClient) GetSpaceKeyFromSpaceID(spaceID int64) (string
 		response := &apiResponse{}
 
 		if _, _, err := service.CallJSONWithURL(csc.URL, path, http.MethodGet, nil, response, csc.HTTPClient); err != nil {
-			return "", errors.Wrap(err, "confluence GetSpaceKeyFromSpaceID")
+			return "", errors.Wrap(err, "Confluence GetSpaceKeyFromSpaceID")
 		}
 
 		for _, space := range response.Results {
@@ -221,5 +221,5 @@ func (csc *confluenceServerClient) GetSpaceKeyFromSpaceID(spaceID int64) (string
 		start += pageSize
 	}
 
-	return "", fmt.Errorf("confluence GetSpaceKeyFromSpaceID: no space key found for the space ID")
+	return "", fmt.Errorf("Confluence GetSpaceKeyFromSpaceID: no space key found for the space ID")
 }

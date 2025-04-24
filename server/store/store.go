@@ -232,7 +232,7 @@ func LoadUser(mattermostUserID string) (*types.User, error) {
 	user := types.NewUser(mattermostUserID)
 	key := hashkey(prefixUser, mattermostUserID)
 	if err := get(key, user); err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("failed to load confluence user for mattermostUserId:%s", mattermostUserID))
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed to load Confluence user for mattermostUserId:%s", mattermostUserID))
 	}
 	return user, nil
 }

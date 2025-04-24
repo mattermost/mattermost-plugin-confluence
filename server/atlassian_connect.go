@@ -20,6 +20,7 @@ var atlassianConnectJSON = &Endpoint{
 func renderAtlassianConnectJSON(w http.ResponseWriter, r *http.Request, _ *Plugin) {
 	conf := config.GetConfig()
 	if status, err := verifyHTTPSecret(conf.Secret, r.FormValue("secret")); err != nil {
+		config.Mattermost.LogWarn("Failed to verify secret", "error", err.Error())
 		http.Error(w, "invalid secret", status)
 		return
 	}
@@ -41,12 +42,14 @@ func renderAtlassianConnectJSON(w http.ResponseWriter, r *http.Request, _ *Plugi
 	}
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
+		config.Mattermost.LogWarn("Error parsing the template", "error", err.Error())
 		http.Error(w, "error rendering the template", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = tmpl.Execute(w, values); err != nil {
+		config.Mattermost.LogWarn("Error writng the template as response", "error", err.Error())
 		http.Error(w, "failed to write response", http.StatusInternalServerError)
 		return
 	}

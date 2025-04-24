@@ -52,13 +52,13 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	} else if err != nil {
 		p.client.Log.Error("Error loading the connection", "UserID", mattermostUserID, "InstanceURL", instanceURL, "error", err.Error())
-		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("some error occurred connecting user to confluence"))
+		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("error occurred while connecting user to Confluence"))
 		return
 	}
 
 	redirectURL, err := p.getUserConnectURL(instanceURL, mattermostUserID, isAdmin)
 	if err != nil {
-		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("some error occurred connecting user to confluence"))
+		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("error occurred while connecting user to Confluence"))
 		return
 	}
 
@@ -107,7 +107,7 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
-		http.Error(w, "missing confluence base url", http.StatusInternalServerError)
+		http.Error(w, "missing Confluence base url", http.StatusInternalServerError)
 		return
 	}
 
@@ -176,7 +176,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 
 	confluenceUser, err := client.GetSelf()
 	if err != nil {
-		p.client.Log.Error("Error getting the confluence user from client", "error", err.Error())
+		p.client.Log.Error("Error getting the Confluence user from client", "error", err.Error())
 		return nil, nil, err
 	}
 	connection.ConfluenceUser = *confluenceUser
@@ -379,7 +379,7 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		}
 
 		p.client.Log.Error("Error getting client connection", "MattermostUserID", mattermostUserID, "error", err)
-		http.Error(w, "some error occurred checking user connection status", http.StatusInternalServerError)
+		http.Error(w, "Error occurred while checking user connection status", http.StatusInternalServerError)
 		return
 	}
 
