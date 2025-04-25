@@ -17,6 +17,7 @@ formatters:
 linters:
   default: none
   enable:
+    - bidichk
     - bodyclose
     - errcheck
     - gocritic
