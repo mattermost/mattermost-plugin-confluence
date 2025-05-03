@@ -77,7 +77,10 @@ plugin.exe
 vendor/
 .history/
 coverage.txt
+bin/
 
 # webapp test cases
 webapp/build/test-results.xml
 webapp/junit.xml
+
+**/.claude/settings.local.json

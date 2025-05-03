@@ -2,25 +2,12 @@
 
 exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = `
 <Modal
-  animation={true}
-  autoFocus={true}
   backdrop="static"
-  dialogAs={
-    Object {
-      "$$typeof": Symbol(react.forward_ref),
-      "displayName": "ModalDialog",
-      "render": [Function],
-    }
-  }
-  enforceFocus={true}
-  keyboard={true}
   onHide={[Function]}
-  restoreFocus={true}
   show={true}
 >
   <ModalHeader
     closeButton={true}
-    closeLabel="Close"
   >
     <ModalTitle>
       Edit Your Confluence Subscription
@@ -214,22 +201,17 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
   </ModalBody>
   <ModalFooter>
     <Button
-      active={false}
       bsStyle="link"
-      disabled={false}
       onClick={[Function]}
       type="button"
-      variant="primary"
     >
       Cancel
     </Button>
     <Button
-      active={false}
       bsStyle="primary"
       disabled={false}
       onClick={[Function]}
       type="submit"
-      variant="primary"
     >
       Save Subscription
     </Button>
