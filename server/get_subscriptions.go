@@ -15,9 +15,10 @@ import (
 )
 
 var autocompleteGetChannelSubscriptions = &Endpoint{
-	Path:    "/autocomplete/GetChannelSubscriptions",
-	Method:  http.MethodGet,
-	Execute: handleGetChannelSubscriptions,
+	Path:            "/autocomplete/GetChannelSubscriptions",
+	Method:          http.MethodGet,
+	Execute:         handleGetChannelSubscriptions,
+	IsAuthenticated: true,
 }
 
 func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, _ *Plugin) {

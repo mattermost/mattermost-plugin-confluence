@@ -17,9 +17,10 @@ import (
 )
 
 type Endpoint struct {
-	Path    string
-	Method  string
-	Execute func(w http.ResponseWriter, r *http.Request, p *Plugin)
+	Path            string
+	Method          string
+	Execute         func(w http.ResponseWriter, r *http.Request, p *Plugin)
+	IsAuthenticated bool
 }
 
 // Endpoints is a map of endpoint key to endpoint object
@@ -50,10 +51,24 @@ func (p *Plugin) InitAPI() *mux.Router {
 	s := r.PathPrefix("/api/v1").Subrouter()
 	for _, endpoint := range Endpoints {
 		handler := endpoint.Execute
+		if endpoint.IsAuthenticated {
+			s.HandleFunc(endpoint.Path, p.checkAuth(p.wrapHandler(handler))).Methods(endpoint.Method)
+		}
 		s.HandleFunc(endpoint.Path, p.wrapHandler(handler)).Methods(endpoint.Method)
 	}
 
 	return r
+}
+
+func (p *Plugin) checkAuth(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("Mattermost-User-ID")
+		if userID == "" {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+		handler(w, r)
+	}
 }
 
 // wrapHandler ensures the plugin is passed to the handler

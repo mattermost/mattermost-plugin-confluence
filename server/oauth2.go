@@ -9,19 +9,22 @@ const (
 )
 
 var userConnect = &Endpoint{
-	Path:    routeUserConnect,
-	Method:  http.MethodGet,
-	Execute: httpOAuth2Connect,
+	Path:            routeUserConnect,
+	Method:          http.MethodGet,
+	Execute:         httpOAuth2Connect,
+	IsAuthenticated: false,
 }
 
 var userConnectComplete = &Endpoint{
-	Path:    routeUserComplete,
-	Method:  http.MethodGet,
-	Execute: httpOAuth2Complete,
+	Path:            routeUserComplete,
+	Method:          http.MethodGet,
+	Execute:         httpOAuth2Complete,
+	IsAuthenticated: false,
 }
 
 var userConnectionInfo = &Endpoint{
-	Path:    routeUserConnectionInfo,
-	Method:  http.MethodGet,
-	Execute: httpGetUserInfo,
+	Path:            routeUserConnectionInfo,
+	Method:          http.MethodGet,
+	Execute:         httpGetUserInfo,
+	IsAuthenticated: false,
 }
