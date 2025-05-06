@@ -12,19 +12,19 @@ var userConnect = &Endpoint{
 	Path:            routeUserConnect,
 	Method:          http.MethodGet,
 	Execute:         httpOAuth2Connect,
-	IsAuthenticated: false,
+	IsAuthenticated: true,
 }
 
 var userConnectComplete = &Endpoint{
 	Path:            routeUserComplete,
 	Method:          http.MethodGet,
 	Execute:         httpOAuth2Complete,
-	IsAuthenticated: false,
+	IsAuthenticated: true,
 }
 
 var userConnectionInfo = &Endpoint{
 	Path:            routeUserConnectionInfo,
 	Method:          http.MethodGet,
 	Execute:         httpGetUserInfo,
-	IsAuthenticated: false,
+	IsAuthenticated: true,
 }

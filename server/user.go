@@ -31,13 +31,7 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	}
 
 	isAdmin := IsAdmin(w, r)
-
-	mattermostUserID := r.Header.Get("Mattermost-User-Id")
-	if mattermostUserID == "" {
-		_, _ = respondErr(w, http.StatusUnauthorized,
-			errors.New("not authorized"))
-		return
-	}
+	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
@@ -95,12 +89,6 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	}
 
-	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
-	if mattermostUserID == "" {
-		http.Error(w, "not authorized", http.StatusUnauthorized)
-		return
-	}
-
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
 		http.Error(w, "missing confluence base url", http.StatusInternalServerError)
@@ -109,7 +97,7 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	isAdmin := IsAdmin(w, r)
 
-	cuser, mmuser, err := p.CompleteOAuth2(mattermostUserID, code, state, instanceURL, isAdmin)
+	cuser, mmuser, err := p.CompleteOAuth2(r.Header.Get(config.HeaderMattermostUserID), code, state, instanceURL, isAdmin)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -317,13 +305,7 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	}
 
-	mattermostUserID := r.Header.Get("Mattermost-User-Id")
-	if mattermostUserID == "" {
-		_, _ = respondErr(w, http.StatusUnauthorized,
-			errors.New("not authorized"))
-		return
-	}
-
+	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
 	serverVersionGreaterThan9 := config.GetConfig().ServerVersionGreaterthan9
 
 	if !serverVersionGreaterThan9 {

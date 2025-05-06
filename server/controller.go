@@ -62,7 +62,7 @@ func (p *Plugin) InitAPI() *mux.Router {
 
 func (p *Plugin) checkAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Header.Get("Mattermost-User-ID")
+		userID := r.Header.Get(config.HeaderMattermostUserID)
 		if userID == "" {
 			http.Error(w, "Not authorized", http.StatusUnauthorized)
 			return
