@@ -52,7 +52,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 		var event *serializer.ConfluenceServerWebhookPayload
 		err = json.Unmarshal(body, &event)
 		if err != nil {
-			config.Mattermost.LogError("Error occurred while unmarshaling Confluence server webhook payload", "Error", err.Error())
+			p.client.Log.Error("Error occurred while unmarshaling Confluence server webhook payload", "Error", err.Error())
 			http.Error(w, "Failed to unmarshal Confluence server webhook payload", http.StatusInternalServerError)
 			return
 		}
