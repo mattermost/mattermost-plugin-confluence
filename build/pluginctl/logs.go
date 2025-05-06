@@ -179,7 +179,7 @@ func checkJSONLogsSetting(ctx context.Context, client *model.Client4) error {
 	}
 	if cfg.LogSettings.FileJson == nil || !*cfg.LogSettings.FileJson {
 		//nolint:revive,staticcheck
-		return errors.New("JSON output for file logs are disabled. Please enable LogSettings.FileJson via the configration in Mattermost.")
+		return errors.New("JSON output for file logs are disabled. Please enable LogSettings.FileJson via the configuration in Mattermost.")
 	}
 
 	return nil
