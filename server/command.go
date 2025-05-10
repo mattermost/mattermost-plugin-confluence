@@ -171,7 +171,7 @@ func (p *Plugin) responsef(commandArgs *model.CommandArgs, format string, args .
 	return &model.CommandResponse{}
 }
 
-func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeConnect(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	isAdmin := util.IsSystemAdmin(context.UserId)
 
 	pluginConfig := config.GetConfig()
@@ -197,7 +197,7 @@ func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *mode
 	return p.responsef(context, "[Click here to link your Confluence account](%s)", link)
 }
 
-func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, _ ...string) *model.CommandResponse {
 	user, err := store.LoadUser(commArgs.UserId)
 	if err != nil {
 		p.client.Log.Error("Error loading  the user from store", "UserID", commArgs.UserId, "error", err.Error())
@@ -217,7 +217,7 @@ func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, args ...string) *
 	return p.responsef(commArgs, "You have successfully disconnected your Confluence account (**%s**).", disconnected.DisplayName)
 }
 
-func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
@@ -228,7 +228,7 @@ func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, args ...string)
 	return &model.CommandResponse{}
 }
 
-func showInstallServerHelp(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func showInstallServerHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
@@ -285,7 +285,7 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	return &model.CommandResponse{}
 }
 
-func listChannelSubscription(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func listChannelSubscription(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
