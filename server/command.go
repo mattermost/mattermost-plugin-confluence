@@ -285,7 +285,7 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	return &model.CommandResponse{}
 }
 
-func listChannelSubscription(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
+func listChannelSubscription(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
