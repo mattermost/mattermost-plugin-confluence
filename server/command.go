@@ -171,15 +171,15 @@ func (p *Plugin) responsef(commandArgs *model.CommandArgs, format string, args .
 	return &model.CommandResponse{}
 }
 
-func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeConnect(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	isAdmin := util.IsSystemAdmin(context.UserId)
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ConfluenceURL == "" || !pluginConfig.IsOAuthConfigured() {
 		if isAdmin {
-			return p.responsef(context, "OAuth config not set for confluence plugin. Please run `/confluence install server`")
+			return p.responsef(context, "OAuth config not set for Confluence plugin. Please run `/confluence install server`")
 		}
-		return p.responsef(context, "OAuth config not set for confluence plugin. Please ask the admin to setup OAuth for the plugin")
+		return p.responsef(context, "OAuth config not set for Confluence plugin. Please ask the admin to setup OAuth for the plugin")
 	}
 	confluenceURL := pluginConfig.GetConfluenceBaseURL()
 	confluenceURL = strings.TrimSuffix(confluenceURL, "/")
@@ -188,30 +188,36 @@ func executeConnect(p *Plugin, context *model.CommandArgs, args ...string) *mode
 	if err == nil && len(conn.ConfluenceAccountID()) != 0 {
 		return p.responsef(context,
 			"You already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect.")
+	} else if err != nil {
+		p.client.Log.Error("Error loading connection for the user", "UserID", context.UserId, "error", err.Error())
+		return p.responsef(context, "Failed to complete the **connection** request. Error: %v", err)
 	}
 
 	link := fmt.Sprintf(oauth2ConnectPath, util.GetPluginURL())
 	return p.responsef(context, "[Click here to link your Confluence account](%s)", link)
 }
 
-func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, _ ...string) *model.CommandResponse {
 	user, err := store.LoadUser(commArgs.UserId)
 	if err != nil {
-		return p.responsef(commArgs, "Could not complete the **disconnection** request. Error: %v", err)
+		p.client.Log.Error("Error loading  the user from store", "UserID", commArgs.UserId, "error", err.Error())
+		return p.responsef(commArgs, "Failed to complete the **disconnection** request. Error: %v", err)
 	}
 	confluenceURL := user.InstanceURL
 
 	disconnected, err := p.DisconnectUser(confluenceURL, commArgs.UserId)
-	if errors.Cause(err) == store.ErrNotFound {
-		return p.responsef(commArgs, "Your account is not connected to Confluence. Please use `/confluence connect` to connect your account.")
-	}
 	if err != nil {
-		return p.responsef(commArgs, "Could not complete the **disconnection** request. Error: %v", err)
+		if errors.Cause(err) == store.ErrNotFound {
+			return p.responsef(commArgs, "Your account is not connected to Confluence.")
+		}
+
+		p.client.Log.Error("Error disconnecting the user", "UserID", commArgs.UserId, "error", err.Error())
+		return p.responsef(commArgs, "Failed to complete the **disconnection** request. Error: %v", err)
 	}
 	return p.responsef(commArgs, "You have successfully disconnected your Confluence account (**%s**).", disconnected.DisplayName)
 }
 
-func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
@@ -222,7 +228,7 @@ func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, args ...string)
 	return &model.CommandResponse{}
 }
 
-func showInstallServerHelp(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func showInstallServerHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
@@ -230,7 +236,10 @@ func showInstallServerHelp(p *Plugin, context *model.CommandArgs, args ...string
 
 	err := p.flowManager.StartSetupWizard(context.UserId, "")
 	if err != nil {
-		return &model.CommandResponse{}
+		p.client.Log.Error("Failed to start setup wizard", "user_id", context.UserId, "error", err.Error())
+		return &model.CommandResponse{
+			Text: "Failed to start setup wizard",
+		}
 	}
 
 	return &model.CommandResponse{
@@ -238,7 +247,7 @@ func showInstallServerHelp(p *Plugin, context *model.CommandArgs, args ...string
 	}
 }
 
-func deleteSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
@@ -248,6 +257,7 @@ func deleteSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *
 				return &model.CommandResponse{}
 			}
 
+			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
 			postCommandResponse(context, errorExecutingCommand)
 			return &model.CommandResponse{}
 		}
@@ -267,6 +277,7 @@ func deleteSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *
 	}
 	alias := strings.Join(args, " ")
 	if err := service.DeleteSubscription(context.ChannelId, alias); err != nil {
+		p.client.Log.Error("Error deleting the subscription", "subscription alias", alias, "error", err.Error())
 		postCommandResponse(context, err.Error())
 		return &model.CommandResponse{}
 	}
@@ -274,7 +285,7 @@ func deleteSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *
 	return &model.CommandResponse{}
 }
 
-func listChannelSubscription(_ *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+func listChannelSubscription(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
@@ -284,6 +295,7 @@ func listChannelSubscription(_ *Plugin, context *model.CommandArgs, args ...stri
 				return &model.CommandResponse{}
 			}
 
+			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
 			postCommandResponse(context, errorExecutingCommand)
 			return &model.CommandResponse{}
 		}
@@ -299,6 +311,7 @@ func listChannelSubscription(_ *Plugin, context *model.CommandArgs, args ...stri
 
 	channelSubscriptions, gErr := service.GetSubscriptionsByChannelID(context.ChannelId)
 	if gErr != nil {
+		p.client.Log.Error("Error getting the subscription for the channel", "ChannelID", context.ChannelId, "UserID", context.UserId, "error", gErr.Error())
 		postCommandResponse(context, gErr.Error())
 		return &model.CommandResponse{}
 	}

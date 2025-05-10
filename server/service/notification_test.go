@@ -122,10 +122,10 @@ func TestGetNotificationsChannelIDs(t *testing.T) {
 				mock.AnythingOfType("string"),
 				mock.AnythingOfType("string")).Return(nil)
 			mockAPI.On("CreatePost", mock.AnythingOfType(model.Post{}.Type)).Return(&model.Post{}, nil)
-			monkey.Patch(GetSubscriptionsByURLSpaceKey, func(url, spaceKey string) (serializer.StringArrayMap, error) {
+			monkey.Patch(GetSubscriptionsByURLSpaceKey, func(_, _ string) (serializer.StringArrayMap, error) {
 				return val.urlSpaceKeyCombinationSubscriptions, nil
 			})
-			monkey.Patch(GetSubscriptionsByURLPageID, func(url, pageID string) (serializer.StringArrayMap, error) {
+			monkey.Patch(GetSubscriptionsByURLPageID, func(_, _ string) (serializer.StringArrayMap, error) {
 				return val.urlPageIDCombinationSubscriptions, nil
 			})
 			channelIDs := getNotificationChannelIDs(val.baseURL, val.spaceKey, val.pageID, val.event)

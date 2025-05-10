@@ -68,7 +68,7 @@ func (n *notification) SendGenericWHNotification(event *serializer.ConfluenceSer
 
 	post := &model.Post{
 		UserId:  botUserID,
-		Message: fmt.Sprintf("Someone %s a page on confluence with the id %d", action, event.Page.ID),
+		Message: fmt.Sprintf("Someone %s a page on Confluence with the id %d", action, event.Page.ID),
 	}
 
 	urlPageIDSubscriptions, err := service.GetSubscriptionsByURLPageID(url, strconv.FormatInt(event.Page.ID, 10))

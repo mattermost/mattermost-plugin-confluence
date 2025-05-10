@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -25,10 +26,11 @@ var confluenceServerWebhook = &Endpoint{
 }
 
 func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Plugin) {
-	p.client.Log.Info("Received confluence server event.")
+	p.client.Log.Info("Received Confluence server event.")
 
 	if status, err := verifyHTTPSecret(config.GetConfig().Secret, r.FormValue("secret")); err != nil {
-		http.Error(w, err.Error(), status)
+		p.client.Log.Error("Error verifying secret for the Confluence server webhook", "error", err.Error())
+		http.Error(w, "Failed to verify secret for the Confluence server webhook", status)
 		return
 	}
 
@@ -37,7 +39,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 	if pluginConfig.ServerVersionGreaterthan9 {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			p.client.Log.Error("Error reading body of the Confluence server webhook", "error", err.Error())
+			http.Error(w, "Failed to read body for the Confluence server webhook", http.StatusBadRequest)
 			return
 		}
 
@@ -50,8 +53,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 		var event *serializer.ConfluenceServerWebhookPayload
 		err = json.Unmarshal(body, &event)
 		if err != nil {
-			config.Mattermost.LogError("Error occurred while unmarshalling Confluence server webhook payload.", "Error", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			p.client.Log.Error("Error occurred while unmarshaling Confluence server webhook payload", "Error", err.Error())
+			http.Error(w, "Failed to unmarshal Confluence server webhook payload", http.StatusInternalServerError)
 			return
 		}
 
@@ -74,7 +77,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 					spaceKey, err = p.GetSpaceKeyFromSpaceIDWithAPIToken(event.Space.ID, pluginConfig)
 					if err != nil {
 						p.client.Log.Error("Error getting space key using space ID with API token", "error", err)
-						http.Error(w, err.Error(), http.StatusInternalServerError)
+						http.Error(w, "Failed to send Confluence notification using API Token", http.StatusInternalServerError)
 						return
 					}
 					event.Space.SpaceKey = spaceKey
@@ -84,7 +87,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 				eventData, err = p.GetEventDataWithAPIToken(event, pluginConfig)
 				if err != nil {
 					p.client.Log.Error("Error getting event data with API token", "error", err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					http.Error(w, "Failed to send Confluence notification using API Token", http.StatusInternalServerError)
 					return
 				}
 
@@ -104,7 +107,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 		if strings.Contains(event.Event, Space) {
 			spaceKey, err = client.(*confluenceServerClient).GetSpaceKeyFromSpaceID(event.Space.ID)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				p.client.Log.Error("Failed to get Space Key from the Space ID", "Space ID", event.Space.ID, "error", err.Error())
+				http.Error(w, "Failed to send notification for Confluence server webhook", http.StatusInternalServerError)
 				return
 			}
 			event.Space.SpaceKey = spaceKey
@@ -112,7 +116,8 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData, err := p.GetEventData(event, client)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			p.client.Log.Error("Error getting event data for the Confluence server webhook", "error", err.Error())
+			http.Error(w, "Failed to send notification for Confluence server webhook", http.StatusInternalServerError)
 			return
 		}
 
@@ -147,15 +152,18 @@ func (p *Plugin) GetEventData(webhookPayload *serializer.ConfluenceServerWebhook
 func (p *Plugin) GetClientFromUserKey(instanceID, eventUserKey string) (Client, *string, error) {
 	mmUserID, err := store.GetMattermostUserIDFromConfluenceID(instanceID, eventUserKey)
 	if err != nil {
+		p.client.Log.Error("Error getting Mattermost User ID from Confluence ID", "InstanceID", instanceID, "Confluence Account ID", eventUserKey, "error", err.Error())
 		return nil, nil, err
 	}
 	connection, err := store.LoadConnection(instanceID, *mmUserID)
 	if err != nil {
+		p.client.Log.Error("Error loading the connection", "UserID", *mmUserID, "InstanceURL", instanceID, "error", err.Error())
 		return nil, nil, err
 	}
 
 	client, err := p.GetServerClient(instanceID, connection)
 	if err != nil {
+		p.client.Log.Error("Error getting server client", "InstanceID", instanceID, "error", err.Error())
 		return nil, nil, err
 	}
 
@@ -284,7 +292,9 @@ func (p *Plugin) GetSpaceDataWithAPIToken(spaceKey string, pluginConfig *config.
 }
 
 func (p *Plugin) MakeHTTPCallWithAPIToken(path string) ([]byte, int, error) {
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	req, err := http.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err

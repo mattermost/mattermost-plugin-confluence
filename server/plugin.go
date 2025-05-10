@@ -140,7 +140,7 @@ func (p *Plugin) setUpBotUser() error {
 	return nil
 }
 
-func (p *Plugin) ExecuteCommand(context *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) ExecuteCommand(_ *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	args, argErr := util.SplitArgs(commandArgs.Command)
 	if argErr != nil {
 		return &model.CommandResponse{
@@ -151,7 +151,7 @@ func (p *Plugin) ExecuteCommand(context *plugin.Context, commandArgs *model.Comm
 	return ConfluenceCommandHandler.Handle(p, commandArgs, args[1:]...), nil
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	p.API.LogDebug("New request:", "Host", r.Host, "RequestURI", r.RequestURI, "Method", r.Method)
 
 	conf := config.GetConfig()

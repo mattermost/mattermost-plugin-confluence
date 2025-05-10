@@ -128,7 +128,7 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 			attachment = &model.SlackAttachment{
 				Fallback: message,
 				Pretext:  message,
-				Text:     fmt.Sprintf("**What’s Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), fmt.Sprintf("%s/%s", baseURL, e.Page.Links.Self)),
+				Text:     fmt.Sprintf("**What's Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), fmt.Sprintf("%s/%s", baseURL, e.Page.Links.Self)),
 			}
 		} else {
 			post.Message = message

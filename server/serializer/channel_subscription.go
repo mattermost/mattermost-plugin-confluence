@@ -2,7 +2,6 @@ package serializer
 
 import (
 	"encoding/json"
-	"reflect"
 	"strings"
 )
 
@@ -81,57 +80,6 @@ func NewSubscriptions() *Subscriptions {
 		ByURLPageID:   map[string]StringArrayMap{},
 		ByURLSpaceKey: map[string]StringArrayMap{},
 	}
-}
-
-func (s *StringSubscription) UnmarshalJSON(data []byte) error {
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(data, &m); err != nil {
-		return err
-	}
-
-	result := make(StringSubscription)
-	for k, v := range m {
-		bytes, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		value, err := UnmarshalCustomSubscription(bytes, "subscriptionType", map[string]reflect.Type{
-			SubscriptionTypePage:  reflect.TypeOf(PageSubscription{}),
-			SubscriptionTypeSpace: reflect.TypeOf(SpaceSubscription{}),
-		})
-		if err != nil {
-			return err
-		}
-		result[k] = value.(Subscription)
-	}
-
-	*s = result
-	return nil
-}
-
-// UnmarshalCustomSubscription returns subscription from bytes.
-func UnmarshalCustomSubscription(data []byte, typeJSONField string, customTypes map[string]reflect.Type) (interface{}, error) {
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, err
-	}
-
-	typeName := m[typeJSONField].(string)
-	var value Subscription
-	if ty, found := customTypes[typeName]; found {
-		value = reflect.New(ty).Interface().(Subscription)
-	}
-
-	valueBytes, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = json.Unmarshal(valueBytes, &value); err != nil {
-		return nil, err
-	}
-
-	return value, nil
 }
 
 func SubscriptionsFromJSON(bytes []byte) (*Subscriptions, error) {

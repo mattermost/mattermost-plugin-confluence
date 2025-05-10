@@ -28,14 +28,15 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, _ *Pl
 	userID := r.Header.Get(config.HeaderMattermostUserID)
 	var subscription serializer.Subscription
 	var err error
-	if subscriptionType == serializer.SubscriptionTypeSpace {
+	switch subscriptionType {
+	case serializer.SubscriptionTypeSpace:
 		subscription, err = serializer.SpaceSubscriptionFromJSON(r.Body)
 		if err != nil {
 			config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
 			http.Error(w, "Could not decode request body", http.StatusBadRequest)
 			return
 		}
-	} else if subscriptionType == serializer.SubscriptionTypePage {
+	case serializer.SubscriptionTypePage:
 		subscription, err = serializer.PageSubscriptionFromJSON(r.Body)
 		if err != nil {
 			config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
@@ -45,7 +46,7 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, _ *Pl
 	}
 	if err := service.EditSubscription(subscription); err != nil {
 		config.Mattermost.LogError(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to edit subscription", http.StatusBadRequest)
 		return
 	}
 	post := &model.Post{

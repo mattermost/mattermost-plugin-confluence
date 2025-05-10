@@ -93,7 +93,7 @@ func TestDeleteSubscription(t *testing.T) {
 			monkey.Patch(GetSubscriptions, func() (serializer.Subscriptions, error) {
 				return subscriptions, nil
 			})
-			monkey.Patch(store.AtomicModify, func(key string, modify func(initialValue []byte) ([]byte, error)) error {
+			monkey.Patch(store.AtomicModify, func(_ string, _ func(initialValue []byte) ([]byte, error)) error {
 				return nil
 			})
 			val.apiCalls(t, val.channelID, val.alias)

@@ -28,14 +28,15 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, _ *Plugin) {
 	userID := r.Header.Get(config.HeaderMattermostUserID)
 	var subscription serializer.Subscription
 	var err error
-	if subscriptionType == serializer.SubscriptionTypeSpace {
+	switch subscriptionType {
+	case serializer.SubscriptionTypeSpace:
 		subscription, err = serializer.SpaceSubscriptionFromJSON(r.Body)
 		if err != nil {
 			config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
 			http.Error(w, "Could not decode request body", http.StatusBadRequest)
 			return
 		}
-	} else if subscriptionType == serializer.SubscriptionTypePage {
+	case serializer.SubscriptionTypePage:
 		subscription, err = serializer.PageSubscriptionFromJSON(r.Body)
 		if err != nil {
 			config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
@@ -44,8 +45,8 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, _ *Plugin) {
 		}
 	}
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
-		config.Mattermost.LogError(sErr.Error())
-		http.Error(w, sErr.Error(), statusCode)
+		config.Mattermost.LogError("Error occurred while saving subscription", "Subscription Name", subscription.Name(), "error", sErr.Error())
+		http.Error(w, "Failed to save subscription", statusCode)
 		return
 	}
 	post := &model.Post{
