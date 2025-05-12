@@ -433,12 +433,12 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 	case serializer.SubscriptionTypeSpace:
 		spaceSub, ok := subscription.(serializer.SpaceSubscription)
 		if !ok {
-			p.client.Log.Error("Error occured while serializing space subscription", "UserID", userID, "Error", err.Error())
-			http.Error(w, "Error occured while serializing space subscription", http.StatusBadRequest)
+			p.client.Log.Error("Error occurred while serializing space subscription", "UserID", userID, "Error")
+			http.Error(w, "Error occurred while serializing space subscription", http.StatusBadRequest)
 			return false
 		}
 		spaceKey := spaceSub.SpaceKey
-		if _, err := serverClient.GetSpaceData(spaceKey); err != nil {
+		if _, err = serverClient.GetSpaceData(spaceKey); err != nil {
 			p.client.Log.Error("User does not have access to this space", "UserID", userID, "SpaceKey", spaceKey, "Error", err.Error())
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return false
@@ -446,8 +446,8 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 	case serializer.SubscriptionTypePage:
 		pageSub, ok := subscription.(serializer.PageSubscription)
 		if !ok {
-			p.client.Log.Error("Error occured while serializing page subscription", "UserID", userID, "Error", err.Error())
-			http.Error(w, "Error occured while serializing page subscription", http.StatusBadRequest)
+			p.client.Log.Error("Error occurred while serializing page subscription", "UserID", userID)
+			http.Error(w, "Error occurred while serializing page subscription", http.StatusBadRequest)
 			return false
 		}
 		pageID, err := strconv.Atoi(pageSub.PageID)
