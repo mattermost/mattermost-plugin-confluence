@@ -433,7 +433,8 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 	case serializer.SubscriptionTypeSpace:
 		spaceSub, ok := subscription.(serializer.SpaceSubscription)
 		if !ok {
-			http.Error(w, "Invalid subscription type for space", http.StatusBadRequest)
+			p.client.Log.Error("Error occured while serializing space subscription", "UserID", userID, "Error", err.Error())
+			http.Error(w, "Error occured while serializing space subscription", http.StatusBadRequest)
 			return false
 		}
 		spaceKey := spaceSub.SpaceKey
@@ -445,7 +446,8 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 	case serializer.SubscriptionTypePage:
 		pageSub, ok := subscription.(serializer.PageSubscription)
 		if !ok {
-			http.Error(w, "Invalid subscription type for page", http.StatusBadRequest)
+			p.client.Log.Error("Error occured while serializing page subscription", "UserID", userID, "Error", err.Error())
+			http.Error(w, "Error occured while serializing page subscription", http.StatusBadRequest)
 			return false
 		}
 		pageID, err := strconv.Atoi(pageSub.PageID)
