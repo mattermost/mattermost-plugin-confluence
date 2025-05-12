@@ -50,11 +50,15 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		_, _ = respondErr(w, http.StatusBadRequest,
 			errors.New("you already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect"))
 		return
+	} else if err != nil {
+		p.client.Log.Error("Error loading the connection", "UserID", mattermostUserID, "InstanceURL", instanceURL, "error", err.Error())
+		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("error occurred while connecting user to Confluence"))
+		return
 	}
 
 	redirectURL, err := p.getUserConnectURL(instanceURL, mattermostUserID, isAdmin)
 	if err != nil {
-		_, _ = respondErr(w, http.StatusInternalServerError, err)
+		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("error occurred while connecting user to Confluence"))
 		return
 	}
 
@@ -103,7 +107,7 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
-		http.Error(w, "missing confluence base url", http.StatusInternalServerError)
+		http.Error(w, "missing Confluence base url", http.StatusInternalServerError)
 		return
 	}
 
@@ -111,7 +115,7 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	cuser, mmuser, err := p.CompleteOAuth2(mattermostUserID, code, state, instanceURL, isAdmin)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to complete OAuth2 connection", http.StatusInternalServerError)
 		return
 	}
 
@@ -130,6 +134,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 	}
 
 	if err := store.VerifyOAuth2State(state); err != nil {
+		p.client.Log.Error("Error verifying OAuth2 state", "State", state, "error", err.Error())
 		return nil, nil, errors.WithMessage(err, "missing stored state")
 	}
 
@@ -140,6 +145,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 
 	oconf, err := p.GetServerOAuth2Config(instanceID, isAdmin)
 	if err != nil {
+		p.client.Log.Error("Error getting server OAuth2 config", "InstanceID", instanceID, "error", err.Error())
 		return nil, nil, err
 	}
 
@@ -147,6 +153,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 	defer cancel()
 	tok, err := oconf.Exchange(ctx, code)
 	if err != nil {
+		p.client.Log.Error("Error converting authorization code into token", "error", err.Error())
 		return nil, nil, err
 	}
 
@@ -163,11 +170,13 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 
 	client, err := p.GetServerClient(instanceID, connection)
 	if err != nil {
+		p.client.Log.Error("Error getting server client", "InstanceID", instanceID, "error", err.Error())
 		return nil, nil, err
 	}
 
 	confluenceUser, err := client.GetSelf()
 	if err != nil {
+		p.client.Log.Error("Error getting the Confluence user from client", "error", err.Error())
 		return nil, nil, err
 	}
 	connection.ConfluenceUser = *confluenceUser
@@ -183,6 +192,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 func (p *Plugin) getUserConnectURL(instanceID string, mattermostUserID string, isAdmin bool) (string, error) {
 	conf, err := p.GetServerOAuth2Config(instanceID, isAdmin)
 	if err != nil {
+		p.client.Log.Error("Error getting server OAuth2 config", "InstanceID", instanceID, "error", err.Error())
 		return "", err
 	}
 	state := fmt.Sprintf("%v_%v", model.NewId()[0:15], mattermostUserID)
@@ -190,6 +200,7 @@ func (p *Plugin) getUserConnectURL(instanceID string, mattermostUserID string, i
 		state = fmt.Sprintf("%v_%v", state, AdminMattermostUserID)
 	}
 	if err = store.StoreOAuth2State(state); err != nil {
+		p.client.Log.Error("Error storing the OAuth2 state", "InstanceID", instanceID, "State", state, "error", err.Error())
 		return "", err
 	}
 
@@ -199,6 +210,7 @@ func (p *Plugin) getUserConnectURL(instanceID string, mattermostUserID string, i
 func (p *Plugin) DisconnectUser(instanceURL string, mattermostUserID string) (*types.Connection, error) {
 	user, err := store.LoadUser(mattermostUserID)
 	if err != nil {
+		p.client.Log.Error("Error loading the user", "UserID", user.MattermostUserID, "error", err.Error())
 		return nil, err
 	}
 
@@ -212,6 +224,7 @@ func (p *Plugin) disconnectUser(instanceID string, user *types.User) (*types.Con
 
 	conn, err := store.LoadConnection(instanceID, user.MattermostUserID)
 	if err != nil {
+		p.client.Log.Error("Error loading the connection", "UserID", user.MattermostUserID, "InstanceURL", instanceID, "error", err.Error())
 		return nil, err
 	}
 
@@ -220,10 +233,12 @@ func (p *Plugin) disconnectUser(instanceID string, user *types.User) (*types.Con
 	}
 
 	if err = store.DeleteConnection(instanceID, user.MattermostUserID); err != nil && errors.Cause(err) != store.ErrNotFound {
+		p.client.Log.Error("Error deleting the connection", "UserID", user.MattermostUserID, "error", err.Error())
 		return nil, err
 	}
 
 	if err = store.StoreUser(user); err != nil {
+		p.client.Log.Error("Error storing the user", "UserID", user.MattermostUserID, "error", err.Error())
 		return nil, err
 	}
 
@@ -234,6 +249,7 @@ func (p *Plugin) connectUser(instanceID, mattermostUserID string, connection *ty
 	user, err := store.LoadUser(mattermostUserID)
 	if err != nil {
 		if errors.Cause(err) != store.ErrNotFound {
+			p.client.Log.Error("Error storing the user", "UserID", user.MattermostUserID, "error", err.Error())
 			return err
 		}
 		user = types.NewUser(mattermostUserID)
@@ -241,18 +257,22 @@ func (p *Plugin) connectUser(instanceID, mattermostUserID string, connection *ty
 	user.InstanceURL = instanceID
 
 	if err = store.StoreConnection(instanceID, mattermostUserID, connection); err != nil {
+		p.client.Log.Error("Error storing connection", "InstanceID", instanceID, "UserID", mattermostUserID, "error", err.Error())
 		return err
 	}
 
 	if err = store.StoreConnection(instanceID, mattermostUserID, connection); err != nil {
+		p.client.Log.Error("Error storing connection", "InstanceID", instanceID, "UserID", mattermostUserID, "error", err.Error())
 		return err
 	}
 
 	if err = store.StoreConnection(instanceID, AdminMattermostUserID, connection); err != nil {
+		p.client.Log.Error("Error storing connection", "InstanceID", instanceID, "UserID", mattermostUserID, "error", err.Error())
 		return err
 	}
 
 	if err = store.StoreUser(user); err != nil {
+		p.client.Log.Error("Error storing the user", "UserID", user.MattermostUserID, "error", err.Error())
 		return err
 	}
 
@@ -291,11 +311,13 @@ func (p *Plugin) refreshAndStoreToken(connection *types.Connection, instanceID s
 		connection.OAuth2Token = encryptedToken
 
 		if err = store.StoreConnection(instanceID, connection.MattermostUserID, connection); err != nil {
+			p.client.Log.Error("Error storing the connection", "InstanceID", instanceID, "UserID", connection.MattermostUserID, "error", err.Error())
 			return nil, err
 		}
 
 		if connection.IsAdmin {
 			if err = store.StoreConnection(instanceID, AdminMattermostUserID, connection); err != nil {
+				p.client.Log.Error("Error storing the connection", "InstanceID", instanceID, "UserID", connection.MattermostUserID, "error", err.Error())
 				return nil, err
 			}
 		}
@@ -357,7 +379,7 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		}
 
 		p.client.Log.Error("Error getting client connection", "MattermostUserID", mattermostUserID, "error", err)
-		http.Error(w, "some error occurred checking user connection status", http.StatusInternalServerError)
+		http.Error(w, "Error occurred while checking user connection status", http.StatusInternalServerError)
 		return
 	}
 

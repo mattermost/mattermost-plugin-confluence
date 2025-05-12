@@ -5,12 +5,12 @@ go 1.23.1
 require (
 	bou.ke/monkey v1.0.2
 	github.com/gorilla/mux v1.8.1
-	github.com/levigross/exp-html v0.0.0-20120902181939-8df60c69a8f5
 	github.com/mattermost/mattermost/server/public v0.1.10
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/atomic v1.11.0
+	golang.org/x/net v0.34.0
 	golang.org/x/oauth2 v0.29.0
 )
 
@@ -50,7 +50,6 @@ require (
 	github.com/wiggin77/merror v1.0.5 // indirect
 	github.com/wiggin77/srslog v1.0.1 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250124145028-65684f501c47 // indirect

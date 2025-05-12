@@ -20,7 +20,8 @@ func handleConfluenceCloudWebhook(w http.ResponseWriter, r *http.Request, p *Plu
 	p.client.Log.Info("Received Confluence cloud event.")
 
 	if status, err := verifyHTTPSecret(config.GetConfig().Secret, r.FormValue("secret")); err != nil {
-		http.Error(w, err.Error(), status)
+		p.client.Log.Error("Error verifying the secret for the Confluence cloud webhook", "error", err.Error())
+		http.Error(w, "Failed to verify the secret for the Confluence cloud webhook", status)
 		return
 	}
 

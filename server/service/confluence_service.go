@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 )
 
 const ErrorStatusNotFound = "No content found"
@@ -26,7 +28,7 @@ type ErrorResponse struct {
 func NormalizeConfluenceURL(confluenceURL string) (string, error) {
 	u, err := url.Parse(confluenceURL)
 	if err != nil {
-		return "", fmt.Errorf("could not parse confluence url: %w", err)
+		return "", fmt.Errorf("could not parse Confluence url: %w", err)
 	}
 
 	// If the parsed URL does not contain a host, trying to extract the host from the path
@@ -59,7 +61,8 @@ func NormalizeConfluenceURL(confluenceURL string) (string, error) {
 func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, _ bool) (string, error) {
 	confluenceURL, err := NormalizeConfluenceURL(confluenceURL)
 	if err != nil {
-		return "", fmt.Errorf("unable to normalize confluence url. Confluence URL %s. %w", confluenceURL, err)
+		config.Mattermost.LogError("Error normalizing Confluence URL", "ConfluenceURL", confluenceURL, "error", err.Error())
+		return "", fmt.Errorf("unable to normalize Confluence url. Confluence URL %s. %w", confluenceURL, err)
 	}
 
 	if confluenceURL == strings.TrimSuffix(mattermostSiteURL, "/") {
@@ -68,7 +71,8 @@ func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, _ bool) (string
 
 	var status ConfluenceStatus
 	if _, statusCode, err := CallJSON(confluenceURL, http.MethodGet, "/status", nil, &status, &http.Client{}); err != nil {
-		return "", fmt.Errorf("error making call to get confluence server status. Confluence URL: %s. StatusCode:  %d, %w", confluenceURL, statusCode, err)
+		config.Mattermost.LogError("Error making call to get Confluence server status", "Confluence URL", confluenceURL, "StatusCode", statusCode, err.Error())
+		return "", fmt.Errorf("error making call to get Confluence server status. Confluence URL: %s. StatusCode:  %d, %w", confluenceURL, statusCode, err)
 	}
 
 	if status.State != "RUNNING" {
@@ -90,6 +94,7 @@ func CallJSONWithURL(instanceURL, path, method string, in, out interface{}, http
 func GetEndpointURL(instanceURL, path string) (string, error) {
 	endpointURL, err := url.Parse(strings.TrimSpace(fmt.Sprintf("%s%s", instanceURL, path)))
 	if err != nil {
+		config.Mattermost.LogError("Error parsing URL", "Instance URL", instanceURL, "Path", path, err.Error())
 		return "", err
 	}
 

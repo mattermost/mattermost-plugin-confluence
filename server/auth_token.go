@@ -30,11 +30,13 @@ func (p *Plugin) NewEncodedAuthToken(token *oauth2.Token) (encodedToken string, 
 
 	jsonBytes, err := json.Marshal(t)
 	if err != nil {
+		p.client.Log.Error("Error marshaling the auth token", "error", err.Error())
 		return "", err
 	}
 
 	encrypted, err := encrypt(jsonBytes, []byte(encryptionSecret))
 	if err != nil {
+		p.client.Log.Error("Error encrypting the auth token", "error", err.Error())
 		return "", err
 	}
 
@@ -47,15 +49,18 @@ func (p *Plugin) ParseAuthToken(encoded string) (token *oauth2.Token, returnErr 
 
 	decoded, err := decode(encoded)
 	if err != nil {
+		p.client.Log.Error("Error decoding the auth token", "error", err.Error())
 		return nil, err
 	}
 
 	jsonBytes, err := decrypt(decoded, []byte(encryptionSecret))
 	if err != nil {
+		p.client.Log.Error("Error decrypting the auth token", "error", err.Error())
 		return nil, err
 	}
 
 	if err = json.Unmarshal(jsonBytes, &t); err != nil {
+		p.client.Log.Error("Error unmarshaling the auth token", "error", err.Error())
 		return nil, err
 	}
 

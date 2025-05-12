@@ -39,7 +39,8 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 				return
 			}
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			p.client.Log.Error("Error loading connection for the user", "UserID", mattermostUserID, "error", err.Error())
+			http.Error(w, "Failed to get subscriptions for the channel", http.StatusInternalServerError)
 			return
 		}
 
@@ -60,7 +61,8 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		p.client.Log.Error("Error getting subscriptions for the channel", "ChannelID", channelID, "error", err.Error())
+		http.Error(w, "Failed to get subscription for the channel", http.StatusInternalServerError)
 		return
 	}
 

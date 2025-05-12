@@ -73,8 +73,8 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	}
 
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
-		config.Mattermost.LogError(sErr.Error())
-		http.Error(w, sErr.Error(), statusCode)
+		config.Mattermost.LogError("Error occurred while saving subscription", "Subscription Name", subscription.Name(), "error", sErr.Error())
+		http.Error(w, "Failed to save subscription", statusCode)
 		return
 	}
 

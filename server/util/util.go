@@ -9,7 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	html "github.com/levigross/exp-html"
+	html "golang.org/x/net/html"
+
 	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"

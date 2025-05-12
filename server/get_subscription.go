@@ -51,9 +51,11 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 
 	subscription, errCode, err := service.GetChannelSubscription(channelID, alias)
 	if err != nil {
-		http.Error(w, err.Error(), errCode)
+		p.client.Log.Error("Error getting subscription for the channel", "ChannelID", channelID, "Subscription Alias", alias, "error", err.Error())
+		http.Error(w, "Failed to get subscription for the channel", errCode)
 		return
 	}
+
 	b, _ := json.Marshal(subscription)
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(string(b)))

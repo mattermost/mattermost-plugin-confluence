@@ -138,17 +138,6 @@ func set(key string, v interface{}) (returnErr error) {
 	return nil
 }
 
-func Load(key string) ([]byte, error) {
-	data, appErr := config.Mattermost.KVGet(key)
-	if appErr != nil {
-		return nil, errors.WithMessage(appErr, "failed plugin KVGet")
-	}
-	if data == nil {
-		return nil, errors.Wrap(ErrNotFound, key)
-	}
-	return data, nil
-}
-
 func StoreOAuth2State(state string) error {
 	if appErr := config.Mattermost.KVSetWithExpiry(hashkey(prefixOneTimeSecret, state), []byte(state), expiryStoreTimeoutSeconds); appErr != nil {
 		return errors.WithMessage(appErr, "failed to store state "+state)
@@ -213,6 +202,7 @@ func LoadConnection(instanceID, mattermostUserID string) (*types.Connection, err
 func DeleteConnection(instanceID, mattermostUserID string) (returnErr error) {
 	c, err := LoadConnection(instanceID, mattermostUserID)
 	if err != nil {
+		config.Mattermost.LogError("Error loading the connection", "UserID", mattermostUserID, "error", err.Error())
 		return err
 	}
 
@@ -242,7 +232,7 @@ func LoadUser(mattermostUserID string) (*types.User, error) {
 	user := types.NewUser(mattermostUserID)
 	key := hashkey(prefixUser, mattermostUserID)
 	if err := get(key, user); err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("failed to load confluence user for mattermostUserId:%s", mattermostUserID))
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed to load Confluence user for mattermostUserId:%s", mattermostUserID))
 	}
 	return user, nil
 }

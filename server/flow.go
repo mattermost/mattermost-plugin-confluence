@@ -48,6 +48,7 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 
 	setupFlow, err := fm.newFlow("setup")
 	if err != nil {
+		p.client.Log.Error("Error creating new flow for setup", "error", err.Error())
 		return nil, err
 	}
 	setupFlow.WithSteps(
@@ -67,6 +68,7 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 
 	completionFlow, err := fm.newFlow("completion")
 	if err != nil {
+		p.client.Log.Error("Error creating new flow for completion", "error", err.Error())
 		return nil, err
 	}
 	completionFlow.WithSteps(
@@ -78,6 +80,7 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 
 	announcementFlow, err := fm.newFlow("announcement")
 	if err != nil {
+		p.client.Log.Error("Error creating new flow for announcement", "error", err.Error())
 		return nil, err
 	}
 	announcementFlow.WithSteps(
@@ -166,6 +169,7 @@ func (fm *FlowManager) StartSetupWizard(userID string, delegatedFrom string) err
 
 	err := fm.setupFlow.ForUser(userID).Start(state)
 	if err != nil {
+		fm.plugin.client.Log.Error("Error creating setup flow for user", "UserID", userID, "error", err.Error())
 		return err
 	}
 
@@ -178,6 +182,7 @@ func (fm *FlowManager) StartCompletionWizard(userID string) error {
 	state := fm.getBaseState()
 
 	if err := fm.completionFlow.ForUser(userID).Start(state); err != nil {
+		fm.plugin.client.Log.Error("Error creating setup flow for user", "UserID", userID, "error", err.Error())
 		return err
 	}
 
@@ -197,7 +202,7 @@ func (fm *FlowManager) stepWelcome() flow.Step {
 }
 
 func (fm *FlowManager) stepServerVersionQuestion() flow.Step {
-	delegateQuestionText := "Are you using confluence server version greater than or equal to 9?"
+	delegateQuestionText := "Are you using Confluence server version greater than or equal to 9?"
 	return flow.NewStep(stepServerVersionQuestion).
 		WithText(delegateQuestionText).
 		WithButton(flow.Button{
@@ -328,10 +333,12 @@ func (fm *FlowManager) submitConfluenceURL(_ *flow.Flow, submitted map[string]in
 
 	configMap, err := config.ToMap()
 	if err != nil {
+		fm.plugin.client.Log.Error("Error converting config to map", "Flow step", stepConfluenceURL, "error", err.Error())
 		return "", nil, nil, err
 	}
 
 	if err = fm.client.Configuration.SavePluginConfig(configMap); err != nil {
+		fm.plugin.client.Log.Error("Error saving the plugin config", "error", err.Error())
 		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
 	}
 
@@ -415,11 +422,13 @@ func (fm *FlowManager) submitOAuthConfig(_ *flow.Flow, submitted map[string]inte
 
 	configMap, err := config.ToMap()
 	if err != nil {
+		fm.plugin.client.Log.Error("Error converting config to map", "Flow step", stepOAuthInput, "error", err.Error())
 		return "", nil, nil, err
 	}
 
 	err = fm.client.Configuration.SavePluginConfig(configMap)
 	if err != nil {
+		fm.plugin.client.Log.Error("Error saving the plugin config", "error", err.Error())
 		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
 	}
 
@@ -433,17 +442,6 @@ func (fm *FlowManager) stepOAuthConnect() flow.Step {
 	return flow.NewStep(stepOAuthConnect).
 		WithText(connectText).
 		WithPretext(connectPretext)
-}
-
-func (fm *FlowManager) StartAnnouncementWizard(userID string) error {
-	state := fm.getBaseState()
-
-	err := fm.announcementFlow.ForUser(userID).Start(state)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (fm *FlowManager) stepAnnouncementQuestion() flow.Step {
@@ -522,6 +520,7 @@ func (fm *FlowManager) submitChannelAnnouncement(f *flow.Flow, submitted map[str
 	}
 	err = fm.client.Post.CreatePost(post)
 	if err != nil {
+		fm.plugin.client.Log.Error("Error creating the post for channel announcement", "error", err.Error())
 		return "", nil, nil, errors.Wrap(err, "failed to create announcement post")
 	}
 

@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
-	"github.com/mattermost/mattermost-plugin-confluence/server/service"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
@@ -53,22 +53,11 @@ func (p *Plugin) GetServerClient(instanceID string, connection *types.Connection
 		return nil, err
 	}
 	httpClient := oconf.Client(context.Background(), token)
+	httpClient.Timeout = 10 * time.Second
 
 	return newServerClient(instanceID, httpClient), nil
 }
 
 func (p *Plugin) GetRedirectURL() string {
 	return fmt.Sprintf("%s%s", util.GetPluginURL(), routeUserComplete)
-}
-
-func (p *Plugin) ResolveWebhookInstanceURL(instanceURL string) (string, error) {
-	var err error
-	if instanceURL != "" {
-		instanceURL, err = service.NormalizeConfluenceURL(instanceURL)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return instanceURL, nil
 }
