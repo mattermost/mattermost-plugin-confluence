@@ -431,16 +431,26 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
-		spaceKey := subscription.(serializer.SpaceSubscription).SpaceKey
+		spaceSub, ok := subscription.(serializer.SpaceSubscription)
+		if !ok {
+			http.Error(w, "Invalid subscription type for space", http.StatusBadRequest)
+			return false
+		}
+		spaceKey := spaceSub.SpaceKey
 		if _, err := serverClient.GetSpaceData(spaceKey); err != nil {
 			p.client.Log.Error("User does not have access to this space", "UserID", userID, "SpaceKey", spaceKey, "Error", err.Error())
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return false
 		}
 	case serializer.SubscriptionTypePage:
-		pageID, err := strconv.Atoi(subscription.(serializer.PageSubscription).PageID)
+		pageSub, ok := subscription.(serializer.PageSubscription)
+		if !ok {
+			http.Error(w, "Invalid subscription type for page", http.StatusBadRequest)
+			return false
+		}
+		pageID, err := strconv.Atoi(pageSub.PageID)
 		if err != nil {
-			p.client.Log.Error("Error converting pageID to integer", "UserID", userID, "PageID", subscription.(serializer.PageSubscription).PageID, "Error", err.Error())
+			p.client.Log.Error("Error converting pageID to integer", "UserID", userID, "PageID", pageSub.PageID, "Error", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return false
 		}
