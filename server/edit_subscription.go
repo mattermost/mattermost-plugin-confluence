@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
+	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
 
 var editChannelSubscription = &Endpoint{
@@ -38,7 +39,8 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
+		var conn *types.Connection
+		conn, err = store.LoadConnection(pluginConfig.ConfluenceURL, userID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				http.Error(w, "User not connected to confluence", http.StatusUnauthorized)

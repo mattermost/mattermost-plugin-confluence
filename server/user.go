@@ -397,4 +397,3 @@ func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	_, err := p.API.GetChannelMember(channelID, userID)
 	return err == nil
 }
-
