@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -437,8 +438,14 @@ func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, con
 			return false
 		}
 	case serializer.SubscriptionTypePage:
-		pageID := subscription.(serializer.PageSubscription).PageID
-		if _, err := serverClient.GetSpaceData(pageID); err != nil {
+		pageID, err := strconv.Atoi(subscription.(serializer.PageSubscription).PageID)
+		if err != nil {
+			p.client.Log.Error("Error converting pageID to integer", "UserID", userID, "PageID", subscription.(serializer.PageSubscription).PageID, "Error", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return false
+		}
+
+		if _, err := serverClient.GetPageData(pageID); err != nil {
 			p.client.Log.Error("User does not have access to this page", "UserID", userID, "PageID", pageID, "Error", err.Error())
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return false

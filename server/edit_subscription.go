@@ -34,13 +34,6 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		if ok := p.validateUserConfluenceAccess(w, userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); !ok {
-			return
-		}
-	}
-
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
 		subscription, err = serializer.SpaceSubscriptionFromJSON(r.Body)
@@ -50,6 +43,13 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		p.client.Log.Error("Error updating channel subscription", "Subscription Type", subscriptionType, "error", "Invalid subscription type")
 		http.Error(w, "Invalid subscription type", http.StatusBadRequest)
 		return
+	}
+
+	pluginConfig := config.GetConfig()
+	if pluginConfig.ServerVersionGreaterthan9 {
+		if ok := p.validateUserConfluenceAccess(w, userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); !ok {
+			return
+		}
 	}
 
 	if err != nil {
