@@ -48,8 +48,20 @@ func (c *Configuration) IsValid() error {
 		return errors.New("please provide the Webhook Secret")
 	}
 
+	if len(c.Secret) != 32 {
+		return errors.New("please provide a valid Webhook Secret")
+	}
+
 	if c.EncryptionKey == "" {
 		return errors.New("please provide the Encryption Key")
+	}
+
+	if len(c.EncryptionKey) != 32 {
+		return errors.New("please provide a valid Encryption Key")
+	}
+
+	if c.AdminAPIToken != "" && len(c.AdminAPIToken) < 32 {
+		return errors.New("please provide a valid Admin API Token")
 	}
 
 	return nil

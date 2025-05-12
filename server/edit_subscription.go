@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
-	"github.com/mattermost/mattermost-plugin-confluence/server/store"
-	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
 
 var editChannelSubscription = &Endpoint{
@@ -39,20 +36,7 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		var conn *types.Connection
-		conn, err = store.LoadConnection(pluginConfig.ConfluenceURL, userID)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
+		if ok := p.validateUserConfluenceAccess(w, userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); !ok {
 			return
 		}
 	}
