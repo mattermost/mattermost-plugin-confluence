@@ -25,7 +25,13 @@ func handleConfluenceCloudWebhook(w http.ResponseWriter, r *http.Request, p *Plu
 	}
 
 	params := mux.Vars(r)
-	event := serializer.ConfluenceCloudEventFromJSON(r.Body)
+	event, err := serializer.ConfluenceCloudEventFromJSON(r.Body)
+	if err != nil {
+		p.client.Log.Error("Error occurred while unmarshalling Confluence cloud webhook payload", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	go service.SendConfluenceNotifications(event, params["event"])
 
 	w.Header().Set("Content-Type", "application/json")

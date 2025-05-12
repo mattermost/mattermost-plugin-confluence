@@ -370,3 +370,9 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(string(b)))
 }
+
+func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
+	_, err := p.API.GetChannelMember(channelID, userID)
+	return err == nil
+}
+

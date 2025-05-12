@@ -3,10 +3,13 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
+	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
+	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 )
 
 var getChannelSubscription = &Endpoint{
@@ -15,10 +18,37 @@ var getChannelSubscription = &Endpoint{
 	Execute: handleGetChannelSubscription,
 }
 
-func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, _ *Plugin) {
+func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	params := mux.Vars(r)
 	channelID := params["channelID"]
+	userID := params["userID"]
 	alias := r.FormValue("alias")
+
+	if !p.hasChannelAccess(userID, channelID) {
+		p.client.Log.Error("User does not have access to get subscription for this channel", "UserID", userID, "ChannelID", channelID)
+		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
+		return
+	}
+
+	pluginConfig := config.GetConfig()
+	if pluginConfig.ServerVersionGreaterthan9 {
+		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
+				return
+			}
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if len(conn.ConfluenceAccountID()) == 0 {
+			http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	subscription, errCode, err := service.GetChannelSubscription(channelID, alias)
 	if err != nil {
 		http.Error(w, err.Error(), errCode)

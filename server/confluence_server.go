@@ -142,6 +142,7 @@ func (p *Plugin) GetClientFromUserKey(instanceID, eventUserKey string) (Client, 
 	if err != nil {
 		return nil, nil, err
 	}
+
 	connection, err := store.LoadConnection(instanceID, *mmUserID)
 	if err != nil {
 		return nil, nil, err

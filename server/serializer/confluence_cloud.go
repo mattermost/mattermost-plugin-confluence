@@ -60,12 +60,13 @@ type ParentComment struct {
 	ID string `json:"id"`
 }
 
-func ConfluenceCloudEventFromJSON(data io.Reader) *ConfluenceCloudEvent {
+func ConfluenceCloudEventFromJSON(data io.Reader) (*ConfluenceCloudEvent, error) {
 	var confluenceCloudEvent ConfluenceCloudEvent
 	if err := json.NewDecoder(data).Decode(&confluenceCloudEvent); err != nil {
 		config.Mattermost.LogError("Unable to decode JSON for ConfluenceServerEvent.", "Error", err.Error())
+		return nil, err
 	}
-	return &confluenceCloudEvent
+	return &confluenceCloudEvent, nil
 }
 
 func (e ConfluenceCloudEvent) GetNotificationPost(eventType string) *model.Post {
