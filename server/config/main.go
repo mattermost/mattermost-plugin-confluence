@@ -44,12 +44,16 @@ func (c *Configuration) ProcessConfiguration() error {
 }
 
 func (c *Configuration) IsValid() error {
-	if c.Secret == "" {
-		return errors.New("please provide the Webhook Secret")
+	if len(c.Secret) != 32 {
+		return errors.New("please provide a valid 32-character Webhook Secret")
 	}
 
-	if c.EncryptionKey == "" {
-		return errors.New("please provide the Encryption Key")
+	if len(c.EncryptionKey) != 32 {
+		return errors.New("please provide a valid 32-character Encryption Key")
+	}
+
+	if c.AdminAPIToken != "" && len(c.AdminAPIToken) < 32 {
+		return errors.New("please provide a valid Admin API Token with at least 32 characters")
 	}
 
 	return nil
