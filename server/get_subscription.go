@@ -35,7 +35,7 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
-				http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
+				http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
 				return
 			}
 
@@ -44,7 +44,7 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 		}
 
 		if len(conn.ConfluenceAccountID()) == 0 {
-			http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
+			http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
 			return
 		}
 	}
