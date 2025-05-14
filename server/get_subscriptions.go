@@ -15,9 +15,10 @@ import (
 )
 
 var autocompleteGetChannelSubscriptions = &Endpoint{
-	Path:    "/autocomplete/GetChannelSubscriptions",
-	Method:  http.MethodGet,
-	Execute: handleGetChannelSubscriptions,
+	Path:            "/autocomplete/GetChannelSubscriptions",
+	Method:          http.MethodGet,
+	Execute:         handleGetChannelSubscriptions,
+	IsAuthenticated: true,
 }
 
 func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Plugin) {
@@ -29,7 +30,7 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, mattermostUserID)
+		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, r.Header.Get(config.HeaderMattermostUserID))
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				out := []model.AutocompleteListItem{}
