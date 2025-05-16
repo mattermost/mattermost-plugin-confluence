@@ -148,6 +148,7 @@ func (p *Plugin) GetClientFromUserKey(instanceID, eventUserKey string) (Client, 
 		p.client.Log.Error("Error getting Mattermost User ID from Confluence ID", "InstanceID", instanceID, "Confluence Account ID", eventUserKey, "error", err.Error())
 		return nil, nil, err
 	}
+
 	connection, err := store.LoadConnection(instanceID, *mmUserID)
 	if err != nil {
 		p.client.Log.Error("Error loading the connection", "UserID", *mmUserID, "InstanceURL", instanceID, "error", err.Error())

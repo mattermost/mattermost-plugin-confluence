@@ -44,12 +44,13 @@ const (
 		"* `/confluence install cloud` - Connect Mattermost to a Confluence Cloud instance.\n" +
 		"* `/confluence install server` - Connect Mattermost to a Confluence Server or Data Center instance.\n"
 
-	invalidCommand          = "Invalid command."
-	installOnlySystemAdmin  = "`/confluence install` can only be run by a system administrator."
-	commandsOnlySystemAdmin = "`/confluence` commands can only be run by a system administrator."
-	disconnectedUser        = "User not connected. Please use `/confluence connect`."
-	errorExecutingCommand   = "Error executing the command, please retry."
-	oauth2ConnectPath       = "%s/oauth2/connect"
+	invalidCommand              = "Invalid command."
+	installOnlySystemAdmin      = "`/confluence install` can only be run by a system administrator."
+	commandsOnlySystemAdmin     = "`/confluence` commands can only be run by a system administrator."
+	errorUserLacksChannelAccess = "Cannot perform operation: user does not have access to the channel."
+	disconnectedUser            = "User not connected. Please use `/confluence connect`."
+	errorExecutingCommand       = "Error executing the command, please retry."
+	oauth2ConnectPath           = "%s/oauth2/connect"
 )
 
 const (
@@ -248,9 +249,12 @@ func showInstallServerHelp(p *Plugin, context *model.CommandArgs, _ ...string) *
 }
 
 func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *model.CommandResponse {
+	userID := context.UserId
+	channelID := context.ChannelId
+
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
+		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				postCommandResponse(context, disconnectedUser)
@@ -266,7 +270,7 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 			postCommandResponse(context, disconnectedUser)
 			return &model.CommandResponse{}
 		}
-	} else if !util.IsSystemAdmin(context.UserId) {
+	} else if !util.IsSystemAdmin(userID) {
 		postCommandResponse(context, commandsOnlySystemAdmin)
 		return &model.CommandResponse{}
 	}
@@ -275,12 +279,19 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 		postCommandResponse(context, specifyAlias)
 		return &model.CommandResponse{}
 	}
+
+	if !p.hasChannelAccess(userID, channelID) {
+		postCommandResponse(context, errorUserLacksChannelAccess)
+		return &model.CommandResponse{}
+	}
+
 	alias := strings.Join(args, " ")
-	if err := service.DeleteSubscription(context.ChannelId, alias); err != nil {
+	if err := service.DeleteSubscription(channelID, alias); err != nil {
 		p.client.Log.Error("Error deleting the subscription", "subscription alias", alias, "error", err.Error())
 		postCommandResponse(context, err.Error())
 		return &model.CommandResponse{}
 	}
+
 	postCommandResponse(context, fmt.Sprintf(subscriptionDeleteSuccess, alias))
 	return &model.CommandResponse{}
 }

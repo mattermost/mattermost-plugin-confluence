@@ -54,6 +54,11 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 	}
 
 	channelID := r.FormValue("channel_id")
+	if _, err := p.API.GetChannel(channelID); err != nil {
+		http.Error(w, "invalid channel ID", http.StatusBadRequest)
+		return
+	}
+
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
 		p.client.Log.Error("Error getting subscriptions for the channel", "ChannelID", channelID, "error", err.Error())
