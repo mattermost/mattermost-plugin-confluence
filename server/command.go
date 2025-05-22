@@ -44,13 +44,13 @@ const (
 		"* `/confluence install cloud` - Connect Mattermost to a Confluence Cloud instance.\n" +
 		"* `/confluence install server` - Connect Mattermost to a Confluence Server or Data Center instance.\n"
 
-	invalidCommand            = "Invalid command."
-	installOnlySystemAdmin    = "`/confluence install` can only be run by a system administrator."
-	commandsOnlySystemAdmin   = "`/confluence` commands can only be run by a system administrator."
-	ErrUserLacksChannelAccess = "Cannot perform operation: user does not have access to the channel."
-	disconnectedUser          = "User not connected. Please use `/confluence connect`."
-	errorExecutingCommand     = "Error executing the command, please retry."
-	oauth2ConnectPath         = "%s/oauth2/connect"
+	invalidCommand              = "Invalid command."
+	installOnlySystemAdmin      = "`/confluence install` can only be run by a system administrator."
+	commandsOnlySystemAdmin     = "`/confluence` commands can only be run by a system administrator."
+	errorUserLacksChannelAccess = "Cannot perform operation: user does not have access to the channel."
+	disconnectedUser            = "User not connected. Please use `/confluence connect`."
+	errorExecutingCommand       = "Error executing the command, please retry."
+	oauth2ConnectPath           = "%s/oauth2/connect"
 )
 
 const (
@@ -281,7 +281,7 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	}
 
 	if !p.hasChannelAccess(userID, channelID) {
-		postCommandResponse(context, ErrUserLacksChannelAccess)
+		postCommandResponse(context, errorUserLacksChannelAccess)
 		return &model.CommandResponse{}
 	}
 
