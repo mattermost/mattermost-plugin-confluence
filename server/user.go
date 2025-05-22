@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
+	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
@@ -396,4 +398,58 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	_, err := p.API.GetChannelMember(channelID, userID)
 	return err == nil
+}
+
+func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptionType string, subscription serializer.Subscription) (error, int) {
+	conn, err := store.LoadConnection(confluenceURL, userID)
+	if err != nil {
+
+		if strings.Contains(err.Error(), "not found") {
+			return errors.New("User not connected to Confluence"), http.StatusUnauthorized
+		}
+		return errors.Wrapf(err, "Error loading connection for the user", "ConfluenceURL", confluenceURL, "UserID", userID), http.StatusInternalServerError
+	}
+
+	if conn.ConfluenceAccountID() == "" {
+		return errors.New("User not connected to Confluence"), http.StatusUnauthorized
+	}
+
+	client, err := p.GetServerClient(confluenceURL, conn)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting client for the user", "UserID", userID), http.StatusInternalServerError
+	}
+
+	serverClient, ok := client.(*confluenceServerClient)
+	if !ok {
+		return errors.New("Invalid confluence server client"), http.StatusInternalServerError
+	}
+
+	switch subscriptionType {
+	case serializer.SubscriptionTypeSpace:
+		spaceSub, ok := subscription.(serializer.SpaceSubscription)
+		if !ok {
+			return errors.New("Error occurred while serializing space subscription"), http.StatusBadRequest
+		}
+		spaceKey := spaceSub.SpaceKey
+		if _, err = serverClient.GetSpaceData(spaceKey); err != nil {
+			return errors.Wrapf(err, "User does not have access to this space", "UserID", userID, "SpaceKey", spaceKey), http.StatusForbidden
+		}
+	case serializer.SubscriptionTypePage:
+		pageSub, ok := subscription.(serializer.PageSubscription)
+		if !ok {
+			return errors.New("Error occurred while serializing page subscription"), http.StatusBadRequest
+		}
+		pageID, err := strconv.Atoi(pageSub.PageID)
+		if err != nil {
+			return errors.Wrapf(err, "Error converting pageID to integer", "UserID", userID, "PageID", pageSub.PageID), http.StatusInternalServerError
+		}
+
+		if _, err := serverClient.GetPageData(pageID); err != nil {
+			return errors.Wrapf(err, "User does not have access to this page", "UserID", userID, "PageID", pageID, "Error", err.Error()), http.StatusForbidden
+		}
+	default:
+		return errors.New("Unknown subscription type"), http.StatusBadRequest
+	}
+
+	return nil, http.StatusOK
 }

@@ -2,14 +2,12 @@ package main
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
-	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -55,19 +53,9 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
+		if err, statusCode := p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
+			p.client.Log.Error("Error validating the user's Confluence access", err.Error())
+			http.Error(w, err.Error(), statusCode)
 			return
 		}
 	}
