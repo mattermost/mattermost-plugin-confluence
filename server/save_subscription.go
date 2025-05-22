@@ -53,7 +53,9 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		if ok := p.validateUserConfluenceAccess(w, userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); !ok {
+		if err, statusCode := p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
+			p.client.Log.Error("Error validating the user's Confluence access", err.Error())
+			http.Error(w, err.Error(), statusCode)
 			return
 		}
 	}

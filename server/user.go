@@ -400,72 +400,56 @@ func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	return err == nil
 }
 
-func (p *Plugin) validateUserConfluenceAccess(w http.ResponseWriter, userID, confluenceURL, subscriptionType string, subscription serializer.Subscription) bool {
+func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptionType string, subscription serializer.Subscription) (error, int) {
 	conn, err := store.LoadConnection(confluenceURL, userID)
 	if err != nil {
+
 		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
-			return false
+			return errors.New("User not connected to Confluence"), http.StatusUnauthorized
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return false
+		return errors.Wrapf(err, "Error loading connection for the user", "ConfluenceURL", confluenceURL, "UserID", userID), http.StatusInternalServerError
 	}
 
 	if conn.ConfluenceAccountID() == "" {
-		http.Error(w, "User not connected to confluence", http.StatusUnauthorized)
-		return false
+		return errors.New("User not connected to Confluence"), http.StatusUnauthorized
 	}
 
 	client, err := p.GetServerClient(confluenceURL, conn)
 	if err != nil {
-		p.client.Log.Error("Error getting client for the user", "UserID", userID, "Error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return false
+		return errors.Wrapf(err, "Error getting client for the user", "UserID", userID), http.StatusInternalServerError
 	}
 
 	serverClient, ok := client.(*confluenceServerClient)
 	if !ok {
-		http.Error(w, "Invalid confluence server client", http.StatusInternalServerError)
-		return false
+		return errors.New("Invalid confluence server client"), http.StatusInternalServerError
 	}
 
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
 		spaceSub, ok := subscription.(serializer.SpaceSubscription)
 		if !ok {
-			p.client.Log.Error("Error occurred while serializing space subscription", "UserID", userID, "Error")
-			http.Error(w, "Error occurred while serializing space subscription", http.StatusBadRequest)
-			return false
+			return errors.New("Error occurred while serializing space subscription"), http.StatusBadRequest
 		}
 		spaceKey := spaceSub.SpaceKey
 		if _, err = serverClient.GetSpaceData(spaceKey); err != nil {
-			p.client.Log.Error("User does not have access to this space", "UserID", userID, "SpaceKey", spaceKey, "Error", err.Error())
-			http.Error(w, err.Error(), http.StatusForbidden)
-			return false
+			return errors.Wrapf(err, "User does not have access to this space", "UserID", userID, "SpaceKey", spaceKey), http.StatusForbidden
 		}
 	case serializer.SubscriptionTypePage:
 		pageSub, ok := subscription.(serializer.PageSubscription)
 		if !ok {
-			p.client.Log.Error("Error occurred while serializing page subscription", "UserID", userID)
-			http.Error(w, "Error occurred while serializing page subscription", http.StatusBadRequest)
-			return false
+			return errors.New("Error occurred while serializing page subscription"), http.StatusBadRequest
 		}
 		pageID, err := strconv.Atoi(pageSub.PageID)
 		if err != nil {
-			p.client.Log.Error("Error converting pageID to integer", "UserID", userID, "PageID", pageSub.PageID, "Error", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return false
+			return errors.Wrapf(err, "Error converting pageID to integer", "UserID", userID, "PageID", pageSub.PageID), http.StatusInternalServerError
 		}
 
 		if _, err := serverClient.GetPageData(pageID); err != nil {
-			p.client.Log.Error("User does not have access to this page", "UserID", userID, "PageID", pageID, "Error", err.Error())
-			http.Error(w, err.Error(), http.StatusForbidden)
-			return false
+			return errors.Wrapf(err, "User does not have access to this page", "UserID", userID, "PageID", pageID, "Error", err.Error()), http.StatusForbidden
 		}
 	default:
-		http.Error(w, "Unknown subscription type", http.StatusBadRequest)
-		return false
+		return errors.New("Unknown subscription type"), http.StatusBadRequest
 	}
 
-	return true
+	return nil, http.StatusOK
 }
