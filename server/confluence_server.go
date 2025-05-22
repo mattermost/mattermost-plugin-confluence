@@ -19,9 +19,10 @@ import (
 )
 
 var confluenceServerWebhook = &Endpoint{
-	Path:    "/server/webhook",
-	Method:  http.MethodPost,
-	Execute: handleConfluenceServerWebhook,
+	Path:            "/server/webhook",
+	Method:          http.MethodPost,
+	Execute:         handleConfluenceServerWebhook,
+	IsAuthenticated: false,
 }
 
 func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Plugin) {
@@ -124,7 +125,13 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID)
 	} else {
-		event := serializer.ConfluenceServerEventFromJSON(r.Body)
+		event, err := serializer.ConfluenceServerEventFromJSON(r.Body)
+		if err != nil {
+			p.client.Log.Error("Error occurred while unmarshalling Confluence server webhook payload", "error", err)
+			http.Error(w, "Failed to unmarshal Confluence server webhook payload", http.StatusInternalServerError)
+			return
+		}
+
 		go service.SendConfluenceNotifications(event, event.Event)
 	}
 
