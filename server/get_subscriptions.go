@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
@@ -23,10 +21,6 @@ var autocompleteGetChannelSubscriptions = &Endpoint{
 
 func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	mattermostUserID := r.Header.Get("Mattermost-User-Id")
-	if mattermostUserID == "" {
-		_, _ = respondErr(w, http.StatusUnauthorized, errors.New("not authorized"))
-		return
-	}
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {

@@ -53,8 +53,9 @@ func (p *Plugin) InitAPI() *mux.Router {
 		handler := endpoint.Execute
 		if endpoint.IsAuthenticated {
 			s.HandleFunc(endpoint.Path, p.checkAuth(p.wrapHandler(handler))).Methods(endpoint.Method)
+		} else {
+			s.HandleFunc(endpoint.Path, p.wrapHandler(handler)).Methods(endpoint.Method)
 		}
-		s.HandleFunc(endpoint.Path, p.wrapHandler(handler)).Methods(endpoint.Method)
 	}
 
 	return r
