@@ -20,11 +20,11 @@ var autocompleteGetChannelSubscriptions = &Endpoint{
 }
 
 func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Plugin) {
-	mattermostUserID := r.Header.Get("Mattermost-User-Id")
+	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, r.Header.Get(config.HeaderMattermostUserID))
+		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, mattermostUserID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				out := []model.AutocompleteListItem{}
