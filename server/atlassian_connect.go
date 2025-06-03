@@ -12,9 +12,10 @@ import (
 )
 
 var atlassianConnectJSON = &Endpoint{
-	Path:    "/atlassian-connect.json",
-	Method:  http.MethodGet,
-	Execute: renderAtlassianConnectJSON,
+	Path:            "/atlassian-connect.json",
+	Method:          http.MethodGet,
+	Execute:         renderAtlassianConnectJSON,
+	IsAuthenticated: false,
 }
 
 func renderAtlassianConnectJSON(w http.ResponseWriter, r *http.Request, p *Plugin) {

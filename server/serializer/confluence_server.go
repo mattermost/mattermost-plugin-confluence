@@ -174,12 +174,14 @@ type ConfluenceServerWebhookPayload struct {
 	Space     SpacePayload   `json:"space"`
 }
 
-func ConfluenceServerEventFromJSON(data io.Reader) *ConfluenceServerEvent {
+func ConfluenceServerEventFromJSON(data io.Reader) (*ConfluenceServerEvent, error) {
 	var confluenceServerEvent ConfluenceServerEvent
 	if err := json.NewDecoder(data).Decode(&confluenceServerEvent); err != nil {
 		config.Mattermost.LogError("Unable to decode JSON for ConfluenceServerEvent.", "Error", err.Error())
+		return nil, err
 	}
-	return &confluenceServerEvent
+
+	return &confluenceServerEvent, nil
 }
 
 func (e *ConfluenceServerEvent) GetUserDisplayName(withLink bool) string {
