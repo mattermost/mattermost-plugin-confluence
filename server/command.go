@@ -185,7 +185,7 @@ func executeConnect(p *Plugin, context *model.CommandArgs, _ ...string) *model.C
 	confluenceURL := pluginConfig.GetConfluenceBaseURL()
 	confluenceURL = strings.TrimSuffix(confluenceURL, "/")
 
-	conn, err := store.LoadConnection(confluenceURL, context.UserId)
+	conn, err := store.LoadConnection(confluenceURL, context.UserId) // Error is expected if the connection doesn't exist — safe to ignore
 	if err == nil && len(conn.ConfluenceAccountID()) != 0 {
 		return p.responsef(context,
 			"You already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect.")

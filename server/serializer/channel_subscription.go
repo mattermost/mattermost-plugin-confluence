@@ -83,6 +83,7 @@ func NewSubscriptions() *Subscriptions {
 	}
 }
 
+// Used indirectly by StringSubscription.UnmarshalJSON during subscription deserialization
 func (s *StringSubscription) UnmarshalJSON(data []byte) error {
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(data, &m); err != nil {
