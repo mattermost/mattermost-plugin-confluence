@@ -27,14 +27,14 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	subscriptionType := params["type"]
 	userID := r.Header.Get(config.HeaderMattermostUserID)
 	var subscription serializer.Subscription
-	var err error
-
+	
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to create subscription for this channel", "UserID", userID, "ChannelID", channelID)
 		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
 		return
 	}
-
+	
+	var err error
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
 		subscription, err = serializer.SpaceSubscriptionFromJSON(r.Body)
@@ -45,7 +45,6 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		http.Error(w, "Invalid subscription type", http.StatusBadRequest)
 		return
 	}
-
 	if err != nil {
 		config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
 		http.Error(w, "Could not decode request body", http.StatusBadRequest)
