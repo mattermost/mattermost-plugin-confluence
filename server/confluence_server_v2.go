@@ -108,6 +108,23 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 	}
 
 	switch eventType {
+	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent, serializer.PageTrashedEvent, serializer.PageRestoredEvent:
+		if e.Page == nil {
+			return nil
+		}
+	case serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent:
+		if e.Comment == nil {
+			return nil
+		}
+	case serializer.SpaceUpdatedEvent:
+		if e.Space == nil {
+			return nil
+		}
+	default:
+		return nil
+	}
+
+	switch eventType {
 	case serializer.PageCreatedEvent:
 		message := fmt.Sprintf(ConfluencePageCreatedMessage, e.GetUserDisplayNameForPageEvents(), e.GetSpaceDisplayNameForPageEvents(baseURL))
 		if strings.TrimSpace(e.Page.Body.View.Value) != "" {
