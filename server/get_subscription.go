@@ -22,7 +22,7 @@ var getChannelSubscription = &Endpoint{
 func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	params := mux.Vars(r)
 	channelID := params["channelID"]
-	userID := params["userID"]
+	userID := r.Header.Get(config.HeaderMattermostUserID)
 	alias := r.FormValue("alias")
 
 	if !p.hasChannelAccess(userID, channelID) {
