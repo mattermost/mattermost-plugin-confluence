@@ -54,15 +54,15 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		if statusCode, err := p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
-			p.client.Log.Error("Error validating the user's Confluence access", err.Error())
-			http.Error(w, err.Error(), statusCode)
+			p.client.Log.Error("Error validating the user's Confluence access", "error", err.Error())
+			http.Error(w, err.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly
 			return
 		}
 	}
 
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
 		config.Mattermost.LogError("Error occurred while saving subscription", "Subscription Name", subscription.Name(), "error", sErr.Error())
-		http.Error(w, "Failed to save subscription", statusCode)
+		http.Error(w, sErr.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly
 		return
 	}
 

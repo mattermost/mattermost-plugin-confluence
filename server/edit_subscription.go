@@ -45,26 +45,25 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		http.Error(w, "Invalid subscription type", http.StatusBadRequest)
 		return
 	}
-
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		var statusCode int
-		if statusCode, err = p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
-			p.client.Log.Error("Error validating the user's Confluence access", err.Error())
-			http.Error(w, err.Error(), statusCode)
-			return
-		}
-	}
-
 	if err != nil {
 		config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
 		http.Error(w, "Could not decode request body", http.StatusBadRequest)
 		return
 	}
 
+	pluginConfig := config.GetConfig()
+	if pluginConfig.ServerVersionGreaterthan9 {
+		var statusCode int
+		if statusCode, err = p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
+			p.client.Log.Error("Error validating the user's Confluence access", "error", err.Error())
+			http.Error(w, err.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly
+			return
+		}
+	}
+
 	if nErr := service.EditSubscription(subscription); nErr != nil {
-		config.Mattermost.LogError(nErr.Error())
-		http.Error(w, nErr.Error(), http.StatusBadRequest)
+		config.Mattermost.LogError("Error occurred while editing subscription", "Subscription Name", subscription.Name(), "error", nErr.Error())
+		http.Error(w, "An error occurred attempting to edit a subscription", http.StatusInternalServerError)
 		return
 	}
 

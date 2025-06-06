@@ -30,7 +30,7 @@ func handleConfluenceCloudWebhook(w http.ResponseWriter, r *http.Request, p *Plu
 	event, err := serializer.ConfluenceCloudEventFromJSON(r.Body)
 	if err != nil {
 		p.client.Log.Error("Error occurred while unmarshalling Confluence cloud webhook payload", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to process Confluence cloud webhook data", http.StatusInternalServerError)
 		return
 	}
 
