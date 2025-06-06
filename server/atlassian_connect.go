@@ -20,15 +20,17 @@ var atlassianConnectJSON = &Endpoint{
 
 func renderAtlassianConnectJSON(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	conf := config.GetConfig()
+
 	if status, err := verifyHTTPSecret(conf.Secret, r.FormValue("secret")); err != nil {
-		config.Mattermost.LogWarn("Failed to verify secret", "error", err.Error())
-		http.Error(w, "invalid secret", status)
+		p.client.Log.Error("Failed to verify secret for Atlassian Connect JSON", "error", err.Error())
+		http.Error(w, "Invalid secret", status)
 		return
 	}
 
 	bundlePath, err := config.Mattermost.GetBundlePath()
 	if err != nil {
-		config.Mattermost.LogWarn("Failed to get bundle path.", "Error", err.Error())
+		p.client.Log.Error("Failed to get bundle path", "error", err.Error())
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -41,17 +43,18 @@ func renderAtlassianConnectJSON(w http.ResponseWriter, r *http.Request, p *Plugi
 		"PluginKey":    util.GetPluginKey(),
 		"SharedSecret": url.QueryEscape(conf.Secret),
 	}
+
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
-		p.client.Log.Error("Error parsing the template", "error", err.Error())
-		http.Error(w, "error rendering the template", http.StatusInternalServerError)
+		p.client.Log.Error("Error parsing Atlassian Connect JSON template", "error", err.Error())
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = tmpl.Execute(w, values); err != nil {
-		p.client.Log.Error("Error writng the template as response", "error", err.Error())
-		http.Error(w, "failed to write response", http.StatusInternalServerError)
+		p.client.Log.Error("Error writing Atlassian Connect JSON response", "error", err.Error())
+		http.Error(w, "Failed to generate response", http.StatusInternalServerError)
 		return
 	}
 }

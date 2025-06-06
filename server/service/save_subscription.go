@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 )
@@ -37,7 +38,8 @@ func SaveSubscription(subscription serializer.Subscription) (int, error) {
 		}
 		return modifiedBytes, nil
 	}); err != nil {
-		return http.StatusInternalServerError, err
+		config.Mattermost.LogError("Error saving subscription to store. Error %s", err.Error())
+		return http.StatusInternalServerError, errors.New(generalSaveError)
 	}
 	return http.StatusOK, nil
 }
