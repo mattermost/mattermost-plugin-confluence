@@ -73,6 +73,19 @@ func (e ConfluenceCloudEvent) GetNotificationPost(eventType string) *model.Post 
 	message := ""
 	page := e.Page
 	comment := e.Comment
+
+	switch eventType {
+	case PageCreatedEvent, PageUpdatedEvent, PageRemovedEvent:
+		if page == nil {
+			return nil
+		}
+
+	case CommentCreatedEvent, CommentUpdatedEvent, CommentRemovedEvent:
+		if comment == nil || comment.Parent == nil {
+			return nil
+		}
+	}
+
 	switch eventType {
 	case PageCreatedEvent:
 		message = fmt.Sprintf(confluenceCloudPageCreateMessage, page.Title, page.Self, page.SpaceKey)
