@@ -35,7 +35,7 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 			}
 
 			p.client.Log.Error("Error loading Confluence connection. UserID: %s. Error: %s", mattermostUserID, err.Error())
-			http.Error(w, "Unable to fetch your Confluence connection. Please try again later.", http.StatusInternalServerError)
+			http.Error(w, "Unable to fetch your Confluence connection.", http.StatusInternalServerError)
 			return
 		}
 
@@ -58,7 +58,7 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
 		p.client.Log.Error("Error retrieving subscriptions. ChannelID: %s. Error: %s", channelID, err.Error())
-		http.Error(w, "Failed to get subscriptions for this channel. Please try again later.", http.StatusInternalServerError)
+		http.Error(w, "Failed to get subscriptions for this channel.", http.StatusInternalServerError)
 		return
 	}
 

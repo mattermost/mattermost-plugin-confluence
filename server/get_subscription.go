@@ -27,7 +27,7 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to get subscription for this channel. UserID: %s, ChannelID: %s", userID, channelID)
-		http.Error(w, "You don't have access to this channel.", http.StatusForbidden)
+		http.Error(w, "User does not have access to this channel.", http.StatusForbidden)
 		return
 	}
 
@@ -37,17 +37,17 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				p.client.Log.Info("User not connected to Confluence. UserID: %s. Error: %s", userID, err.Error())
-				http.Error(w, "You need to connect your Confluence account.", http.StatusUnauthorized)
+				http.Error(w, "User not connected to Confluence.", http.StatusUnauthorized)
 				return
 			}
 			p.client.Log.Error("Error loading Confluence connection. UserID: %s. Error: %s", userID, err.Error())
-			http.Error(w, "An error occurred while verifying your Confluence connection. Please try again later.", http.StatusInternalServerError)
+			http.Error(w, "An error occurred while verifying your Confluence connection.", http.StatusInternalServerError)
 			return
 		}
 
 		if len(conn.ConfluenceAccountID()) == 0 {
 			p.client.Log.Error("User not connected to Confluence. UserID: %s", userID)
-			http.Error(w, "You need to connect your Confluence account.", http.StatusUnauthorized)
+			http.Error(w, "User not connected to Confluence.", http.StatusUnauthorized)
 			return
 		}
 	}
@@ -55,7 +55,7 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 	subscription, errCode, err := service.GetChannelSubscription(channelID, alias)
 	if err != nil {
 		p.client.Log.Error("Error getting subscription for the channel. ChannelID: %s, Alias: %s. Error: %s", channelID, alias, err.Error())
-		http.Error(w, "Failed to get subscription for this channel. Please try again later.", errCode)
+		http.Error(w, "Failed to get subscription for this channel.", errCode)
 		return
 	}
 
