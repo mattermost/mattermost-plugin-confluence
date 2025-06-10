@@ -34,7 +34,7 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 				return
 			}
 
-			p.client.Log.Error("Error loading Confluence connection. UserID: %s. Error: %s", mattermostUserID, err.Error())
+			p.client.Log.Error("Error loading Confluence connection.", "UserID", mattermostUserID,"Error", err.Error())
 			http.Error(w, "Unable to fetch your Confluence connection.", http.StatusInternalServerError)
 			return
 		}
