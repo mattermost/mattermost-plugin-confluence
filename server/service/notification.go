@@ -17,6 +17,7 @@ func SendConfluenceNotifications(event serializer.ConfluenceEvent, eventType str
 	if post == nil || pageID == "" || url == "" || spaceKey == "" {
 		return
 	}
+
 	subscriptionChannelIDs := getNotificationChannelIDs(url, spaceKey, pageID, eventType)
 	for _, channelID := range subscriptionChannelIDs {
 		post.ChannelId = channelID
