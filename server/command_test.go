@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 )
 
-func setupMockAPI(t *testing.T) *plugintest.API {
+func setupMockAPI() *plugintest.API {
 	mockAPI := &plugintest.API{}
 	config.Mattermost = mockAPI
 	mockAPI.On("GetUser", mock.AnythingOfType("string")).Return(&model.User{Roles: "system_user"}, nil)
@@ -20,7 +20,7 @@ func setupMockAPI(t *testing.T) *plugintest.API {
 }
 
 func TestExecuteConfluenceDefault(t *testing.T) {
-	mockAPI := setupMockAPI(t)
+	mockAPI := setupMockAPI()
 
 	cmdArgs := &model.CommandArgs{UserId: "U1", ChannelId: "C1"}
 	resp := executeConfluenceDefault(nil, cmdArgs)
@@ -33,7 +33,7 @@ func TestExecuteConfluenceDefault(t *testing.T) {
 }
 
 func TestHandler_Handle_Default(t *testing.T) {
-	mockAPI := setupMockAPI(t)
+	mockAPI := setupMockAPI()
 
 	p := &Plugin{}
 	cmdArgs := &model.CommandArgs{UserId: "U1", ChannelId: "C1"}

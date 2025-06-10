@@ -249,6 +249,11 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	userID := context.UserId
 	channelID := context.ChannelId
 
+	if !util.IsSystemAdmin(userID) {
+		postCommandResponse(context, commandsOnlySystemAdmin)
+		return &model.CommandResponse{}
+	}
+
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
@@ -267,9 +272,6 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 			postCommandResponse(context, disconnectedUser)
 			return &model.CommandResponse{}
 		}
-	} else if !util.IsSystemAdmin(userID) {
-		postCommandResponse(context, commandsOnlySystemAdmin)
-		return &model.CommandResponse{}
 	}
 
 	if len(args) == 0 {

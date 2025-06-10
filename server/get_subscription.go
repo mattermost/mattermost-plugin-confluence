@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
+	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 )
 
 var getChannelSubscription = &Endpoint{
@@ -24,6 +25,12 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 	channelID := params["channelID"]
 	userID := r.Header.Get(config.HeaderMattermostUserID)
 	alias := r.FormValue("alias")
+
+	if !util.IsSystemAdmin(userID) {
+		p.client.Log.Error("Non admin user does not have access to fetch subscription for this channel", "UserID", userID, "ChannelID", channelID)
+		http.Error(w, "only system admin can fetch a subscription", http.StatusForbidden)
+		return
+	}
 
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to get subscription for this channel", "UserID", userID, "ChannelID", channelID)
