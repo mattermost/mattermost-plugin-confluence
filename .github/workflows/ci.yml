@@ -8,7 +8,7 @@ on:
 
 jobs:
   plugin-ci:
-    uses: mattermost/actions-workflows/.github/workflows/plugin-ci.yml@f53a9d32cc670c0319d95332e07c68c00b332928
+    uses: mattermost/actions-workflows/.github/workflows/plugin-ci.yml@7d90fb64170954e552f79c3145ebaa883da13a9f
     secrets: inherit
     with:
       golang-version: 1.23
