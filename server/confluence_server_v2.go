@@ -24,6 +24,10 @@ const (
 )
 
 func (e ConfluenceServerEvent) GetSpaceKey() string {
+	if e.Space == nil {
+		return ""
+	}
+
 	return e.Space.Key
 }
 
@@ -32,30 +36,58 @@ func (e ConfluenceServerEvent) GetURL() string {
 }
 
 func (e ConfluenceServerEvent) GetCommentSpaceKey() string {
+	if e.Comment == nil {
+		return ""
+	}
+
 	return e.Comment.Space.Key
 }
 
 func (e ConfluenceServerEvent) GetCommentContainerID() string {
+	if e.Comment == nil {
+		return ""
+	}
+
 	return e.Comment.Container.ID
 }
 
 func (e ConfluenceServerEvent) GetPageSpaceKey() string {
+	if e.Page == nil {
+		return ""
+	}
+
 	return e.Page.Space.Key
 }
 
 func (e ConfluenceServerEvent) GetPageID() string {
+	if e.Page == nil {
+		return ""
+	}
+
 	return e.Page.ID
 }
 
 func (e *ConfluenceServerEvent) GetUserDisplayNameForCommentEvents() string {
+	if e.Comment == nil {
+		return ""
+	}
+
 	return util.GetUsernameOrAnonymousName(e.Comment.History.CreatedBy.Username)
 }
 
 func (e *ConfluenceServerEvent) GetUserDisplayNameForPageEvents() string {
+	if e.Page == nil {
+		return ""
+	}
+
 	return util.GetUsernameOrAnonymousName(e.Page.History.CreatedBy.Username)
 }
 
 func (e *ConfluenceServerEvent) GetSpaceDisplayNameForCommentEvents(baseURL string) string {
+	if e.Comment == nil {
+		return ""
+	}
+
 	name := e.Comment.Space.Key
 	if strings.TrimSpace(e.Comment.Space.Name) != "" {
 		name = strings.TrimSpace(e.Comment.Space.Name)
@@ -67,6 +99,10 @@ func (e *ConfluenceServerEvent) GetSpaceDisplayNameForCommentEvents(baseURL stri
 }
 
 func (e *ConfluenceServerEvent) GetSpaceDisplayNameForPageEvents(baseURL string) string {
+	if e.Page == nil {
+		return ""
+	}
+
 	name := e.Page.Space.Key
 	if strings.TrimSpace(e.Page.Space.Name) != "" {
 		name = strings.TrimSpace(e.Page.Space.Name)
@@ -78,7 +114,7 @@ func (e *ConfluenceServerEvent) GetSpaceDisplayNameForPageEvents(baseURL string)
 }
 
 func (e *ConfluenceServerEvent) GetPageDisplayNameForPageEvents(baseURL string) string {
-	if e.Page.Title == "" {
+	if e.Page == nil || e.Page.Title == "" {
 		return ""
 	}
 
@@ -90,7 +126,7 @@ func (e *ConfluenceServerEvent) GetPageDisplayNameForPageEvents(baseURL string) 
 }
 
 func (e *ConfluenceServerEvent) GetPageDisplayNameForCommentEvents(baseURL string) string {
-	if e.Comment.Container.Title == "" {
+	if e.Comment == nil || e.Comment.Container.Title == "" {
 		return ""
 	}
 
@@ -105,6 +141,23 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 	var attachment *model.SlackAttachment
 	post := &model.Post{
 		UserId: botUserID,
+	}
+
+	switch eventType {
+	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent, serializer.PageTrashedEvent, serializer.PageRestoredEvent:
+		if e.Page == nil {
+			return nil
+		}
+	case serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent:
+		if e.Comment == nil {
+			return nil
+		}
+	case serializer.SpaceUpdatedEvent:
+		if e.Space == nil {
+			return nil
+		}
+	default:
+		return nil
 	}
 
 	switch eventType {

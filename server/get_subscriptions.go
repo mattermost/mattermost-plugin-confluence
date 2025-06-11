@@ -8,6 +8,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
+	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -21,6 +22,12 @@ var autocompleteGetChannelSubscriptions = &Endpoint{
 
 func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
+
+	if !util.IsSystemAdmin(mattermostUserID) {
+		p.client.Log.Error("Non admin user does not have access to fetch subscription list", "UserID", mattermostUserID)
+		http.Error(w, "only system admin can fetch subscription list", http.StatusForbidden)
+		return
+	}
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {

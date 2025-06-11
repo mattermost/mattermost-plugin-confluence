@@ -92,11 +92,19 @@ func (n *notification) extractSpaceKeyAndPageID(event serializer.ConfluenceEvent
 	switch {
 	case strings.Contains(eventType, Comment):
 		if e, ok := event.(*ConfluenceServerEvent); ok {
+			if e.Comment == nil {
+				return "", ""
+			}
+
 			spaceKey = e.GetCommentSpaceKey()
 			pageID = e.GetCommentContainerID()
 		}
 	case strings.Contains(eventType, Page):
 		if e, ok := event.(*ConfluenceServerEvent); ok {
+			if e.Page == nil {
+				return "", ""
+			}
+
 			spaceKey = e.GetPageSpaceKey()
 			pageID = event.GetPageID()
 		}

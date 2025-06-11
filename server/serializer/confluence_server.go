@@ -261,6 +261,23 @@ func (e ConfluenceServerEvent) GetNotificationPost(_ string) *model.Post {
 	}
 
 	switch e.Event {
+	case PageCreatedEvent, PageUpdatedEvent, PageRemovedEvent:
+		if e.Page == nil {
+			return nil
+		}
+
+	case CommentCreatedEvent:
+		if e.Comment == nil || e.Comment.ParentComment == nil {
+			return nil
+		}
+
+	case CommentUpdatedEvent, CommentRemovedEvent:
+		if e.Comment == nil {
+			return nil
+		}
+	}
+
+	switch e.Event {
 	case PageCreatedEvent:
 		message := fmt.Sprintf(confluenceServerPageCreatedMessage, e.GetUserDisplayName(true), e.GetSpaceDisplayName(true))
 		if strings.TrimSpace(e.Page.Excerpt) != "" {
@@ -281,7 +298,7 @@ func (e ConfluenceServerEvent) GetNotificationPost(_ string) *model.Post {
 			attachment = &model.SlackAttachment{
 				Fallback: message,
 				Pretext:  message,
-				Text:     fmt.Sprintf("**What’s Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.VersionComment), e.Page.TinyURL),
+				Text:     fmt.Sprintf("**What's Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.VersionComment), e.Page.TinyURL),
 			}
 		} else {
 			post.Message = message
