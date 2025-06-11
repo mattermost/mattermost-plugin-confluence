@@ -84,7 +84,7 @@ func PageSubscriptionFromJSON(data io.Reader) (PageSubscription, error) {
 	}
 
 	if ps.PageID == "" {
-		return ps, errors.New("pageID is required to edit a subscription")
+		return ps, errors.New("pageID is required")
 	}
 
 	return ps, nil
