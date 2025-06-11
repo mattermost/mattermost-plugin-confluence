@@ -21,12 +21,12 @@ var (
 
 type Configuration struct {
 	Secret                      string `json:"secret"`
-	EncryptionKey               string `json:"encryptionKey"` // The encryption key used to encrypt tokens
-	AdminAPIToken               string `json:"adminAPIToken"` // API token from Confluence Data Center
-	ConfluenceOAuthClientID     string
-	ConfluenceOAuthClientSecret string
-	ConfluenceURL               string
-	ServerVersionGreaterthan9   bool
+	EncryptionKey               string `json:"encryptionkey"` // The encryption key used to encrypt tokens
+	AdminAPIToken               string `json:"adminapitoken"` // API token from Confluence Data Center
+	ConfluenceOAuthClientID     string `json:"confluenceoauthclientid"`
+	ConfluenceOAuthClientSecret string `json:"confluenceoauthclientsecret"`
+	ConfluenceURL               string `json:"confluenceurl"`
+	ServerVersionGreaterthan9   bool   `json:"serverversiongreaterthan9"`
 }
 
 func GetConfig() *Configuration {
