@@ -130,7 +130,7 @@ func (e ConfluenceCloudEvent) GetSpaceKey() string {
 }
 
 func (e ConfluenceCloudEvent) GetPageID() string {
-	if e.Comment != nil {
+	if e.Comment != nil && e.Comment.Parent != nil {
 		return strconv.Itoa(e.Comment.Parent.ID)
 	} else if e.Page != nil {
 		return strconv.Itoa(e.Page.ID)
