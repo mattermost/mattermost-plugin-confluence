@@ -30,7 +30,7 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to create subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
+		http.Error(w, "User does not have access to this channel", http.StatusForbidden)
 		return
 	}
 

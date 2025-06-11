@@ -31,7 +31,7 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to edit subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
+		http.Error(w, "User does not have access to this channel", http.StatusForbidden)
 		return
 	}
 
