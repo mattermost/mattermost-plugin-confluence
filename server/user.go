@@ -46,7 +46,7 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	connection, err := store.LoadConnection(instanceURL, mattermostUserID)
 	if err == nil && len(connection.ConfluenceAccountID()) != 0 {
 		p.client.Log.Info("User already has a Confluence account connected. UserID: %s", mattermostUserID)
-		_, _ = respondErr(w, http.StatusBadRequest, errors.New("you already have a Confluence account linked. Use `/confluence disconnect` to unlink"))
+		_, _ = respondErr(w, http.StatusBadRequest, errors.New("User already has a Confluence account linked. Use `/confluence disconnect` to unlink"))
 		return
 	}
 
@@ -404,14 +404,14 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 	conn, err := store.LoadConnection(confluenceURL, userID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return http.StatusUnauthorized, errors.New("you need to connect your Confluence account")
+			return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 		}
 		p.client.Log.Error("Error loading connection for the user. ConfluenceURL: %s, UserID: %s. Error: %s", confluenceURL, userID, err.Error())
 		return http.StatusInternalServerError, errors.New("unable to verify your Confluence connection. Please try again later")
 	}
 
 	if conn.ConfluenceAccountID() == "" {
-		return http.StatusUnauthorized, errors.New("you need to connect your Confluence account")
+		return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 	}
 
 	client, err := p.GetServerClient(confluenceURL, conn)
@@ -435,7 +435,7 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 		}
 		if _, err = serverClient.GetSpaceData(spaceSub.SpaceKey); err != nil {
 			p.client.Log.Error("User does not have access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
-			return http.StatusForbidden, errors.New("you don't have access to this Confluence space")
+			return http.StatusForbidden, errors.New("User does not have an access to this Confluence space")
 		}
 
 	case serializer.SubscriptionTypePage:
@@ -452,7 +452,7 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 
 		if _, err := serverClient.GetPageData(pageID); err != nil {
 			p.client.Log.Error("User does not have access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
-			return http.StatusForbidden, errors.New("you don't have access to this Confluence page")
+			return http.StatusForbidden, errors.New("User does not have an access to this Confluence page")
 		}
 
 	default:
