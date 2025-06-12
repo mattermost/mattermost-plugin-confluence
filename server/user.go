@@ -363,7 +363,7 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	if instanceURL == "" {
 		err := errors.New("missing Confluence base URL")
 		p.client.Log.Error("Confluence base URL is not configured. Error: %s", err.Error())
-		http.Error(w, "Confluence is not properly configured. Please contact your administrator.", http.StatusInternalServerError)
+		http.Error(w, "Confluence is not properly configured. Please contact the system administrator.", http.StatusInternalServerError)
 		return
 	}
 
@@ -407,7 +407,7 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 			return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 		}
 		p.client.Log.Error("Error loading connection for the user. ConfluenceURL: %s, UserID: %s. Error: %s", confluenceURL, userID, err.Error())
-		return http.StatusInternalServerError, errors.New("unable to verify your Confluence connection. Please try again later")
+		return http.StatusInternalServerError, errors.New("unable to verify user's Confluence connection. Please try again later")
 	}
 
 	if conn.ConfluenceAccountID() == "" {
