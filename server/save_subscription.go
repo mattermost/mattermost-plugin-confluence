@@ -45,9 +45,9 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	var sErr error
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
-		subscription, sErr = serializer.SpaceSubscriptionFromJSON(r.Body)
+		subscription, sErr = serializer.SpaceSubscriptionFromJSON(r.Body, subscriptionType)
 	case serializer.SubscriptionTypePage:
-		subscription, sErr = serializer.PageSubscriptionFromJSON(r.Body)
+		subscription, sErr = serializer.PageSubscriptionFromJSON(r.Body, subscriptionType)
 	default:
 		p.client.Log.Error("Invalid subscription type", "Subscription Type", subscriptionType)
 		http.Error(w, "Invalid subscription type", http.StatusBadRequest)
