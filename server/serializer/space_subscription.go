@@ -75,17 +75,17 @@ func (ss SpaceSubscription) IsValid() error {
 }
 
 func SpaceSubscriptionFromJSON(data io.Reader) (SpaceSubscription, error) {
-	var ps SpaceSubscription
-	err := json.NewDecoder(data).Decode(&ps)
+	var ss SpaceSubscription
+	err := json.NewDecoder(data).Decode(&ss)
 	if err != nil {
-		return ps, err
+		return ss, errors.New("error unmarshalling data")
 	}
 
-	if ps.SpaceKey == "" {
-		return ps, errors.New("spaceKey is required")
+	if ss.SpaceKey == "" {
+		return ss, errors.New("spaceKey is required")
 	}
 
-	return ps, nil
+	return ss, nil
 }
 
 func (ss SpaceSubscription) ValidateSubscription(subs *Subscriptions) error {

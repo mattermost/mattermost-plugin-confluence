@@ -80,7 +80,7 @@ func PageSubscriptionFromJSON(data io.Reader) (PageSubscription, error) {
 	var ps PageSubscription
 	err := json.NewDecoder(data).Decode(&ps)
 	if err != nil {
-		return ps, err
+		return ps, errors.New("error unmarshalling data")
 	}
 
 	if ps.PageID == "" {
