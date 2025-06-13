@@ -66,7 +66,7 @@ func CheckConfluenceURL(mattermostSiteURL, confluenceURL string, _ bool) (string
 	}
 
 	if confluenceURL == strings.TrimSuffix(mattermostSiteURL, "/") {
-		return "", fmt.Errorf("%s is the Mattermost site URL. Please use your Confluence URL", confluenceURL)
+		return "", fmt.Errorf("%s is the Mattermost site URL. Please use the Confluence URL", confluenceURL)
 	}
 
 	var status ConfluenceStatus

@@ -41,8 +41,8 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 				return
 			}
 
-			p.client.Log.Error("Error loading connection for the user", "UserID", mattermostUserID, "error", err.Error())
-			http.Error(w, "Failed to get subscriptions for the channel", http.StatusInternalServerError)
+			p.client.Log.Error("Error loading Confluence connection.", "UserID", mattermostUserID, "Error", err.Error())
+			http.Error(w, "Unable to fetch user's Confluence connection.", http.StatusInternalServerError)
 			return
 		}
 
@@ -57,18 +57,19 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 
 	channelID := r.FormValue("channel_id")
 	if _, err := p.API.GetChannel(channelID); err != nil {
-		http.Error(w, "invalid channel ID", http.StatusBadRequest)
+		p.client.Log.Error("Invalid channel ID. ChannelID: %s. Error: %s", channelID, err.Error())
+		http.Error(w, "Invalid channel ID.", http.StatusBadRequest)
 		return
 	}
 
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
-		p.client.Log.Error("Error getting subscriptions for the channel", "ChannelID", channelID, "error", err.Error())
-		http.Error(w, "Failed to get subscription for the channel", http.StatusInternalServerError)
+		p.client.Log.Error("Error retrieving subscriptions. ChannelID: %s. Error: %s", channelID, err.Error())
+		http.Error(w, "Failed to get subscriptions for this channel.", http.StatusInternalServerError)
 		return
 	}
 
-	out := []model.AutocompleteListItem{}
+	out := make([]model.AutocompleteListItem, 0, len(subscriptions))
 	for _, sub := range subscriptions {
 		out = append(out, model.AutocompleteListItem{
 			Item: sub.GetAlias(),

@@ -27,8 +27,9 @@ const (
 
 func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	if r.Method != http.MethodGet {
-		_, _ = respondErr(w, http.StatusMethodNotAllowed,
-			errors.New("method "+r.Method+" is not allowed, must be GET"))
+		err := errors.New("method " + r.Method + " is not allowed, must be GET")
+		p.client.Log.Error("Invalid HTTP method used. Method: %s. Error: %s", r.Method, err.Error())
+		_, _ = respondErr(w, http.StatusMethodNotAllowed, err)
 		return
 	}
 
@@ -37,20 +38,22 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
-		http.Error(w, "missing Confluence base url. Please run `/confluence install server`", http.StatusInternalServerError)
+		p.client.Log.Error("Missing Confluence base URL. UserID: %s", mattermostUserID)
+		http.Error(w, "Missing Confluence base URL. Please run `/confluence install server`.", http.StatusInternalServerError)
 		return
 	}
 
-	connection, err := store.LoadConnection(instanceURL, mattermostUserID) // Error is expected if the connection doesn't exist — safe to ignore
+	connection, err := store.LoadConnection(instanceURL, mattermostUserID)
 	if err == nil && len(connection.ConfluenceAccountID()) != 0 {
-		_, _ = respondErr(w, http.StatusBadRequest,
-			errors.New("you already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect"))
+		p.client.Log.Info("User already has a Confluence account connected. UserID: %s", mattermostUserID)
+		_, _ = respondErr(w, http.StatusBadRequest, errors.New("User already has a Confluence account linked. Use `/confluence disconnect` to unlink"))
 		return
 	}
 
 	redirectURL, err := p.getUserConnectURL(instanceURL, mattermostUserID, isAdmin)
 	if err != nil {
-		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("error occurred while connecting user to Confluence"))
+		p.client.Log.Error("Error generating user connect URL. UserID: %s. Error: %s", mattermostUserID, err.Error())
+		_, _ = respondErr(w, http.StatusInternalServerError, errors.New("an error occurred while initiating Confluence connection. Please try again later"))
 		return
 	}
 
@@ -60,7 +63,8 @@ func httpOAuth2Connect(w http.ResponseWriter, r *http.Request, p *Plugin) {
 func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	var err error
 	var status int
-	// Prettify error output
+
+	// Prettify and present errors on the template page
 	defer func() {
 		if err == nil {
 			return
@@ -70,6 +74,7 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		if len(errText) > 0 {
 			errText = strings.ToUpper(errText[:1]) + errText[1:]
 		}
+
 		status, err = p.respondTemplate(w, "/other/message.html", nil, status, "text/html", struct {
 			Header  string
 			Message string
@@ -81,27 +86,41 @@ func httpOAuth2Complete(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
-		http.Error(w, "missing authorization code", http.StatusBadRequest)
+		err = errors.New("missing authorization code")
+		status = http.StatusBadRequest
+		p.client.Log.Error("OAuth2 completion failed: %s", err.Error())
 		return
 	}
 
 	state := r.URL.Query().Get("state")
 	if state == "" {
-		http.Error(w, "missing authorization state", http.StatusBadRequest)
+		err = errors.New("missing authorization state")
+		status = http.StatusBadRequest
+		p.client.Log.Error("OAuth2 completion failed: %s", err.Error())
 		return
 	}
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
-		http.Error(w, "missing Confluence base url", http.StatusInternalServerError)
+		err = errors.New("missing Confluence base URL")
+		status = http.StatusInternalServerError
+		p.client.Log.Error("OAuth2 completion failed: %s", err.Error())
 		return
 	}
 
 	isAdmin := IsAdmin(w, r)
 
-	cuser, mmuser, err := p.CompleteOAuth2(r.Header.Get(config.HeaderMattermostUserID), code, state, instanceURL, isAdmin)
-	if err != nil {
-		http.Error(w, "Failed to complete OAuth2 connection", http.StatusInternalServerError)
+	cuser, mmuser, completeErr := p.CompleteOAuth2(
+		r.Header.Get(config.HeaderMattermostUserID),
+		code,
+		state,
+		instanceURL,
+		isAdmin,
+	)
+	if completeErr != nil {
+		err = errors.New("an error occurred while completing the Confluence connection")
+		status = http.StatusInternalServerError
+		p.client.Log.Error("OAuth2 completion failed. Code: %s, State: %s. Error: %s", code, state, completeErr.Error())
 		return
 	}
 
@@ -320,8 +339,9 @@ type UserConnectionInfo struct {
 
 func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	if r.Method != http.MethodGet {
-		_, _ = respondErr(w, http.StatusMethodNotAllowed,
-			errors.New("method "+r.Method+" is not allowed, must be GET"))
+		err := errors.New("method " + r.Method + " is not allowed, must be GET")
+		p.client.Log.Error("Invalid HTTP method used in GetUserInfo. Error: %s", err.Error())
+		_, _ = respondErr(w, http.StatusMethodNotAllowed, err)
 		return
 	}
 
@@ -341,7 +361,9 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	instanceURL := config.GetConfig().GetConfluenceBaseURL()
 	if instanceURL == "" {
-		http.Error(w, "missing Confluence base url. Please run `/confluence install server`", http.StatusInternalServerError)
+		err := errors.New("missing Confluence base URL")
+		p.client.Log.Error("Confluence base URL is not configured. Error: %s", err.Error())
+		http.Error(w, "Confluence is not properly configured. Please contact the system administrator.", http.StatusInternalServerError)
 		return
 	}
 
@@ -358,8 +380,8 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 			return
 		}
 
-		p.client.Log.Error("Error getting client connection", "MattermostUserID", mattermostUserID, "error", err)
-		http.Error(w, "Error occurred while checking user connection status", http.StatusInternalServerError)
+		p.client.Log.Error("Failed to load user Confluence connection. MattermostUserID: %s. Error: %s", mattermostUserID, err.Error())
+		http.Error(w, "Failed to retrieve user connection status. Please retry after some time.", http.StatusInternalServerError)
 		return
 	}
 
@@ -370,7 +392,7 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	b, _ := json.Marshal(info)
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write([]byte(string(b)))
+	_, _ = w.Write(b)
 }
 
 func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
@@ -382,50 +404,60 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 	conn, err := store.LoadConnection(confluenceURL, userID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return http.StatusUnauthorized, errors.New("user not connected to Confluence")
+			return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 		}
-		return http.StatusInternalServerError, errors.Wrapf(err, "error loading connection for the user. ConfluenceURL %s. UserID %s", confluenceURL, userID)
+		p.client.Log.Error("Error loading connection for the user. ConfluenceURL: %s, UserID: %s. Error: %s", confluenceURL, userID, err.Error())
+		return http.StatusInternalServerError, errors.New("unable to verify user's Confluence connection. Please try again later")
 	}
 
 	if conn.ConfluenceAccountID() == "" {
-		return http.StatusUnauthorized, errors.New("user not connected to Confluence")
+		return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 	}
 
 	client, err := p.GetServerClient(confluenceURL, conn)
 	if err != nil {
-		return http.StatusInternalServerError, errors.Wrapf(err, "error getting client for the user. UserID %s", userID)
+		p.client.Log.Error("Error getting Confluence client. UserID: %s. Error: %s", userID, err.Error())
+		return http.StatusInternalServerError, errors.New("An error occurred while connecting to Confluence. Please try again later")
 	}
 
 	serverClient, ok := client.(*confluenceServerClient)
 	if !ok {
-		return http.StatusInternalServerError, errors.New("invalid confluence server client")
+		p.client.Log.Error("Invalid Confluence server client type while validating user's Confluence access. UserID: %s", userID)
+		return http.StatusInternalServerError, errors.New("an unexpected error occurred. Please try again later")
 	}
 
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
 		spaceSub, ok := subscription.(serializer.SpaceSubscription)
 		if !ok {
-			return http.StatusBadRequest, errors.New("error occurred while serializing space subscription")
+			p.client.Log.Error("Failed to parse space subscription. UserID: %s", userID)
+			return http.StatusBadRequest, errors.New("invalid space subscription details provided")
 		}
-		spaceKey := spaceSub.SpaceKey
-		if _, err = serverClient.GetSpaceData(spaceKey); err != nil {
-			return http.StatusForbidden, errors.Wrapf(err, "user does not have access to this space. UserID %s. SpaceKey %s", userID, spaceKey)
+		if _, err = serverClient.GetSpaceData(spaceSub.SpaceKey); err != nil {
+			p.client.Log.Error("User does not have access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
+			return http.StatusForbidden, errors.New("User does not have an access to this Confluence space")
 		}
+
 	case serializer.SubscriptionTypePage:
 		pageSub, ok := subscription.(serializer.PageSubscription)
 		if !ok {
-			return http.StatusBadRequest, errors.New("error occurred while serializing page subscription")
+			p.client.Log.Error("Failed to parse page subscription. UserID: %s", userID)
+			return http.StatusBadRequest, errors.New("invalid page subscription details provided")
 		}
 		pageID, err := strconv.Atoi(pageSub.PageID)
 		if err != nil {
-			return http.StatusInternalServerError, errors.Wrapf(err, "error converting pageID to integer. UserID %s. PageID %s", userID, pageSub.PageID)
+			p.client.Log.Error("Error converting PageID to integer. UserID: %s, PageID: %s. Error: %s", userID, pageSub.PageID, err.Error())
+			return http.StatusInternalServerError, errors.New("an error occurred while processing the page details. Please try again later")
 		}
 
 		if _, err := serverClient.GetPageData(pageID); err != nil {
-			return http.StatusForbidden, errors.Wrapf(err, "user does not have access to this page. UserID %s. PageID %d. Error %s", userID, pageID, err.Error())
+			p.client.Log.Error("User does not have access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
+			return http.StatusForbidden, errors.New("User does not have an access to this Confluence page")
 		}
+
 	default:
-		return http.StatusBadRequest, errors.New("Unknown subscription type")
+		p.client.Log.Error("Unknown subscription type. UserID: %s, Type: %s", userID, subscriptionType)
+		return http.StatusBadRequest, errors.New("unsupported subscription type")
 	}
 
 	return http.StatusOK, nil

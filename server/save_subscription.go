@@ -38,7 +38,7 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 
 	if !p.hasChannelAccess(userID, channelID) {
 		p.client.Log.Error("User does not have access to create subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
+		http.Error(w, "User does not have access to this channel", http.StatusForbidden)
 		return
 	}
 
@@ -62,15 +62,15 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	pluginConfig := config.GetConfig()
 	if pluginConfig.ServerVersionGreaterthan9 {
 		if statusCode, err := p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
-			p.client.Log.Error("Error validating the user's Confluence access", err.Error())
-			http.Error(w, err.Error(), statusCode)
+			p.client.Log.Error("Error validating the user's Confluence access", "error", err.Error())
+			http.Error(w, err.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly
 			return
 		}
 	}
 
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
 		config.Mattermost.LogError("Error occurred while saving subscription", "Subscription Name", subscription.Name(), "error", sErr.Error())
-		http.Error(w, "Failed to save subscription", statusCode)
+		http.Error(w, sErr.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly
 		return
 	}
 

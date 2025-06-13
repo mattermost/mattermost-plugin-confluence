@@ -188,7 +188,7 @@ func executeConnect(p *Plugin, context *model.CommandArgs, _ ...string) *model.C
 	conn, err := store.LoadConnection(confluenceURL, context.UserId) // Error is expected if the connection doesn't exist — safe to ignore
 	if err == nil && len(conn.ConfluenceAccountID()) != 0 {
 		return p.responsef(context,
-			"You already have a Confluence account linked to your Mattermost account. Please use `/confluence disconnect` to disconnect.")
+			"Mattermost account is already linked to a Confluence account. Please use `/confluence disconnect` to disconnect")
 	}
 
 	link := fmt.Sprintf(oauth2ConnectPath, util.GetPluginURL())

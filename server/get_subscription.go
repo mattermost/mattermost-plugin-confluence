@@ -33,8 +33,8 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 	}
 
 	if !p.hasChannelAccess(userID, channelID) {
-		p.client.Log.Error("User does not have access to get subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "user does not have access to this channel", http.StatusForbidden)
+		p.client.Log.Error("User does not have access to get subscription for this channel. UserID: %s, ChannelID: %s", userID, channelID)
+		http.Error(w, "User does not have access to this channel.", http.StatusForbidden)
 		return
 	}
 
@@ -43,24 +43,26 @@ func handleGetChannelSubscription(w http.ResponseWriter, r *http.Request, p *Plu
 		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
-				http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
+				p.client.Log.Info("User not connected to Confluence. UserID: %s. Error: %s", userID, err.Error())
+				http.Error(w, "User not connected to Confluence.", http.StatusUnauthorized)
 				return
 			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			p.client.Log.Error("Error loading Confluence connection. UserID: %s. Error: %s", userID, err.Error())
+			http.Error(w, "An error occurred while verifying user's Confluence connection.", http.StatusInternalServerError)
 			return
 		}
 
 		if len(conn.ConfluenceAccountID()) == 0 {
-			http.Error(w, "User not connected to Confluence", http.StatusUnauthorized)
+			p.client.Log.Error("User not connected to Confluence. UserID: %s", userID)
+			http.Error(w, "User not connected to Confluence.", http.StatusUnauthorized)
 			return
 		}
 	}
 
 	subscription, errCode, err := service.GetChannelSubscription(channelID, alias)
 	if err != nil {
-		p.client.Log.Error("Error getting subscription for the channel", "ChannelID", channelID, "Subscription Alias", alias, "error", err.Error())
-		http.Error(w, "Failed to get subscription for the channel", errCode)
+		p.client.Log.Error("Error getting subscription for the channel. ChannelID: %s, Alias: %s. Error: %s", channelID, alias, err.Error())
+		http.Error(w, "Failed to get subscription for this channel.", errCode)
 		return
 	}
 
