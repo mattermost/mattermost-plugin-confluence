@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -41,20 +42,20 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	}
 
-	var err error
+	var sErr error
 	switch subscriptionType {
 	case serializer.SubscriptionTypeSpace:
-		subscription, err = serializer.SpaceSubscriptionFromJSON(r.Body)
+		subscription, sErr = serializer.SpaceSubscriptionFromJSON(r.Body, subscriptionType)
 	case serializer.SubscriptionTypePage:
-		subscription, err = serializer.PageSubscriptionFromJSON(r.Body)
+		subscription, sErr = serializer.PageSubscriptionFromJSON(r.Body, subscriptionType)
 	default:
 		p.client.Log.Error("Invalid subscription type", "Subscription Type", subscriptionType)
 		http.Error(w, "Invalid subscription type", http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		config.Mattermost.LogError("Error decoding request body.", "Error", err.Error())
-		http.Error(w, "Could not decode request body", http.StatusBadRequest)
+	if sErr != nil {
+		config.Mattermost.LogError("Error decoding request body.", "Error", sErr.Error())
+		http.Error(w, fmt.Sprintf("Could not decode request body. %s", sErr.Error()), http.StatusBadRequest)
 		return
 	}
 

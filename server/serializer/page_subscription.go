@@ -76,10 +76,22 @@ func (ps PageSubscription) IsValid() error {
 	return nil
 }
 
-func PageSubscriptionFromJSON(data io.Reader) (PageSubscription, error) {
+func PageSubscriptionFromJSON(data io.Reader, subscriptionType string) (PageSubscription, error) {
 	var ps PageSubscription
 	err := json.NewDecoder(data).Decode(&ps)
-	return ps, err
+	if err != nil {
+		return ps, errors.New("error unmarshalling data")
+	}
+
+	if ps.PageID == "" {
+		return ps, errors.New("pageID is required")
+	}
+
+	if subscriptionType != ps.Type {
+		return ps, errors.New("subscription type mismatch")
+	}
+
+	return ps, nil
 }
 
 func (ps PageSubscription) ValidateSubscription(subs *Subscriptions) error {
