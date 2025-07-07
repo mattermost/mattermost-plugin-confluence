@@ -25,7 +25,6 @@ const config = {
         '@babel/plugin-proposal-class-properties',
         '@babel/plugin-syntax-dynamic-import',
         '@babel/proposal-object-rest-spread',
-        'babel-plugin-typescript-to-proptypes',
     ],
 };
 
