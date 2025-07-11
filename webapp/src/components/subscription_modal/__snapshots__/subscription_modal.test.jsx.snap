@@ -6,7 +6,7 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
   autoFocus={true}
   backdrop="static"
   dialogAs={
-    Object {
+    {
       "$$typeof": Symbol(react.forward_ref),
       "displayName": "ModalDialog",
       "render": [Function],
@@ -31,8 +31,8 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
       <ConfluenceField
         addValidation={[Function]}
         fieldType="input"
-        formControlStyle={Object {}}
-        formGroupStyle={Object {}}
+        formControlStyle={{}}
+        formGroupStyle={{}}
         label="Name"
         onChange={[Function]}
         placeholder="Enter a name for this subscription."
@@ -45,8 +45,8 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
       <ConfluenceField
         addValidation={[Function]}
         fieldType="input"
-        formControlStyle={Object {}}
-        formGroupStyle={Object {}}
+        formControlStyle={{}}
+        formGroupStyle={{}}
         label="Confluence Base URL"
         onChange={[Function]}
         placeholder="Enter the Confluence Base URL."
@@ -58,7 +58,7 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
       />
       <div
         style={
-          Object {
+          {
             "display": "flex",
           }
         }
@@ -66,9 +66,9 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
         <ConfluenceField
           addValidation={[Function]}
           fieldType="dropDown"
-          formControlStyle={Object {}}
+          formControlStyle={{}}
           formGroupStyle={
-            Object {
+            {
               "flex": "1",
               "marginRight": "20px",
             }
@@ -79,12 +79,12 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
           name="type"
           onChange={[Function]}
           options={
-            Array [
-              Object {
+            [
+              {
                 "label": "Space",
                 "value": "space_subscription",
               },
-              Object {
+              {
                 "label": "Page",
                 "value": "page_subscription",
               },
@@ -93,9 +93,9 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
           readOnly={false}
           removeValidation={[Function]}
           required={true}
-          theme={Object {}}
+          theme={{}}
           value={
-            Object {
+            {
               "label": "Space",
               "value": "space_subscription",
             }
@@ -105,12 +105,12 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
           addValidation={[Function]}
           fieldType="input"
           formControlStyle={
-            Object {
+            {
               "height": "38px",
             }
           }
           formGroupStyle={
-            Object {
+            {
               "flex": "1",
             }
           }
@@ -127,43 +127,43 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
       <ConfluenceField
         addValidation={[Function]}
         fieldType="dropDown"
-        formControlStyle={Object {}}
-        formGroupStyle={Object {}}
+        formControlStyle={{}}
+        formGroupStyle={{}}
         isMulti={true}
         label="Events"
         name="events"
         onChange={[Function]}
         options={
-          Array [
-            Object {
+          [
+            {
               "label": "Comment Create",
               "value": "comment_created",
             },
-            Object {
+            {
               "label": "Comment Update",
               "value": "comment_updated",
             },
-            Object {
+            {
               "label": "Comment Remove",
               "value": "comment_removed",
             },
-            Object {
+            {
               "label": "Page Create",
               "value": "page_created",
             },
-            Object {
+            {
               "label": "Page Update",
               "value": "page_updated",
             },
-            Object {
+            {
               "label": "Page Trash",
               "value": "page_trashed",
             },
-            Object {
+            {
               "label": "Page Restore",
               "value": "page_restored",
             },
-            Object {
+            {
               "label": "Page Remove",
               "value": "page_removed",
             },
@@ -172,38 +172,38 @@ exports[`components/ChannelSettingsModal subscription modal snapshot test 1`] = 
         readOnly={false}
         removeValidation={[Function]}
         required={true}
-        theme={Object {}}
+        theme={{}}
         value={
-          Array [
-            Object {
+          [
+            {
               "label": "Comment Create",
               "value": "comment_created",
             },
-            Object {
+            {
               "label": "Comment Update",
               "value": "comment_updated",
             },
-            Object {
+            {
               "label": "Comment Remove",
               "value": "comment_removed",
             },
-            Object {
+            {
               "label": "Page Create",
               "value": "page_created",
             },
-            Object {
+            {
               "label": "Page Update",
               "value": "page_updated",
             },
-            Object {
+            {
               "label": "Page Trash",
               "value": "page_trashed",
             },
-            Object {
+            {
               "label": "Page Restore",
               "value": "page_restored",
             },
-            Object {
+            {
               "label": "Page Remove",
               "value": "page_removed",
             },
