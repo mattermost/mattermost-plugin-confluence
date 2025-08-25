@@ -25,8 +25,8 @@
     "@babel/runtime": "7.24.7",
     "@emotion/babel-preset-css-prop": "10.0.27",
     "@emotion/core": "10.0.28",
-    "@mattermost/client": "10.7.0",
-    "@mattermost/types": "10.8.0",
+    "@mattermost/client": "10.9.0",
+    "@mattermost/types": "10.9.0",
     "@types/cheerio": "0.22.30",
     "@types/enzyme": "3.10.5",
     "@types/jest": "29.5.11",
@@ -76,10 +76,6 @@
     "redux": "4.0.5",
     "superagent": "5.3.1",
     "typescript": "5.6.3"
-  },
-  "overrides": {
-    "cheerio": "0.22.0",
-    "@mattermost/types": "$@mattermost/types"
   },
   "jest": {
     "snapshotSerializers": [
