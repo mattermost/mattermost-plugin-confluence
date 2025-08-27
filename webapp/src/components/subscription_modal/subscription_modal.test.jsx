@@ -65,6 +65,7 @@ describe('components/ChannelSettingsModal', () => {
 
     test('edit space subscription', async () => {
         const subscription = {
+            oldAlias: 'Xyz',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -80,6 +81,7 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
+            oldAlias: 'Xyz',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -92,6 +94,7 @@ describe('components/ChannelSettingsModal', () => {
         wrapper.instance().handleSubmit({preventDefault: jest.fn()});
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
+            oldAlias: 'Abc',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -138,6 +141,7 @@ describe('components/ChannelSettingsModal', () => {
 
     test('edit page subscription', async () => {
         const subscription = {
+            oldAlias: 'Xyz',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -153,6 +157,7 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
+            oldAlias: 'Xyz',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',
@@ -165,6 +170,7 @@ describe('components/ChannelSettingsModal', () => {
         wrapper.instance().handleSubmit({preventDefault: jest.fn()});
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
+            oldAlias: 'Abc',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: '',

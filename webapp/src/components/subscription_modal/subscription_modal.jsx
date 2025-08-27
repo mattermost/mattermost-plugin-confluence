@@ -139,6 +139,7 @@ export default class SubscriptionModal extends React.PureComponent {
 
         let response;
         if (subscription && subscription.alias) {
+            channelSubscription.oldAlias = subscription.alias;
             response = await editChannelSubscription(channelSubscription);
         } else {
             response = await saveChannelSubscription(channelSubscription);
