@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/mattermost/mattermost/server/public v0.1.12
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/atomic v1.11.0
 	golang.org/x/net v0.39.0
