@@ -65,7 +65,6 @@ describe('components/ChannelSettingsModal', () => {
 
     test('edit space subscription', async () => {
         const subscription = {
-            oldAlias: 'Xyz',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -81,8 +80,8 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
-            oldAlias: 'Xyz',
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: 'test',
             events: Constants.CONFLUENCE_EVENTS,
@@ -95,7 +94,7 @@ describe('components/ChannelSettingsModal', () => {
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
             oldAlias: 'Abc',
-            alias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: 'test',
             events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
@@ -141,7 +140,7 @@ describe('components/ChannelSettingsModal', () => {
 
     test('edit page subscription', async () => {
         const subscription = {
-            oldAlias: 'Xyz',
+            oldAlias: 'Abc',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -157,8 +156,8 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
-            oldAlias: 'Xyz',
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: '',
             events: Constants.CONFLUENCE_EVENTS,
@@ -171,7 +170,7 @@ describe('components/ChannelSettingsModal', () => {
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
             oldAlias: 'Abc',
-            alias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: '',
             events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
