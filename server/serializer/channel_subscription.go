@@ -36,9 +36,9 @@ var eventDisplayName = map[string]string{
 }
 
 type Subscription interface {
-	Add(*Subscriptions)
-	Remove(*Subscriptions)
-	Edit(*Subscriptions)
+	Add(*Subscriptions) error
+	Remove(*Subscriptions) error
+	Edit(*Subscriptions) error
 	Name() string
 	GetAlias() string
 	GetFormattedSubscription() string
@@ -48,6 +48,7 @@ type Subscription interface {
 
 type BaseSubscription struct {
 	Alias     string   `json:"alias"`
+	OldAlias  string   `json:"oldAlias,omitempty"`
 	BaseURL   string   `json:"baseURL"`
 	Events    []string `json:"events"`
 	ChannelID string   `json:"channelID"`
