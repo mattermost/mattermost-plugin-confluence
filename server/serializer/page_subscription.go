@@ -48,8 +48,13 @@ func (ps PageSubscription) Remove(s *Subscriptions) error {
 		return errors.New("ByChannelID map is nil")
 	}
 	if channelMap, ok := s.ByChannelID[ps.ChannelID]; ok {
-		if _, aliasOk := channelMap[ps.OldAlias]; aliasOk {
-			delete(channelMap, ps.OldAlias)
+		aliasToRemove := ps.OldAlias
+		if aliasToRemove == "" {
+			aliasToRemove = ps.Alias
+		}
+
+		if _, aliasOk := channelMap[aliasToRemove]; aliasOk {
+			delete(channelMap, aliasToRemove)
 		} else {
 			return errors.New("alias not found in ByChannelID")
 		}

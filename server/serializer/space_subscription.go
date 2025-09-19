@@ -47,8 +47,13 @@ func (ss SpaceSubscription) Remove(s *Subscriptions) error {
 		return errors.New("ByChannelID map is nil")
 	}
 	if channelMap, ok := s.ByChannelID[ss.ChannelID]; ok {
-		if _, aliasOk := channelMap[ss.OldAlias]; aliasOk {
-			delete(channelMap, ss.OldAlias)
+		aliasToRemove := ss.OldAlias
+		if aliasToRemove == "" {
+			aliasToRemove = ss.Alias
+		}
+
+		if _, aliasOk := channelMap[aliasToRemove]; aliasOk {
+			delete(channelMap, aliasToRemove)
 		} else {
 			return errors.New("alias not found in ByChannelID")
 		}
