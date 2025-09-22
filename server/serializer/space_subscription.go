@@ -21,6 +21,10 @@ func (ss SpaceSubscription) Add(s *Subscriptions) error {
 	if s.ByChannelID == nil {
 		return errors.New("ByChannelID map is nil")
 	}
+
+	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
+	ss.OldAlias = ss.Alias
+
 	if _, valid := s.ByChannelID[ss.ChannelID]; !valid {
 		s.ByChannelID[ss.ChannelID] = make(StringSubscription)
 	}

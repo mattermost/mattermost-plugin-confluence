@@ -19,6 +19,9 @@ type PageSubscription struct {
 func (ps PageSubscription) Add(s *Subscriptions) error {
 	s.EnsureDefaults()
 
+	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
+	ps.OldAlias = ps.Alias
+
 	if s.ByChannelID == nil {
 		return errors.New("ByChannelID map is nil")
 	}
