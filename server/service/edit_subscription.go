@@ -14,7 +14,11 @@ func EditSubscription(subscription serializer.Subscription) error {
 		if err != nil {
 			return nil, err
 		}
-		subscription.Edit(subscriptions)
+
+		if err := subscription.Edit(subscriptions); err != nil {
+			return nil, err
+		}
+
 		modifiedBytes, marshalErr := json.Marshal(subscriptions)
 		if marshalErr != nil {
 			return nil, marshalErr
