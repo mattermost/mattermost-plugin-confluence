@@ -31,7 +31,9 @@ With the Confluence plugin, you can subscribe to a variety of events in Confluen
   - Confluence spaces, including those created, updated, deleted, and restored, and those with added comments.
   - Confluence pages, including those created, updated, deleted, restored, and those with added, deleted, or updated comments.
 
-**Note**: For Confluence server version greater than 9, users need to be connected to Mattermost in order to get the Confluence notifications, or the admin has to setup an API token.
+**Note**: For Confluence server version greater than 9:
+- users need to be connected to Mattermost in order to get the Confluence notifications, or the admin has to setup an API token.
+- users will not be notified for destructive events such as when content is purged. However, users will be notified when content is non-permanently deleted (sent to trash).
 
 ## Configure notifications
 
