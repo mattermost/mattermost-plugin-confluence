@@ -33,7 +33,7 @@ With the Confluence plugin, you can subscribe to a variety of events in Confluen
 
 **Note**: For Confluence server version greater than 9:
 - users need to be connected to Mattermost in order to get the Confluence notifications, or the admin has to setup an API token.
-- users will not be notified for destructive events like content deletion(i.e. purged). Although user will be notified when content is trashed.
+- users will not be notified for destructive events such as when content is purged. However, users will be notified when content is non-permanently deleted (sent to trash).
 
 ## Configure notifications
 
