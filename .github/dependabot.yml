@@ -1,7 +1,11 @@
 version: 2
 updates:
-  # Enable version updates for GOLang dependencies
+  # Enable version updates for Golang dependencies
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "monthly"
+    groups:
+      all:
+        patterns:
+          - "*"
