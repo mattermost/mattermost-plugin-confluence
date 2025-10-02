@@ -27,7 +27,10 @@ func DeleteSubscription(channelID, alias string) error {
 					return nil, err
 				}
 
-				subscription.Remove(subscriptions)
+				if err := subscription.Remove(subscriptions); err != nil {
+					return nil, fmt.Errorf(generalDeleteError, alias)
+				}
+
 				modifiedBytes, marshalErr := json.Marshal(subscriptions)
 				if marshalErr != nil {
 					return nil, marshalErr
