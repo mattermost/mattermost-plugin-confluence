@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-plugin-confluence
 
-go 1.24.0
+go 1.24.6
 
 require (
 	bou.ke/monkey v1.0.2
