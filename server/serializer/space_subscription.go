@@ -18,9 +18,6 @@ type SpaceSubscription struct {
 
 func (ss SpaceSubscription) Add(s *Subscriptions) error {
 	s.EnsureDefaults()
-	if s.ByChannelID == nil {
-		return errors.New("ByChannelID map is nil")
-	}
 
 	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
 	ss.OldAlias = ss.Alias
@@ -33,9 +30,7 @@ func (ss SpaceSubscription) Add(s *Subscriptions) error {
 	}
 	s.ByChannelID[ss.ChannelID][ss.Alias] = ss
 	key := store.GetURLSpaceKeyCombinationKey(ss.BaseURL, ss.SpaceKey)
-	if s.ByURLSpaceKey == nil {
-		return errors.New("ByURLSpaceKey map is nil")
-	}
+
 	if _, ok := s.ByURLSpaceKey[key]; !ok {
 		s.ByURLSpaceKey[key] = make(map[string][]string)
 	}

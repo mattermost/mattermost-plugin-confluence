@@ -22,9 +22,6 @@ func (ps PageSubscription) Add(s *Subscriptions) error {
 	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
 	ps.OldAlias = ps.Alias
 
-	if s.ByChannelID == nil {
-		return errors.New("ByChannelID map is nil")
-	}
 	if _, valid := s.ByChannelID[ps.ChannelID]; !valid {
 		s.ByChannelID[ps.ChannelID] = make(StringSubscription)
 	}
@@ -33,9 +30,7 @@ func (ps PageSubscription) Add(s *Subscriptions) error {
 	}
 	s.ByChannelID[ps.ChannelID][ps.Alias] = ps
 	key := store.GetURLPageIDCombinationKey(ps.BaseURL, ps.PageID)
-	if s.ByURLPageID == nil {
-		return errors.New("ByURLPageID map is nil")
-	}
+
 	if _, ok := s.ByURLPageID[key]; !ok {
 		s.ByURLPageID[key] = make(map[string][]string)
 	}
