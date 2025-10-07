@@ -16,29 +16,73 @@ type PageSubscription struct {
 	BaseSubscription
 }
 
-func (ps PageSubscription) Add(s *Subscriptions) {
+func (ps PageSubscription) Add(s *Subscriptions) error {
 	s.EnsureDefaults()
+
+	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
+	ps.OldAlias = ps.Alias
 
 	if _, valid := s.ByChannelID[ps.ChannelID]; !valid {
 		s.ByChannelID[ps.ChannelID] = make(StringSubscription)
 	}
+	if s.ByChannelID[ps.ChannelID] == nil {
+		return errors.New("ByChannelID entry is nil")
+	}
 	s.ByChannelID[ps.ChannelID][ps.Alias] = ps
 	key := store.GetURLPageIDCombinationKey(ps.BaseURL, ps.PageID)
+
 	if _, ok := s.ByURLPageID[key]; !ok {
 		s.ByURLPageID[key] = make(map[string][]string)
 	}
+	if s.ByURLPageID[key] == nil {
+		return errors.New("ByURLPageID entry is nil")
+	}
 	s.ByURLPageID[key][ps.ChannelID] = ps.Events
+	return nil
 }
 
-func (ps PageSubscription) Remove(s *Subscriptions) {
-	delete(s.ByChannelID[ps.ChannelID], ps.Alias)
+func (ps PageSubscription) Remove(s *Subscriptions) error {
+	if s.ByChannelID == nil {
+		return errors.New("ByChannelID map is nil")
+	}
+	if channelMap, ok := s.ByChannelID[ps.ChannelID]; ok {
+		aliasToRemove := ps.OldAlias
+		if aliasToRemove == "" {
+			aliasToRemove = ps.Alias
+		}
+
+		if _, aliasOk := channelMap[aliasToRemove]; aliasOk {
+			delete(channelMap, aliasToRemove)
+		} else {
+			return errors.New("alias not found in ByChannelID")
+		}
+	} else {
+		return errors.New("channelID not found in ByChannelID")
+	}
 	key := store.GetURLPageIDCombinationKey(ps.BaseURL, ps.PageID)
-	delete(s.ByURLPageID[key], ps.ChannelID)
+	if s.ByURLPageID == nil {
+		return errors.New("ByURLPageID map is nil")
+	}
+	if urlPageMap, ok := s.ByURLPageID[key]; ok {
+		if _, channelOk := urlPageMap[ps.ChannelID]; channelOk {
+			delete(urlPageMap, ps.ChannelID)
+		} else {
+			return errors.New("channelID not found in ByURLPageID entry")
+		}
+	} else {
+		return errors.New("key not found in ByURLPageID")
+	}
+	return nil
 }
 
-func (ps PageSubscription) Edit(s *Subscriptions) {
-	ps.Remove(s)
-	ps.Add(s)
+func (ps PageSubscription) Edit(s *Subscriptions) error {
+	if err := ps.Remove(s); err != nil {
+		return err
+	}
+	if err := ps.Add(s); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ps PageSubscription) Name() string {

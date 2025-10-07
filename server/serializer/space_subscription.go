@@ -16,27 +16,73 @@ type SpaceSubscription struct {
 	BaseSubscription
 }
 
-func (ss SpaceSubscription) Add(s *Subscriptions) {
+func (ss SpaceSubscription) Add(s *Subscriptions) error {
+	s.EnsureDefaults()
+
+	// Update OldAlias to current Alias as we don't need the old alias when creating a new subscription
+	ss.OldAlias = ss.Alias
+
 	if _, valid := s.ByChannelID[ss.ChannelID]; !valid {
 		s.ByChannelID[ss.ChannelID] = make(StringSubscription)
 	}
+	if s.ByChannelID[ss.ChannelID] == nil {
+		return errors.New("ByChannelID entry is nil")
+	}
 	s.ByChannelID[ss.ChannelID][ss.Alias] = ss
 	key := store.GetURLSpaceKeyCombinationKey(ss.BaseURL, ss.SpaceKey)
+
 	if _, ok := s.ByURLSpaceKey[key]; !ok {
 		s.ByURLSpaceKey[key] = make(map[string][]string)
 	}
+	if s.ByURLSpaceKey[key] == nil {
+		return errors.New("ByURLSpaceKey entry is nil")
+	}
 	s.ByURLSpaceKey[key][ss.ChannelID] = ss.Events
+	return nil
 }
 
-func (ss SpaceSubscription) Remove(s *Subscriptions) {
-	delete(s.ByChannelID[ss.ChannelID], ss.Alias)
+func (ss SpaceSubscription) Remove(s *Subscriptions) error {
+	if s.ByChannelID == nil {
+		return errors.New("ByChannelID map is nil")
+	}
+	if channelMap, ok := s.ByChannelID[ss.ChannelID]; ok {
+		aliasToRemove := ss.OldAlias
+		if aliasToRemove == "" {
+			aliasToRemove = ss.Alias
+		}
+
+		if _, aliasOk := channelMap[aliasToRemove]; aliasOk {
+			delete(channelMap, aliasToRemove)
+		} else {
+			return errors.New("alias not found in ByChannelID")
+		}
+	} else {
+		return errors.New("channelID not found in ByChannelID")
+	}
 	key := store.GetURLSpaceKeyCombinationKey(ss.BaseURL, ss.SpaceKey)
-	delete(s.ByURLSpaceKey[key], ss.ChannelID)
+	if s.ByURLSpaceKey == nil {
+		return errors.New("ByURLSpaceKey map is nil")
+	}
+	if urlSpaceMap, ok := s.ByURLSpaceKey[key]; ok {
+		if _, channelOk := urlSpaceMap[ss.ChannelID]; channelOk {
+			delete(urlSpaceMap, ss.ChannelID)
+		} else {
+			return errors.New("channelID not found in ByURLSpaceKey entry")
+		}
+	} else {
+		return errors.New("key not found in ByURLSpaceKey")
+	}
+	return nil
 }
 
-func (ss SpaceSubscription) Edit(s *Subscriptions) {
-	ss.Remove(s)
-	ss.Add(s)
+func (ss SpaceSubscription) Edit(s *Subscriptions) error {
+	if err := ss.Remove(s); err != nil {
+		return err
+	}
+	if err := ss.Add(s); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ss SpaceSubscription) Name() string {

@@ -31,7 +31,11 @@ func SaveSubscription(subscription serializer.Subscription) (int, error) {
 		if err != nil {
 			return nil, err
 		}
-		subscription.Add(subscriptions)
+
+		if err := subscription.Add(subscriptions); err != nil {
+			return nil, err
+		}
+
 		modifiedBytes, marshalErr := json.Marshal(subscriptions)
 		if marshalErr != nil {
 			return nil, marshalErr

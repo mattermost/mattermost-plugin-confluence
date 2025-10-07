@@ -9,14 +9,13 @@ import (
 )
 
 const (
-	generalDeleteError   = "error occurred while deleting subscription with name **%s**"
 	subscriptionNotFound = "subscription with name **%s** not found"
 )
 
 func DeleteSubscription(channelID, alias string) error {
 	subs, gErr := GetSubscriptions()
 	if gErr != nil {
-		return fmt.Errorf(generalDeleteError, alias)
+		return gErr
 	}
 
 	if channelSubscriptions, valid := subs.ByChannelID[channelID]; valid {
@@ -27,7 +26,10 @@ func DeleteSubscription(channelID, alias string) error {
 					return nil, err
 				}
 
-				subscription.Remove(subscriptions)
+				if err := subscription.Remove(subscriptions); err != nil {
+					return nil, err
+				}
+
 				modifiedBytes, marshalErr := json.Marshal(subscriptions)
 				if marshalErr != nil {
 					return nil, marshalErr

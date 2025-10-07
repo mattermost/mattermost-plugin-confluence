@@ -80,7 +80,8 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: 'test',
             events: Constants.CONFLUENCE_EVENTS,
@@ -92,7 +93,8 @@ describe('components/ChannelSettingsModal', () => {
         wrapper.instance().handleSubmit({preventDefault: jest.fn()});
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: 'test',
             events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),
@@ -138,6 +140,7 @@ describe('components/ChannelSettingsModal', () => {
 
     test('edit page subscription', async () => {
         const subscription = {
+            oldAlias: 'Abc',
             alias: 'Abc',
             baseURL: 'https://test.com',
             spaceKey: 'test',
@@ -153,7 +156,8 @@ describe('components/ChannelSettingsModal', () => {
             <SubscriptionModal {...props}/>,
         );
         wrapper.setState({
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: '',
             events: Constants.CONFLUENCE_EVENTS,
@@ -165,7 +169,8 @@ describe('components/ChannelSettingsModal', () => {
         wrapper.instance().handleSubmit({preventDefault: jest.fn()});
         expect(wrapper.state().error).toBe('');
         expect(props.editChannelSubscription).toHaveBeenCalledWith({
-            alias: 'Abc',
+            oldAlias: 'Abc',
+            alias: 'Xyz',
             baseURL: 'https://test.com',
             spaceKey: '',
             events: Constants.CONFLUENCE_EVENTS.map((event) => event.value),

@@ -51,6 +51,8 @@ const (
 	disconnectedUser            = "User not connected. Please use `/confluence connect`."
 	errorExecutingCommand       = "Error executing the command, please retry."
 	oauth2ConnectPath           = "%s/oauth2/connect"
+
+	generalDeleteError = "error occurred while deleting subscription with name **%s**"
 )
 
 const (
@@ -287,7 +289,7 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	alias := strings.Join(args, " ")
 	if err := service.DeleteSubscription(channelID, alias); err != nil {
 		p.client.Log.Error("Error deleting the subscription", "subscription alias", alias, "error", err.Error())
-		postCommandResponse(context, err.Error())
+		postCommandResponse(context, fmt.Sprintf(generalDeleteError, alias))
 		return &model.CommandResponse{}
 	}
 
