@@ -64,6 +64,14 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 		notification := p.getNotification()
 
 		client, _, err := p.GetClientFromUserKey(instanceID, event.UserKey)
+
+		eventTriggerer, err := client.(*confluenceServerClient).GetUserFromUserkey(event.UserKey)
+		if err != nil {
+			p.client.Log.Error("Error getting details of the event triggerer user", "error", err.Error())
+			http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
+			return
+		}
+
 		// If there is an error while retrieving the client from the event user key, it could be due to one of the following reasons:
 		// - An expected error occurred.
 		// - The user who triggered the event in Confluence is not connected to Mattermost.
@@ -92,7 +100,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 				}
 
 				eventData.BaseURL = pluginConfig.ConfluenceURL
-				notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID)
+				notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
 			} else {
 				p.client.Log.Info("Error getting client for the user who triggered webhook event. Sending generic notification")
 				notification.SendGenericWHNotification(event, p.BotUserID, pluginConfig.ConfluenceURL)
@@ -123,7 +131,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData.BaseURL = pluginConfig.ConfluenceURL
 
-		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID)
+		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
 	} else {
 		event, err := serializer.ConfluenceServerEventFromJSON(r.Body)
 		if err != nil {

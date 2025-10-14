@@ -18,6 +18,7 @@ const (
 	PathCurrentUser = "/rest/api/user/current"
 	PathContentData = "/rest/api/content/"
 	PathSpaceData   = "/rest/api/space/"
+	PathUserData    = "/rest/api/user/"
 	PathAdminData   = "/rest/api/audit"
 )
 
@@ -222,4 +223,33 @@ func (csc *confluenceServerClient) GetSpaceKeyFromSpaceID(spaceID int64) (string
 	}
 
 	return "", fmt.Errorf("confluence GetSpaceKeyFromSpaceID: no space key found for the space ID")
+}
+
+type ConfluenceUser struct {
+	DisplayName    string `json:"displayName"`
+	Type           string `json:"type"`
+	UserKey        string `json:"userKey"`
+	Username       string `json:"username"`
+	ProfilePicture struct {
+		Path      string `json:"path"`
+		Width     int    `json:"width"`
+		Height    int    `json:"height"`
+		IsDefault bool   `json:"isDefault"`
+	} `json:"profilePicture"`
+	Expandable map[string]string `json:"_expandable"`
+	Links      struct {
+		Base    string `json:"base"`
+		Context string `json:"context"`
+		Self    string `json:"self"`
+	} `json:"_links"`
+}
+
+func (csc *confluenceServerClient) GetUserFromUserkey(userKey string) (*ConfluenceUser, error) {
+	var user ConfluenceUser
+
+	if _, _, err := service.CallJSONWithURL(csc.URL, fmt.Sprintf("%s?key=%s", PathUserData, userKey), http.MethodGet, nil, &user, csc.HTTPClient); err != nil {
+		return nil, fmt.Errorf("error fetching user data: %w", err)
+	}
+
+	return &user, nil
 }
