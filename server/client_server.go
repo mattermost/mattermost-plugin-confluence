@@ -244,7 +244,7 @@ type ConfluenceUser struct {
 	} `json:"_links"`
 }
 
-func (csc *confluenceServerClient) GetUserFromUserkey(userKey string) (*ConfluenceUser, error) {
+func (csc *confluenceServerClient) GetUserFromUserKey(userKey string) (*ConfluenceUser, error) {
 	var user ConfluenceUser
 
 	if _, _, err := service.CallJSONWithURL(csc.URL, fmt.Sprintf("%s?key=%s", PathUserData, userKey), http.MethodGet, nil, &user, csc.HTTPClient); err != nil {

@@ -130,7 +130,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData.BaseURL = pluginConfig.ConfluenceURL
 
-		eventTriggerer, cErr := client.(*confluenceServerClient).GetUserFromUserkey(event.UserKey)
+		eventTriggerer, cErr := client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
 		if cErr != nil {
 			p.client.Log.Error("Error getting details of the event triggerer user", "error", cErr.Error())
 			http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
