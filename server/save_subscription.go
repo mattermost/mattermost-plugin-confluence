@@ -68,6 +68,12 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		}
 	}
 
+	if err := serializer.ValidateEventsForServerVersion(subscription, pluginConfig.ServerVersionGreaterthan9); err != nil {
+		p.client.Log.Error("Invalid events for Confluence Server version", "error", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if statusCode, sErr := service.SaveSubscription(subscription); sErr != nil {
 		config.Mattermost.LogError("Error occurred while saving subscription", "Subscription Name", subscription.Name(), "error", sErr.Error())
 		http.Error(w, sErr.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly

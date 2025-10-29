@@ -2,23 +2,28 @@ package serializer
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 )
 
 const (
-	CommentCreatedEvent   = "comment_created"
-	CommentUpdatedEvent   = "comment_updated"
-	CommentRemovedEvent   = "comment_removed"
-	PageCreatedEvent      = "page_created"
-	PageUpdatedEvent      = "page_updated"
-	PageTrashedEvent      = "page_trashed"
-	PageRestoredEvent     = "page_restored"
-	PageRemovedEvent      = "page_removed"
+	// Webhook Events
+	CommentCreatedEvent = "comment_created"
+	CommentUpdatedEvent = "comment_updated"
+	CommentRemovedEvent = "comment_removed"
+	PageCreatedEvent    = "page_created"
+	PageUpdatedEvent    = "page_updated"
+	PageTrashedEvent    = "page_trashed"
+	PageRestoredEvent   = "page_restored"
+	PageRemovedEvent    = "page_removed"
+	SpaceUpdatedEvent   = "space_updated"
+
+	// Subscription Types
 	SubscriptionTypeSpace = "space_subscription"
-	SpaceUpdatedEvent     = "space_updated"
 	SubscriptionTypePage  = "page_subscription"
 
+	// Error messages
 	aliasAlreadyExist       = "a subscription with the same name already exists in this channel"
 	urlSpaceKeyAlreadyExist = "a subscription with the same url and space key already exists in this channel"
 	urlPageIDAlreadyExist   = "a subscription with the same url and page id already exists in this channel"
@@ -33,6 +38,32 @@ var eventDisplayName = map[string]string{
 	PageTrashedEvent:    "Page Trash",
 	PageRestoredEvent:   "Page Restore",
 	PageRemovedEvent:    "Page Remove",
+}
+
+// SupportedEventsV8AndBelow contains all events supported by Confluence Server v8 and below
+var SupportedEventsV8AndBelow = []string{
+	CommentCreatedEvent,
+	CommentUpdatedEvent,
+	CommentRemovedEvent,
+	PageCreatedEvent,
+	PageUpdatedEvent,
+	PageTrashedEvent,
+	PageRestoredEvent,
+	PageRemovedEvent,
+	SpaceUpdatedEvent,
+}
+
+// SupportedEventsV9AndAbove contains events supported by Confluence Server v9+
+var SupportedEventsV9AndAbove = []string{
+	CommentCreatedEvent,
+	CommentUpdatedEvent,
+	// CommentRemovedEvent -- Removed as it's NOT supported in v9+
+	PageCreatedEvent,
+	PageUpdatedEvent,
+	PageTrashedEvent,
+	PageRestoredEvent,
+	PageRemovedEvent,
+	SpaceUpdatedEvent,
 }
 
 type Subscription interface {
@@ -181,4 +212,47 @@ func (s StringSubscription) GetInsensitiveCase(key string) (Subscription, bool) 
 		}
 	}
 	return nil, false
+}
+
+// GetSupportedEvents returns the list of supported events based on server version
+func GetSupportedEvents(isV9OrAbove bool) []string {
+	if isV9OrAbove {
+		return SupportedEventsV9AndAbove
+	}
+	return SupportedEventsV8AndBelow
+}
+
+// EventDisplayName returns the display name for an event
+func EventDisplayName(event string) string {
+	if name, ok := eventDisplayName[event]; ok {
+		return name
+	}
+	return event
+}
+
+// ValidateEventsForServerVersion validates that subscription events are supported by the server version
+func ValidateEventsForServerVersion(subscription Subscription, isV9OrAbove bool) error {
+	supportedEvents := GetSupportedEvents(isV9OrAbove)
+	supportedEventsMap := make(map[string]bool)
+	for _, event := range supportedEvents {
+		supportedEventsMap[event] = true
+	}
+
+	var events []string
+	switch sub := subscription.(type) {
+	case SpaceSubscription:
+		events = sub.Events
+	case PageSubscription:
+		events = sub.Events
+	default:
+		events = []string{}
+	}
+
+	for _, event := range events {
+		if !supportedEventsMap[event] {
+			return errors.New("event '" + event + "' is not supported by the current Confluence Server version")
+		}
+	}
+
+	return nil
 }
