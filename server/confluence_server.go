@@ -91,8 +91,15 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 					return
 				}
 
+				eventTriggerer, cErr := p.GetUserFromUserKeyWithAPIToken(event.UserKey, pluginConfig)
+				if cErr != nil {
+					p.client.Log.Error("Error getting details of the event triggerer user using API token", "error", cErr.Error())
+					http.Error(w, "Failed to get details of the event triggerer user using API token", http.StatusInternalServerError)
+					return
+				}
+
 				eventData.BaseURL = pluginConfig.ConfluenceURL
-				notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID)
+				notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
 			} else {
 				p.client.Log.Info("Error getting client for the user who triggered webhook event. Sending generic notification")
 				notification.SendGenericWHNotification(event, p.BotUserID, pluginConfig.ConfluenceURL)
@@ -123,7 +130,14 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData.BaseURL = pluginConfig.ConfluenceURL
 
-		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID)
+		eventTriggerer, cErr := client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
+		if cErr != nil {
+			p.client.Log.Error("Error getting details of the event triggerer user", "error", cErr.Error())
+			http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
+			return
+		}
+
+		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
 	} else {
 		event, err := serializer.ConfluenceServerEventFromJSON(r.Body)
 		if err != nil {
@@ -171,6 +185,22 @@ func (p *Plugin) GetClientFromUserKey(instanceID, eventUserKey string) (Client, 
 	return client, mmUserID, nil
 }
 
+func (p *Plugin) GetUserFromUserKeyWithAPIToken(eventUserKey string, pluginConfig *config.Configuration) (*ConfluenceUser, error) {
+	var user ConfluenceUser
+
+	path := fmt.Sprintf("%s%s?key=%s", pluginConfig.ConfluenceURL, PathUserData, eventUserKey)
+
+	body, statusCode, err := p.MakeHTTPCallWithAPIToken(path)
+	if err != nil || statusCode != http.StatusOK {
+		return nil, fmt.Errorf("error fetching user data with API token: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &user); err != nil {
+		return nil, fmt.Errorf("error unmarshaling user data with API token: %w", err)
+	}
+
+	return &user, nil
+}
 func (p *Plugin) GetSpaceKeyFromSpaceIDWithAPIToken(spaceID int64, pluginConfig *config.Configuration) (string, error) {
 	start := 0
 

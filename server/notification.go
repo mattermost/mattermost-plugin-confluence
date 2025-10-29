@@ -32,7 +32,7 @@ func (p *Plugin) getNotification() *notification {
 	}
 }
 
-func (n *notification) SendConfluenceNotifications(event serializer.ConfluenceEventV2, eventType, botUserID string) {
+func (n *notification) SendConfluenceNotifications(event serializer.ConfluenceEventV2, eventType, botUserID string, eventTriggerer string) {
 	url := event.GetURL()
 	if url == "" {
 		return
@@ -43,7 +43,7 @@ func (n *notification) SendConfluenceNotifications(event serializer.ConfluenceEv
 		return
 	}
 
-	post := event.GetNotificationPost(eventType, url, botUserID)
+	post := event.GetNotificationPost(eventType, url, botUserID, eventTriggerer)
 	if post == nil {
 		return
 	}

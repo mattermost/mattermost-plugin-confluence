@@ -13,7 +13,7 @@ type ConfluenceEvent interface {
 
 // for handling of Confluence server version greater than 9 notifications
 type ConfluenceEventV2 interface {
-	GetNotificationPost(string, string, string) *model.Post
+	GetNotificationPost(string, string, string, string) *model.Post
 	GetURL() string
 	GetSpaceKey() string
 	GetPageID() string
