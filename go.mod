@@ -3,7 +3,7 @@ module github.com/mattermost/mattermost-plugin-confluence
 go 1.24.6
 
 require (
-	bou.ke/monkey v1.0.2
+	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/mattermost/mattermost/server/public v0.1.19
 	github.com/pkg/errors v0.9.1

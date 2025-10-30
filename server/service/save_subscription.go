@@ -17,8 +17,9 @@ const (
 	urlPageIDAlreadyExist   = "a subscription with the same url and page id already exists in this channel"
 )
 
-func SaveSubscription(subscription serializer.Subscription) (int, error) {
-	subs, gErr := GetSubscriptions()
+// SaveSubscriptionWithDeps saves a subscription using injected dependencies
+func SaveSubscriptionWithDeps(subscription serializer.Subscription, repo SubscriptionRepository, storeService Store) (int, error) {
+	subs, gErr := repo.GetSubscriptions()
 	if gErr != nil {
 		return http.StatusInternalServerError, errors.New(generalSaveError)
 	}
@@ -26,7 +27,7 @@ func SaveSubscription(subscription serializer.Subscription) (int, error) {
 		return http.StatusBadRequest, vErr
 	}
 	key := store.GetSubscriptionKey()
-	if err := store.AtomicModify(key, func(initialBytes []byte) ([]byte, error) {
+	if err := storeService.AtomicModify(key, func(initialBytes []byte) ([]byte, error) {
 		subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
 		if err != nil {
 			return nil, err
@@ -46,4 +47,9 @@ func SaveSubscription(subscription serializer.Subscription) (int, error) {
 		return http.StatusInternalServerError, errors.New(generalSaveError)
 	}
 	return http.StatusOK, nil
+}
+
+// SaveSubscription saves a subscription using default dependencies
+func SaveSubscription(subscription serializer.Subscription) (int, error) {
+	return SaveSubscriptionWithDeps(subscription, NewDefaultSubscriptionRepository(), NewDefaultStore())
 }
