@@ -50,7 +50,6 @@ var SupportedEventsV8AndBelow = []string{
 	PageTrashedEvent,
 	PageRestoredEvent,
 	PageRemovedEvent,
-	SpaceUpdatedEvent,
 }
 
 // SupportedEventsV9AndAbove contains events supported by Confluence Server v9+
@@ -63,7 +62,6 @@ var SupportedEventsV9AndAbove = []string{
 	PageTrashedEvent,
 	PageRestoredEvent,
 	PageRemovedEvent,
-	SpaceUpdatedEvent,
 }
 
 type Subscription interface {
