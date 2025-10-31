@@ -52,7 +52,7 @@ With the Confluence plugin, you can subscribe to a variety of events in Confluen
     
 - `Events` are the internal confluence events that will trigger a notification from Confluence. The following events are currently included:
     - Confluence spaces, including those created, updated, deleted, and restored, and those with added comments.
-    - Confluence pages, inlcuidng those created, updated, deleted, restored, and those with added, deleted, or updated comments.
+    - Confluence pages, including those created, updated, deleted, restored, and those with added, deleted, or updated comments.
 
 Example of a configured notification:
 
