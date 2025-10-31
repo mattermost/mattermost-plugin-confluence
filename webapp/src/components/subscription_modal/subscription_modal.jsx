@@ -59,6 +59,7 @@ export default class SubscriptionModal extends React.PureComponent {
         const result = await this.props.getPluginConfig();
         this.setState({
             supportedEvents: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
+            events: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
         });
     }
 
@@ -172,7 +173,7 @@ export default class SubscriptionModal extends React.PureComponent {
         const {visibility, subscription} = this.props;
         const editSubscription = Boolean(subscription && subscription.alias);
         const isModalVisible = Boolean(visibility || editSubscription);
-        const {error, saving, subscriptionType} = this.state;
+        const {error, saving, subscriptionType, supportedEvents, events} = this.state;
         let typeField = (
             <ConfluenceField
                 formGroupStyle={getStyle.typeValue}
@@ -281,8 +282,8 @@ export default class SubscriptionModal extends React.PureComponent {
                             fieldType={'dropDown'}
                             required={true}
                             theme={this.props.theme}
-                            options={this.state.supportedEvents}
-                            value={this.state.events}
+                            options={supportedEvents}
+                            value={events}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
                             onChange={this.handleEvents}
