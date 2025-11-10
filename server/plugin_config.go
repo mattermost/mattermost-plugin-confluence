@@ -12,7 +12,7 @@ var getPluginConfig = &Endpoint{
 	Path:            "/config",
 	Method:          http.MethodGet,
 	Execute:         handleGetPluginConfig,
-	IsAuthenticated: false,
+	IsAuthenticated: true,
 }
 
 type PluginConfigResponse struct {

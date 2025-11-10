@@ -2,7 +2,7 @@ package serializer
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -248,7 +248,7 @@ func ValidateEventsForServerVersion(subscription Subscription, isV9OrAbove bool)
 
 	for _, event := range events {
 		if !supportedEventsMap[event] {
-			return errors.New("event '" + event + "' is not supported by the current Confluence Server version")
+			return fmt.Errorf("event '%s' is not supported by the current Confluence Server version", event)
 		}
 	}
 
