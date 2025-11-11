@@ -13,3 +13,10 @@ jobs:
     with:
       golang-version: 1.24.6
       golangci-lint-version: v2.1.6
+
+  dist:
+      uses: mattermost/actions-workflows/.github/workflows/plugin-dist-pr.yml@main
+      secrets: inherit
+      with:
+        dist-target: "dist"
+        s3-prefix: "mattermost-plugin-confluence"
