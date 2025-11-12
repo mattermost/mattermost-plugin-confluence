@@ -20,3 +20,4 @@ jobs:
       with:
         dist-target: "dist"
         s3-prefix: "mattermost-plugin-confluence"
+        
