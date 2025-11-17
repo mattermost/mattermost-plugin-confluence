@@ -1,6 +1,4 @@
-# Disclaimer
-
-## Contents
+# Contents
 
 - [Overview](#overview)
 - [Features](#features)
