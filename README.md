@@ -1,8 +1,4 @@
-# Disclaimer
-
-**This repository is community supported and not maintained by Mattermost. Mattermost disclaims liability for integrations, including Third Party Integrations and Mattermost Integrations. Integrations may be modified or discontinued at any time.**
-
-## Contents
+# Contents
 
 - [Overview](#overview)
 - [Features](#features)
