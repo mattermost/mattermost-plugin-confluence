@@ -17,6 +17,11 @@ describe('components/ChannelSettingsModal', () => {
         saveChannelSubscription: jest.fn().mockResolvedValue({}),
         currentChannelID: 'abcabcabcabcabc',
         editChannelSubscription: jest.fn().mockResolvedValue({}),
+        getPluginConfig: jest.fn().mockResolvedValue({
+            data: {
+                supportedEvents: Constants.CONFLUENCE_EVENTS,
+            },
+        }),
     };
 
     test('subscription modal snapshot test', async () => {
@@ -212,5 +217,13 @@ describe('components/ChannelSettingsModal', () => {
         });
 
         expect(props.editChannelSubscription).not.toHaveBeenCalled();
+    });
+
+    test('loads plugin config on mount', async () => {
+        const wrapper = shallow(
+            <SubscriptionModal {...baseProps}/>,
+        );
+        wrapper.instance().componentDidMount();
+        expect(wrapper.state().supportedEvents).toEqual(Constants.CONFLUENCE_EVENTS);
     });
 });

@@ -70,6 +70,12 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		}
 	}
 
+	if err := serializer.ValidateEventsForServerVersion(subscription, pluginConfig.ServerVersionGreaterthan9); err != nil {
+		p.client.Log.Error("Invalid events for Confluence Server version", "error", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if nErr := service.EditSubscription(subscription); nErr != nil {
 		config.Mattermost.LogError("Error occurred while editing subscription", "Subscription Name", subscription.Name(), "error", nErr.Error())
 		http.Error(w, "An error occurred attempting to edit a subscription", http.StatusInternalServerError)
