@@ -5,13 +5,16 @@ import (
 	"net/http"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
+	"github.com/mattermost/mattermost-plugin-confluence/server/service/mocks"
 )
 
 func TestGetChannelSubscription(t *testing.T) {
+	subscriptions := getBaseTestSubscriptions()
+
 	for name, val := range map[string]struct {
 		channelID    string
 		alias        string
@@ -19,60 +22,26 @@ func TestGetChannelSubscription(t *testing.T) {
 		errorMessage string
 	}{
 		"get subscription success": {
-			channelID:    "testtesttesttest",
-			alias:        "test",
+			channelID:    testChannelID1,
+			alias:        testAliasSpace1,
 			statusCode:   http.StatusOK,
 			errorMessage: "",
 		},
 		"subscription not found for alias": {
-			channelID:    "testtesttesttest",
-			alias:        "test4",
+			channelID:    testChannelID1,
+			alias:        testAliasNotFound,
 			statusCode:   http.StatusBadRequest,
-			errorMessage: fmt.Sprintf(subscriptionNotFound, "test4"),
+			errorMessage: fmt.Sprintf(subscriptionNotFound, testAliasNotFound),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			defer monkey.UnpatchAll()
-			subscriptions := serializer.Subscriptions{
-				ByChannelID: map[string]serializer.StringSubscription{
-					"testtesttesttest": {
-						"test": serializer.SpaceSubscription{
-							SpaceKey: "TS",
-							BaseSubscription: serializer.BaseSubscription{
-								Alias:     "test",
-								BaseURL:   "https://test.com",
-								ChannelID: "testtesttesttest",
-								Events:    []string{serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
-							},
-						},
-					},
-					"testtesttesttes1": {
-						"test": serializer.PageSubscription{
-							PageID: "1234",
-							BaseSubscription: serializer.BaseSubscription{
-								Alias:     "test",
-								BaseURL:   "https://test.com",
-								ChannelID: "testtesttesttest",
-								Events:    []string{serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-							},
-						},
-					},
-				},
-				ByURLSpaceKey: map[string]serializer.StringArrayMap{
-					"confluence_subs/test.com/TS": {
-						"testtesttesttest": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
-					},
-				},
-				ByURLPageID: map[string]serializer.StringArrayMap{
-					"confluence_subs/test.com/1234": {
-						"testtesttesttes1": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-					},
-				},
-			}
-			monkey.Patch(GetSubscriptions, func() (serializer.Subscriptions, error) {
-				return subscriptions, nil
-			})
-			subscription, errCode, err := GetChannelSubscription(val.channelID, val.alias)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mocks.NewMockSubscriptionRepository(ctrl)
+			mockRepo.EXPECT().GetSubscriptions().Return(subscriptions, nil).AnyTimes()
+
+			subscription, errCode, err := GetChannelSubscriptionWithDeps(val.channelID, val.alias, mockRepo)
 			assert.Equal(t, val.statusCode, errCode)
 			if err != nil {
 				assert.Equal(t, val.errorMessage, err.Error())

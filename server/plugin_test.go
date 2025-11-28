@@ -3,7 +3,6 @@ package main
 import (
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
@@ -37,7 +36,6 @@ func TestExecuteCommand(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			defer monkey.UnpatchAll()
 			mockAPI := baseMock()
 
 			mockAPI.On("SendEphemeralPost", mock.AnythingOfType("string"), mock.AnythingOfType("*model.Post")).Run(func(args mock.Arguments) {
