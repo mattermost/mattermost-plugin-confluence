@@ -1,11 +1,11 @@
 package main
 
 import (
+	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
 )

@@ -137,7 +137,7 @@ func (e *ConfluenceServerEvent) GetPageDisplayNameForCommentEvents(baseURL strin
 	return name
 }
 
-func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID string) *model.Post {
+func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID, eventTriggerer string) *model.Post {
 	var attachment *model.SlackAttachment
 	post := &model.Post{
 		UserId: botUserID,
@@ -176,7 +176,7 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 		}
 
 	case serializer.PageUpdatedEvent:
-		message := fmt.Sprintf(ConfluencePageUpdatedMessage, e.GetUserDisplayNameForPageEvents(), e.GetPageDisplayNameForPageEvents(baseURL), e.GetSpaceDisplayNameForPageEvents(baseURL))
+		message := fmt.Sprintf(ConfluencePageUpdatedMessage, eventTriggerer, e.GetPageDisplayNameForPageEvents(baseURL), e.GetSpaceDisplayNameForPageEvents(baseURL))
 		if strings.TrimSpace(e.Page.Body.View.Value) != "" {
 			attachment = &model.SlackAttachment{
 				Fallback: message,
