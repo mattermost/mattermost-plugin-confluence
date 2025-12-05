@@ -12,15 +12,16 @@ const (
 	subscriptionNotFound = "subscription with name **%s** not found"
 )
 
-func DeleteSubscription(channelID, alias string) error {
-	subs, gErr := GetSubscriptions()
+// DeleteSubscriptionWithDeps deletes a subscription using injected dependencies
+func DeleteSubscriptionWithDeps(channelID, alias string, repo SubscriptionRepository, storeService Store) error {
+	subs, gErr := repo.GetSubscriptions()
 	if gErr != nil {
 		return gErr
 	}
 
 	if channelSubscriptions, valid := subs.ByChannelID[channelID]; valid {
 		if subscription, ok := channelSubscriptions.GetInsensitiveCase(alias); ok {
-			aErr := store.AtomicModify(store.GetSubscriptionKey(), func(initialBytes []byte) ([]byte, error) {
+			aErr := storeService.AtomicModify(store.GetSubscriptionKey(), func(initialBytes []byte) ([]byte, error) {
 				subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
 				if err != nil {
 					return nil, err
@@ -41,4 +42,9 @@ func DeleteSubscription(channelID, alias string) error {
 		}
 	}
 	return fmt.Errorf(subscriptionNotFound, alias)
+}
+
+// DeleteSubscription deletes a subscription using default dependencies
+func DeleteSubscription(channelID, alias string) error {
+	return DeleteSubscriptionWithDeps(channelID, alias, NewDefaultSubscriptionRepository(), NewDefaultStore())
 }
