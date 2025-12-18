@@ -10,6 +10,10 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 )
 
+func joinURL(baseURL, path string) string {
+	return strings.TrimSuffix(baseURL, "/") + "/" + strings.TrimPrefix(path, "/")
+}
+
 const (
 	ConfluencePageCreatedMessage            = "%s published a new page in %s."
 	ConfluencePageCreatedWithoutBodyMessage = "%s published a new page %s in %s."
@@ -93,7 +97,7 @@ func (e *ConfluenceServerEvent) GetSpaceDisplayNameForCommentEvents(baseURL stri
 		name = strings.TrimSpace(e.Comment.Space.Name)
 	}
 	if e.Comment.Space.Links.Self != "" {
-		name = fmt.Sprintf("[%s](%s/%s)", name, baseURL, e.Comment.Space.Links.Self)
+		name = fmt.Sprintf("[%s](%s)", name, joinURL(baseURL, e.Comment.Space.Links.Self))
 	}
 	return name
 }
@@ -108,7 +112,7 @@ func (e *ConfluenceServerEvent) GetSpaceDisplayNameForPageEvents(baseURL string)
 		name = strings.TrimSpace(e.Page.Space.Name)
 	}
 	if e.Page.Space.Links.Self != "" {
-		name = fmt.Sprintf("[%s](%s/%s)", name, baseURL, e.Page.Space.Links.Self)
+		name = fmt.Sprintf("[%s](%s)", name, joinURL(baseURL, e.Page.Space.Links.Self))
 	}
 	return name
 }
@@ -120,7 +124,7 @@ func (e *ConfluenceServerEvent) GetPageDisplayNameForPageEvents(baseURL string) 
 
 	name := e.Page.Title
 	if e.Page.Links.Self != "" {
-		name = fmt.Sprintf("[%s](%s/%s)", name, baseURL, e.Page.Links.Self)
+		name = fmt.Sprintf("[%s](%s)", name, joinURL(baseURL, e.Page.Links.Self))
 	}
 	return name
 }
@@ -132,7 +136,7 @@ func (e *ConfluenceServerEvent) GetPageDisplayNameForCommentEvents(baseURL strin
 
 	name := e.Comment.Container.Title
 	if e.Comment.Container.Links.Self != "" {
-		name = fmt.Sprintf("[%s](%s/%s)", name, baseURL, e.Comment.Container.Links.Self)
+		name = fmt.Sprintf("[%s](%s)", name, joinURL(baseURL, e.Comment.Container.Links.Self))
 	}
 	return name
 }
@@ -168,8 +172,8 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 				Fallback:  message,
 				Pretext:   message,
 				Title:     e.Page.Title,
-				TitleLink: fmt.Sprintf("%s/%s", baseURL, e.Page.Links.Self),
-				Text:      fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), fmt.Sprintf("%s/%s", baseURL, e.Page.Links.Self)),
+				TitleLink: joinURL(baseURL, e.Page.Links.Self),
+				Text:      fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), joinURL(baseURL, e.Page.Links.Self)),
 			}
 		} else {
 			post.Message = fmt.Sprintf(ConfluencePageCreatedWithoutBodyMessage, e.GetUserDisplayNameForPageEvents(), e.GetPageDisplayNameForPageEvents(baseURL), e.GetSpaceDisplayNameForPageEvents(baseURL))
@@ -181,7 +185,7 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 			attachment = &model.SlackAttachment{
 				Fallback: message,
 				Pretext:  message,
-				Text:     fmt.Sprintf("**What's Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), fmt.Sprintf("%s/%s", baseURL, e.Page.Links.Self)),
+				Text:     fmt.Sprintf("**What's Changed?**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Page.Body.View.Value), joinURL(baseURL, e.Page.Links.Self)),
 			}
 		} else {
 			post.Message = message
@@ -201,10 +205,10 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 			attachment = &model.SlackAttachment{
 				Fallback: message,
 				Pretext:  message,
-				Text:     fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", text, fmt.Sprintf("%s/%s", baseURL, e.Comment.Links.Self)),
+				Text:     fmt.Sprintf("%s\n\n[**View in Confluence**](%s)", text, joinURL(baseURL, e.Comment.Links.Self)),
 			}
 		} else {
-			post.Message = fmt.Sprintf(ConfluenceEmptyCommentCreatedMessage, e.GetUserDisplayNameForCommentEvents(), fmt.Sprintf("%s/%s", baseURL, e.Comment.Links.Self), e.GetPageDisplayNameForCommentEvents(baseURL), e.GetSpaceDisplayNameForCommentEvents(baseURL))
+			post.Message = fmt.Sprintf(ConfluenceEmptyCommentCreatedMessage, e.GetUserDisplayNameForCommentEvents(), joinURL(baseURL, e.Comment.Links.Self), e.GetPageDisplayNameForCommentEvents(baseURL), e.GetSpaceDisplayNameForCommentEvents(baseURL))
 		}
 
 	case serializer.CommentUpdatedEvent:
@@ -213,14 +217,14 @@ func (e ConfluenceServerEvent) GetNotificationPost(eventType, baseURL, botUserID
 			attachment = &model.SlackAttachment{
 				Fallback: message,
 				Pretext:  message,
-				Text:     fmt.Sprintf("**Updated Comment:**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Comment.Body.View.Value), fmt.Sprintf("%s/%s", baseURL, e.Comment.Links.Self)),
+				Text:     fmt.Sprintf("**Updated Comment:**\n> %s\n\n[**View in Confluence**](%s)", strings.TrimSpace(e.Comment.Body.View.Value), joinURL(baseURL, e.Comment.Links.Self)),
 			}
 		} else {
-			post.Message = fmt.Sprintf(ConfluenceEmptyCommentUpdatedMessage, e.GetUserDisplayNameForCommentEvents(), fmt.Sprintf("%s/%s", baseURL, e.Comment.Links.Self), e.GetPageDisplayNameForCommentEvents(baseURL), e.GetSpaceDisplayNameForCommentEvents(baseURL))
+			post.Message = fmt.Sprintf(ConfluenceEmptyCommentUpdatedMessage, e.GetUserDisplayNameForCommentEvents(), joinURL(baseURL, e.Comment.Links.Self), e.GetPageDisplayNameForCommentEvents(baseURL), e.GetSpaceDisplayNameForCommentEvents(baseURL))
 		}
 
 	case serializer.SpaceUpdatedEvent:
-		post.Message = fmt.Sprintf(ConfluenceSpaceUpdatedMessage, e.Space.Key, fmt.Sprintf("%s/%s", baseURL, e.Space.Links.Self))
+		post.Message = fmt.Sprintf(ConfluenceSpaceUpdatedMessage, e.Space.Key, joinURL(baseURL, e.Space.Links.Self))
 	default:
 		return nil
 	}
