@@ -64,4 +64,3 @@ func TestJoinURL(t *testing.T) {
 		})
 	}
 }
-
