@@ -130,19 +130,21 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData.BaseURL = pluginConfig.ConfluenceURL
 
-		eventTriggerer, cErr := client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
-		if cErr != nil {
-			// it requires ADMIN scope in Confluence Data Center so fall back to Admin API Token if available.
-			p.client.Log.Warn("Error getting user with user's OAuth token, trying Admin API Token", "error", cErr.Error())
-			if pluginConfig.AdminAPIToken != "" {
-				eventTriggerer, cErr = p.GetUserFromUserKeyWithAPIToken(event.UserKey, pluginConfig)
-				if cErr != nil {
-					p.client.Log.Error("Error getting details of the event triggerer user using API token", "error", cErr.Error())
-					http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
-					return
-				}
-			} else {
-				p.client.Log.Error("Error getting details of the event triggerer user and no Admin API Token configured", "error", cErr.Error())
+		// Prefer Admin API Token if available since regular user tokens lack this permission.
+		var eventTriggerer *ConfluenceUser
+		var cErr error
+		if pluginConfig.AdminAPIToken != "" {
+			eventTriggerer, cErr = p.GetUserFromUserKeyWithAPIToken(event.UserKey, pluginConfig)
+			if cErr != nil {
+				p.client.Log.Error("Error getting details of the event triggerer user using API token", "error", cErr.Error())
+				http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			// Fallback to user's OAuth token if Admin API Token is not configured
+			eventTriggerer, cErr = client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
+			if cErr != nil {
+				p.client.Log.Error("Error getting details of the event triggerer user", "error", cErr.Error())
 				http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
 				return
 			}
