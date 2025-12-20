@@ -7,8 +7,8 @@ package mocks
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	serializer "github.com/mattermost/mattermost-plugin-confluence/server/serializer"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockSubscriptionRepository is a mock of SubscriptionRepository interface.
