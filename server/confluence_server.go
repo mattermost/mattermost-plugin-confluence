@@ -130,11 +130,24 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 		eventData.BaseURL = pluginConfig.ConfluenceURL
 
-		eventTriggerer, cErr := client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
-		if cErr != nil {
-			p.client.Log.Error("Error getting details of the event triggerer user", "error", cErr.Error())
-			http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
-			return
+		// Prefer Admin API Token if available since regular user tokens lack this permission.
+		var eventTriggerer *ConfluenceUser
+		var cErr error
+		if pluginConfig.AdminAPIToken != "" {
+			eventTriggerer, cErr = p.GetUserFromUserKeyWithAPIToken(event.UserKey, pluginConfig)
+			if cErr != nil {
+				p.client.Log.Error("Error getting details of the event triggerer user using API token", "error", cErr.Error())
+				http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			// Fallback to user's OAuth token if Admin API Token is not configured
+			eventTriggerer, cErr = client.(*confluenceServerClient).GetUserFromUserKey(event.UserKey)
+			if cErr != nil {
+				p.client.Log.Error("Error getting details of the event triggerer user", "error", cErr.Error())
+				http.Error(w, "Failed to get details of the event triggerer user", http.StatusInternalServerError)
+				return
+			}
 		}
 
 		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
