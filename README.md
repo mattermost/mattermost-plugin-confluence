@@ -16,7 +16,7 @@
 
 ## Overview
 
-A Mattermost plugin for Confluence. Supports Confluence Cloud, Server, and Data Center versions, as well as environments with multiple Confluence servers. This plugin helps your teams collaborate and keep in sync as Confluence Pages and Spaces get updated. Comments and activity can be pushed into specific Mattermost channels for full visibility. 
+A Mattermost plugin for Confluence. Supports Confluence Cloud, Server, and Data Center versions. This plugin helps your teams collaborate and keep in sync as Confluence Pages and Spaces get updated. Comments and activity can be pushed into specific Mattermost channels for full visibility. 
 
 ## Features
 
