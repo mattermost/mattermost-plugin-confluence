@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/mattermost/mattermost/server/public/model"
 
@@ -35,7 +34,7 @@ type Page struct {
 	ModificationDate      int64  `json:"modificationDate"`
 	LastModifierAccountID string `json:"lastModifierAccountId"`
 	Self                  string `json:"self"`
-	ID                    int    `json:"id"`
+	ID                    string `json:"id"`
 	Title                 string `json:"title"`
 	CreationDate          int    `json:"creationDate"`
 	ContentTypes          string `json:"contentType"`
@@ -48,7 +47,7 @@ type Comment struct {
 	ModificationDate      int64          `json:"modificationDate"`
 	LastModifierAccountID string         `json:"lastModifierAccountId"`
 	Self                  string         `json:"self"`
-	ID                    int            `json:"id"`
+	ID                    string         `json:"id"`
 	CreationDate          int            `json:"creationDate"`
 	ContentTypes          string         `json:"contentType"`
 	Version               int            `json:"version"`
@@ -131,9 +130,9 @@ func (e ConfluenceCloudEvent) GetSpaceKey() string {
 
 func (e ConfluenceCloudEvent) GetPageID() string {
 	if e.Comment != nil && e.Comment.Parent != nil {
-		return strconv.Itoa(e.Comment.Parent.ID)
+		return e.Comment.Parent.ID
 	} else if e.Page != nil {
-		return strconv.Itoa(e.Page.ID)
+		return e.Page.ID
 	}
 	return ""
 }
