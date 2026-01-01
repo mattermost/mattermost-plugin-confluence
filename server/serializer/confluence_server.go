@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -181,7 +183,56 @@ func ConfluenceServerEventFromJSON(data io.Reader) (*ConfluenceServerEvent, erro
 		return nil, err
 	}
 
+	confluenceServerEvent.sanitizeURLs()
+
 	return &confluenceServerEvent, nil
+}
+
+func sanitizeURL(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return raw
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	if parsed.Path != "" {
+		parsed.Path = path.Clean(parsed.Path)
+	}
+
+	return parsed.String()
+}
+
+func (e *ConfluenceServerEvent) sanitizeURLs() {
+	e.BaseURL = sanitizeURL(e.BaseURL)
+
+	if e.User != nil {
+		e.User.URL = sanitizeURL(e.User.URL)
+	}
+
+	e.Space.URL = sanitizeURL(e.Space.URL)
+
+	if e.Page != nil {
+		e.Page.URL = sanitizeURL(e.Page.URL)
+		e.Page.TinyURL = sanitizeURL(e.Page.TinyURL)
+		e.Page.EditURL = sanitizeURL(e.Page.EditURL)
+		for i := range e.Page.Ancestors {
+			e.Page.Ancestors[i].URL = sanitizeURL(e.Page.Ancestors[i].URL)
+		}
+	}
+
+	if e.Comment != nil {
+		e.Comment.URL = sanitizeURL(e.Comment.URL)
+		if e.Comment.ParentComment != nil {
+			e.Comment.ParentComment.URL = sanitizeURL(e.Comment.ParentComment.URL)
+		}
+	}
+
+	if e.Blog != nil {
+		e.Blog.URL = sanitizeURL(e.Blog.URL)
+	}
 }
 
 func (e *ConfluenceServerEvent) GetUserDisplayName(withLink bool) string {
