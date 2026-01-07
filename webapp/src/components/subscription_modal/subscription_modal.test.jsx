@@ -223,7 +223,9 @@ describe('components/ChannelSettingsModal', () => {
         const wrapper = shallow(
             <SubscriptionModal {...baseProps}/>,
         );
-        wrapper.instance().componentDidMount();
+        await wrapper.instance().componentDidMount();
+        wrapper.update();
+        expect(baseProps.getPluginConfig).toHaveBeenCalled();
         expect(wrapper.state().supportedEvents).toEqual(Constants.CONFLUENCE_EVENTS);
     });
 });

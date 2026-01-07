@@ -64,6 +64,24 @@ var SupportedEventsV9AndAbove = []string{
 	PageRemovedEvent,
 }
 
+// supportedEventsV8Map is a lookup map for V8 and below events
+var supportedEventsV8Map = func() map[string]bool {
+	m := make(map[string]bool, len(SupportedEventsV8AndBelow))
+	for _, event := range SupportedEventsV8AndBelow {
+		m[event] = true
+	}
+	return m
+}()
+
+// supportedEventsV9Map is a lookup map for V9+ events
+var supportedEventsV9Map = func() map[string]bool {
+	m := make(map[string]bool, len(SupportedEventsV9AndAbove))
+	for _, event := range SupportedEventsV9AndAbove {
+		m[event] = true
+	}
+	return m
+}()
+
 type Subscription interface {
 	Add(*Subscriptions) error
 	Remove(*Subscriptions) error
@@ -220,6 +238,14 @@ func GetSupportedEvents(isV9OrAbove bool) []string {
 	return SupportedEventsV8AndBelow
 }
 
+// GetSupportedEventsMap returns the map of supported events based on server version
+func GetSupportedEventsMap(isV9OrAbove bool) map[string]bool {
+	if isV9OrAbove {
+		return supportedEventsV9Map
+	}
+	return supportedEventsV8Map
+}
+
 // EventDisplayName returns the display name for an event
 func EventDisplayName(event string) string {
 	if name, ok := eventDisplayName[event]; ok {
@@ -230,11 +256,7 @@ func EventDisplayName(event string) string {
 
 // ValidateEventsForServerVersion validates that subscription events are supported by the server version
 func ValidateEventsForServerVersion(subscription Subscription, isV9OrAbove bool) error {
-	supportedEvents := GetSupportedEvents(isV9OrAbove)
-	supportedEventsMap := make(map[string]bool)
-	for _, event := range supportedEvents {
-		supportedEventsMap[event] = true
-	}
+	supportedEventsMap := GetSupportedEventsMap(isV9OrAbove)
 
 	var events []string
 	switch sub := subscription.(type) {
