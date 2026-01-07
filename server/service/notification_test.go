@@ -3,14 +3,15 @@ package service
 import (
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
+	"github.com/mattermost/mattermost-plugin-confluence/server/service/mocks"
 )
 
 func baseMock() *plugintest.API {
@@ -31,84 +32,86 @@ func TestGetNotificationsChannelIDs(t *testing.T) {
 		urlPageIDCombinationSubscriptions   serializer.StringArrayMap
 	}{
 		"duplicated channel ids": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.CommentCreatedEvent,
 			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			expected: 1,
 		},
 		"page event": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.PageRemovedEvent,
 			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentRemovedEvent, serializer.PageRemovedEvent},
+				testChannelID1: {serializer.CommentRemovedEvent, serializer.PageRemovedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
 			},
 			expected: 1,
 		},
 		"single notification": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.CommentCreatedEvent,
 			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{},
 			expected:                          1,
 		},
 		"multiple notification": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.CommentUpdatedEvent,
 			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1235": {serializer.PageRemovedEvent, serializer.PageCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1236": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1:      {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2:      {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID3:      {serializer.PageRemovedEvent, serializer.PageCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelNotFound: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttes8": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
-			expected: 5,
+			expected: 4,
 		},
 		"no notification": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.PageRemovedEvent,
-			urlSpaceKeyCombinationSubscriptions: map[string][]string{
-				"testtesttesttest": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
+				testChannelID1: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			expected: 0,
 		},
 		"multiple subscription single notification": {
-			baseURL:  "https://test.com",
-			spaceKey: "TEST",
+			baseURL:  testBaseURL,
+			spaceKey: testSpaceKey1,
 			event:    serializer.CommentCreatedEvent,
-			urlSpaceKeyCombinationSubscriptions: map[string][]string{
-				"testtesttesttest": {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
-				"testtesttest1234": {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
+			urlSpaceKeyCombinationSubscriptions: serializer.StringArrayMap{
+				testChannelID1: {serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent},
+				testChannelID2: {serializer.CommentRemovedEvent, serializer.CommentUpdatedEvent},
 			},
 			urlPageIDCombinationSubscriptions: serializer.StringArrayMap{},
 			expected:                          1,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			defer monkey.UnpatchAll()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			mockAPI := baseMock()
 			mockAPI.On("LogError",
 				mock.AnythingOfType("string"),
@@ -120,15 +123,15 @@ func TestGetNotificationsChannelIDs(t *testing.T) {
 				mock.AnythingOfType("string"),
 				mock.AnythingOfType("string"),
 				mock.AnythingOfType("string"),
+				mock.AnythingOfType("string"),
 				mock.AnythingOfType("string")).Return(nil)
 			mockAPI.On("CreatePost", mock.AnythingOfType(model.Post{}.Type)).Return(&model.Post{}, nil)
-			monkey.Patch(GetSubscriptionsByURLSpaceKey, func(_, _ string) (serializer.StringArrayMap, error) {
-				return val.urlSpaceKeyCombinationSubscriptions, nil
-			})
-			monkey.Patch(GetSubscriptionsByURLPageID, func(_, _ string) (serializer.StringArrayMap, error) {
-				return val.urlPageIDCombinationSubscriptions, nil
-			})
-			channelIDs := getNotificationChannelIDs(val.baseURL, val.spaceKey, val.pageID, val.event)
+
+			mockRepo := mocks.NewMockSubscriptionRepository(ctrl)
+			mockRepo.EXPECT().GetSubscriptionsByURLSpaceKey(gomock.Any(), gomock.Any()).Return(val.urlSpaceKeyCombinationSubscriptions, nil).AnyTimes()
+			mockRepo.EXPECT().GetSubscriptionsByURLPageID(gomock.Any(), gomock.Any()).Return(val.urlPageIDCombinationSubscriptions, nil).AnyTimes()
+
+			channelIDs := getNotificationChannelIDsWithDeps(val.baseURL, val.spaceKey, val.pageID, val.event, mockRepo)
 			assert.Equal(t, val.expected, len(channelIDs))
 		})
 	}
