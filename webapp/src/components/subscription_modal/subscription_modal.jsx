@@ -60,6 +60,10 @@ export default class SubscriptionModal extends React.PureComponent {
         this.setState({
             supportedEvents: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
             events: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
+        }, () => {
+            if (this.props.subscription?.alias) {
+                this.setData();
+            }
         });
     }
 
