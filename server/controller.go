@@ -36,6 +36,7 @@ var Endpoints = map[string]*Endpoint{
 	getEndpointKey(userConnect):                         userConnect,
 	getEndpointKey(userConnectComplete):                 userConnectComplete,
 	getEndpointKey(userConnectionInfo):                  userConnectionInfo,
+	getEndpointKey(getPluginConfig):                     getPluginConfig,
 }
 
 // Uniquely identifies an endpoint using path and method
