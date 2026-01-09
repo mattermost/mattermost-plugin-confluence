@@ -58,11 +58,17 @@ const (
 const (
 	installCloudHelp = `
 To finish the configuration, add a new app in your Confluence Cloud instance following these steps:
-1. Navigate to **Settings > Apps > Manage Apps**.
-2. Choose **Settings** at the bottom of the page, enable development mode, and apply the change. Development mode allows you to install apps from outside of the Atlassian Marketplace.
-3. Press **Upload App**.
-4. In **From this URL**, enter: %s
-5. Once installed, you will see the "Installed and ready to go!" message.
+1. Open the [Atlassian Admin](https://admin.atlassian.com/) page while logged in with an admin account.
+2. Select **Apps** from the side panel.
+3. Choose **Sites** and select the site that will be connected to Mattermost.
+4. Select **Connected Apps** from the side panel.
+5. Navigate to the **Settings** tab and enable **Development Mode**.
+6. Press **Install a private app** at the top of the page.
+7. Select **Confluence** as the product to install the app on.
+8. In **App descriptor URL**, enter: %s
+9. Press **Install app** to complete the installation.
+
+Once these steps are completed, your Confluence Cloud instance is fully configured and ready to use. You can now create subscriptions to receive notifications in Mattermost.
 `
 )
 
