@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -101,12 +103,50 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
+	if len(configuration.EncryptionKey) != 32 {
+		newKey, err := generateRandomKey(32)
+		if err != nil {
+			config.Mattermost.LogError("Error generating encryption key.", "Error", err.Error())
+			return err
+		}
+		configuration.EncryptionKey = newKey
+		config.Mattermost.LogInfo("Auto-generated missing Encryption Key.")
+
+		if err := p.savePluginConfig(&configuration); err != nil {
+			config.Mattermost.LogError("Error saving auto-generated encryption key.", "Error", err.Error())
+			return err
+		}
+	}
+
 	if err := configuration.IsValid(); err != nil {
 		config.Mattermost.LogError("Error in Validating Configuration.", "Error", err.Error())
 		return err
 	}
 
 	config.SetConfig(&configuration)
+	return nil
+}
+
+func generateRandomKey(length int) (string, error) {
+	// We need more bytes because base64 encoding expands the size
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	encoded := base64.URLEncoding.EncodeToString(bytes)
+	return encoded[:length], nil
+}
+
+func (p *Plugin) savePluginConfig(configuration *config.Configuration) error {
+	configMap, err := configuration.ToMap()
+	if err != nil {
+		return errors.Wrap(err, "failed to convert config to map")
+	}
+
+	if appErr := p.API.SavePluginConfig(configMap); appErr != nil {
+		return errors.Wrap(appErr, "failed to save plugin config")
+	}
+
 	return nil
 }
 
