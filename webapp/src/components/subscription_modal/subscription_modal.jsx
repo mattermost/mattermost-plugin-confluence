@@ -88,7 +88,13 @@ export default class SubscriptionModal extends React.PureComponent {
         if (e && e.preventDefault) {
             e.preventDefault();
         }
-        this.setState(initialState, this.props.close);
+        // Preserve supportedEvents from the config, only reset form fields
+        const {supportedEvents} = this.state;
+        this.setState({
+            ...initialState,
+            supportedEvents,
+            events: supportedEvents,
+        }, this.props.close);
     };
 
     handleAlias = (e) => {
