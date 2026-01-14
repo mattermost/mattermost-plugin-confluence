@@ -279,14 +279,14 @@ export default class SubscriptionModal extends React.PureComponent {
                 <Modal.Footer>
                     <Button
                         type='button'
-                        bsStyle='link'
+                        variant='link'
                         onClick={this.handleClose}
                     >
                         {'Cancel'}
                     </Button>
                     <Button
                         type='submit'
-                        bsStyle='primary'
+                        variant='primary'
                         onClick={this.handleSubmit}
                         disabled={saving}
                     >

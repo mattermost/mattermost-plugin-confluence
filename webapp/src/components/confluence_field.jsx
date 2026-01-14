@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {ControlLabel, FormControl, FormGroup} from 'react-bootstrap';
+import {Form} from 'react-bootstrap';
 import Select from 'react-select';
 
 import {getStyleForReactSelect} from '../utils/react_select_styles';
@@ -78,6 +78,11 @@ export default class ConfluenceField extends React.PureComponent {
     render() {
         const {
             required, fieldType, theme, label, formGroupStyle, formControlStyle,
+            value, type, placeholder, name, readOnly, options, isMulti, isSearchable,
+            // These are intentionally not passed to DOM elements
+            addValidation: _addValidation,
+            removeValidation: _removeValidation,
+            ...restProps
         } = this.props;
         const requiredErrorMsg = 'This field is required.';
         let requiredError = null;
@@ -91,16 +96,23 @@ export default class ConfluenceField extends React.PureComponent {
         let field = null;
         if (fieldType === 'input') {
             field = (
-                <FormControl
+                <Form.Control
                     style={formControlStyle}
-                    {...this.props}
+                    type={type}
+                    placeholder={placeholder}
+                    value={value}
+                    readOnly={readOnly}
                     onChange={this.handleChange}
                 />
             );
         } else if (fieldType === 'dropDown') {
             field = (
                 <Select
-                    {...this.props}
+                    name={name}
+                    value={value}
+                    options={options}
+                    isMulti={isMulti}
+                    isSearchable={isSearchable}
                     menuPortalTarget={document.body}
                     menuPlacement='auto'
                     styles={getStyleForReactSelect(theme)}
@@ -109,8 +121,8 @@ export default class ConfluenceField extends React.PureComponent {
             );
         }
         return (
-            <FormGroup style={formGroupStyle}>
-                <ControlLabel>{label}</ControlLabel>
+            <Form.Group style={formGroupStyle}>
+                <Form.Label>{label}</Form.Label>
                 {required &&
                 <span
                     className='error-text'
@@ -120,7 +132,7 @@ export default class ConfluenceField extends React.PureComponent {
                 </span> }
                 {field}
                 {requiredError}
-            </FormGroup>
+            </Form.Group>
         );
     }
 }
