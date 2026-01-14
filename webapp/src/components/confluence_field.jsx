@@ -8,7 +8,7 @@ import {getStyleForReactSelect} from '../utils/react_select_styles';
 export default class ConfluenceField extends React.PureComponent {
     static propTypes = {
         required: PropTypes.bool.isRequired,
-        value: PropTypes.PropTypes.oneOfType([
+        value: PropTypes.oneOfType([
             PropTypes.string,
             PropTypes.number,
             PropTypes.object,
@@ -23,6 +23,12 @@ export default class ConfluenceField extends React.PureComponent {
         readOnly: PropTypes.bool,
         formGroupStyle: PropTypes.object,
         formControlStyle: PropTypes.object,
+        type: PropTypes.string,
+        placeholder: PropTypes.string,
+        name: PropTypes.string,
+        options: PropTypes.array,
+        isMulti: PropTypes.bool,
+        isSearchable: PropTypes.bool,
     };
 
     static defaultProps = {
@@ -79,10 +85,6 @@ export default class ConfluenceField extends React.PureComponent {
         const {
             required, fieldType, theme, label, formGroupStyle, formControlStyle,
             value, type, placeholder, name, readOnly, options, isMulti, isSearchable,
-            // These are intentionally not passed to DOM elements
-            addValidation: _addValidation,
-            removeValidation: _removeValidation,
-            ...restProps
         } = this.props;
         const requiredErrorMsg = 'This field is required.';
         let requiredError = null;

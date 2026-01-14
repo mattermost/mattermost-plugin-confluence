@@ -1,4 +1,4 @@
-/*eslint max-nested-callbacks: ["error", 3]*/
+/*eslint max-nested-callbacks: ["error", 4]*/
 
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
@@ -89,7 +89,12 @@ describe('components/ChannelSettingsModal', () => {
             subscriptionType: Constants.SUBSCRIPTION_TYPE[0].value,
         };
 
-        const {rerender} = render(<SubscriptionModal {...baseProps} visibility={true}/>);
+        const {rerender} = render(
+            <SubscriptionModal
+                {...baseProps}
+                visibility={true}
+            />,
+        );
 
         const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
         const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
@@ -99,7 +104,12 @@ describe('components/ChannelSettingsModal', () => {
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
         fireEvent.change(spaceKeyInput, {target: {value: 'test'}});
 
-        rerender(<SubscriptionModal {...baseProps} subscription={subscription}/>);
+        rerender(
+            <SubscriptionModal
+                {...baseProps}
+                subscription={subscription}
+            />,
+        );
 
         fireEvent.change(nameInput, {target: {value: 'Xyz'}});
 
@@ -137,15 +147,11 @@ describe('components/ChannelSettingsModal', () => {
         const subscribeToDropdown = screen.getByText('Space');
         fireEvent.mouseDown(subscribeToDropdown);
 
-        await waitFor(() => {
-            const pageOption = screen.getByText('Page');
-            fireEvent.click(pageOption);
-        });
+        const pageOption = await screen.findByText('Page');
+        fireEvent.click(pageOption);
 
-        await waitFor(() => {
-            const pageIDInput = screen.getByPlaceholderText('Enter the page id.');
-            fireEvent.change(pageIDInput, {target: {value: '1234'}});
-        });
+        const pageIDInput = await screen.findByPlaceholderText('Enter the page id.');
+        fireEvent.change(pageIDInput, {target: {value: '1234'}});
 
         const saveButton = screen.getByText('Save Subscription');
         fireEvent.click(saveButton);
@@ -175,7 +181,12 @@ describe('components/ChannelSettingsModal', () => {
             subscriptionType: Constants.SUBSCRIPTION_TYPE[1].value,
         };
 
-        const {rerender} = render(<SubscriptionModal {...baseProps} visibility={true}/>);
+        const {rerender} = render(
+            <SubscriptionModal
+                {...baseProps}
+                visibility={true}
+            />,
+        );
 
         const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
         const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
@@ -185,17 +196,19 @@ describe('components/ChannelSettingsModal', () => {
 
         const subscribeToDropdown = screen.getByText('Space');
         fireEvent.mouseDown(subscribeToDropdown);
-        await waitFor(() => {
-            const pageOption = screen.getByText('Page');
-            fireEvent.click(pageOption);
-        });
 
-        await waitFor(() => {
-            const pageIDInput = screen.getByPlaceholderText('Enter the page id.');
-            fireEvent.change(pageIDInput, {target: {value: '1234'}});
-        });
+        const pageOption = await screen.findByText('Page');
+        fireEvent.click(pageOption);
 
-        rerender(<SubscriptionModal {...baseProps} subscription={subscription}/>);
+        const pageIDInput = await screen.findByPlaceholderText('Enter the page id.');
+        fireEvent.change(pageIDInput, {target: {value: '1234'}});
+
+        rerender(
+            <SubscriptionModal
+                {...baseProps}
+                subscription={subscription}
+            />,
+        );
 
         fireEvent.change(nameInput, {target: {value: 'Xyz'}});
 
