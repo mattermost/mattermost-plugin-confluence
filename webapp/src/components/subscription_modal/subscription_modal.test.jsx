@@ -53,9 +53,9 @@ describe('components/ChannelSettingsModal', () => {
         };
         render(<SubscriptionModal {...props}/>);
 
-        const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
-        const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
-        const spaceKeyInput = screen.getByPlaceholderText('Enter the Confluence Space Key.');
+        const nameInput = screen.getByTestId('subscription-name-input');
+        const urlInput = screen.getByTestId('subscription-url-input');
+        const spaceKeyInput = screen.getByTestId('subscription-space-key-input');
 
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
@@ -96,9 +96,9 @@ describe('components/ChannelSettingsModal', () => {
             />,
         );
 
-        const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
-        const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
-        const spaceKeyInput = screen.getByPlaceholderText('Enter the Confluence Space Key.');
+        const nameInput = screen.getByTestId('subscription-name-input');
+        const urlInput = screen.getByTestId('subscription-url-input');
+        const spaceKeyInput = screen.getByTestId('subscription-space-key-input');
 
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
@@ -138,8 +138,8 @@ describe('components/ChannelSettingsModal', () => {
         };
         render(<SubscriptionModal {...props}/>);
 
-        const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
-        const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
+        const nameInput = screen.getByTestId('subscription-name-input');
+        const urlInput = screen.getByTestId('subscription-url-input');
 
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
@@ -150,7 +150,7 @@ describe('components/ChannelSettingsModal', () => {
         const pageOption = await screen.findByText('Page');
         fireEvent.click(pageOption);
 
-        const pageIDInput = await screen.findByPlaceholderText('Enter the page id.');
+        const pageIDInput = await screen.findByTestId('subscription-page-id-input');
         fireEvent.change(pageIDInput, {target: {value: '1234'}});
 
         const saveButton = screen.getByText('Save Subscription');
@@ -188,8 +188,8 @@ describe('components/ChannelSettingsModal', () => {
             />,
         );
 
-        const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
-        const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
+        const nameInput = screen.getByTestId('subscription-name-input');
+        const urlInput = screen.getByTestId('subscription-url-input');
 
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
@@ -200,7 +200,7 @@ describe('components/ChannelSettingsModal', () => {
         const pageOption = await screen.findByText('Page');
         fireEvent.click(pageOption);
 
-        const pageIDInput = await screen.findByPlaceholderText('Enter the page id.');
+        const pageIDInput = await screen.findByTestId('subscription-page-id-input');
         fireEvent.change(pageIDInput, {target: {value: '1234'}});
 
         rerender(
@@ -237,9 +237,9 @@ describe('components/ChannelSettingsModal', () => {
         };
         render(<SubscriptionModal {...props}/>);
 
-        const nameInput = screen.getByPlaceholderText('Enter a name for this subscription.');
-        const urlInput = screen.getByPlaceholderText('Enter the Confluence Base URL.');
-        const spaceKeyInput = screen.getByPlaceholderText('Enter the Confluence Space Key.');
+        const nameInput = screen.getByTestId('subscription-name-input');
+        const urlInput = screen.getByTestId('subscription-url-input');
+        const spaceKeyInput = screen.getByTestId('subscription-space-key-input');
 
         fireEvent.change(nameInput, {target: {value: '   Abc   '}});
         fireEvent.change(urlInput, {target: {value: 'https://teST.com'}});
