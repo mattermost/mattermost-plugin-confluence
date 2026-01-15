@@ -35,7 +35,10 @@
     "beforeEach": true
   },
   "settings": {
-    "import/resolver": "webpack"
+    "import/resolver": "webpack",
+    "react": {
+      "version": "detect"
+    }
   },
   "rules": {
     "array-bracket-spacing": [
@@ -631,6 +634,13 @@
     ]
   },
   "overrides": [
+    {
+      "files": ["**/tests/**", "**/*.test.*"],
+      "rules": {
+        "import/no-unresolved": 0,
+        "max-nested-callbacks": ["error", 4]
+      }
+    },
     {
       "files": ["**/*.tsx", "**/*.ts"],
       "extends": "plugin:@typescript-eslint/recommended",
