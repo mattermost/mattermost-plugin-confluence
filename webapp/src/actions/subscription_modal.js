@@ -56,6 +56,21 @@ export function getSubscriptionAccess() {
     };
 }
 
+export function getPluginConfig() {
+    return async () => {
+        let data = null;
+        let error = null;
+
+        try {
+            data = await Client.getPluginConfig();
+        } catch (e) {
+            error = e;
+        }
+
+        return {data, error};
+    };
+}
+
 export const openSubscriptionModal = () => (dispatch) => {
     dispatch({
         type: Constants.ACTION_TYPES.OPEN_SUBSCRIPTION_MODAL,

@@ -1,7 +1,7 @@
 /*eslint max-nested-callbacks: ["error", 4]*/
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 
 import Constants from '../../constants';
 
@@ -24,18 +24,26 @@ describe('components/ChannelSettingsModal', () => {
         saveChannelSubscription: jest.fn().mockResolvedValue({}),
         currentChannelID: 'abcabcabcabcabc',
         editChannelSubscription: jest.fn().mockResolvedValue({}),
+        getPluginConfig: jest.fn().mockResolvedValue({
+            data: {
+                supportedEvents: Constants.CONFLUENCE_EVENTS,
+            },
+        }),
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    test('subscription modal renders when visible', () => {
+    test('subscription modal renders when visible', async () => {
         const props = {
             ...baseProps,
             visibility: true,
         };
-        render(<SubscriptionModal {...props}/>);
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
 
         expect(screen.getByText('Edit Your Confluence Subscription')).toBeInTheDocument();
         expect(screen.getByText('Name')).toBeInTheDocument();
@@ -51,7 +59,10 @@ describe('components/ChannelSettingsModal', () => {
             ...baseProps,
             visibility: true,
         };
-        render(<SubscriptionModal {...props}/>);
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
 
         const nameInput = screen.getByTestId('subscription-name-input');
         const urlInput = screen.getByTestId('subscription-url-input');
@@ -89,12 +100,16 @@ describe('components/ChannelSettingsModal', () => {
             subscriptionType: Constants.SUBSCRIPTION_TYPE[0].value,
         };
 
-        const {rerender} = render(
-            <SubscriptionModal
-                {...baseProps}
-                visibility={true}
-            />,
-        );
+        let rerender;
+        await act(async () => {
+            const result = render(
+                <SubscriptionModal
+                    {...baseProps}
+                    visibility={true}
+                />,
+            );
+            rerender = result.rerender;
+        });
 
         const nameInput = screen.getByTestId('subscription-name-input');
         const urlInput = screen.getByTestId('subscription-url-input');
@@ -104,12 +119,14 @@ describe('components/ChannelSettingsModal', () => {
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
         fireEvent.change(spaceKeyInput, {target: {value: 'test'}});
 
-        rerender(
-            <SubscriptionModal
-                {...baseProps}
-                subscription={subscription}
-            />,
-        );
+        await act(async () => {
+            rerender(
+                <SubscriptionModal
+                    {...baseProps}
+                    subscription={subscription}
+                />,
+            );
+        });
 
         fireEvent.change(nameInput, {target: {value: 'Xyz'}});
 
@@ -136,7 +153,10 @@ describe('components/ChannelSettingsModal', () => {
             ...baseProps,
             visibility: true,
         };
-        render(<SubscriptionModal {...props}/>);
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
 
         const nameInput = screen.getByTestId('subscription-name-input');
         const urlInput = screen.getByTestId('subscription-url-input');
@@ -181,12 +201,16 @@ describe('components/ChannelSettingsModal', () => {
             subscriptionType: Constants.SUBSCRIPTION_TYPE[1].value,
         };
 
-        const {rerender} = render(
-            <SubscriptionModal
-                {...baseProps}
-                visibility={true}
-            />,
-        );
+        let rerender;
+        await act(async () => {
+            const result = render(
+                <SubscriptionModal
+                    {...baseProps}
+                    visibility={true}
+                />,
+            );
+            rerender = result.rerender;
+        });
 
         const nameInput = screen.getByTestId('subscription-name-input');
         const urlInput = screen.getByTestId('subscription-url-input');
@@ -203,12 +227,14 @@ describe('components/ChannelSettingsModal', () => {
         const pageIDInput = await screen.findByTestId('subscription-page-id-input');
         fireEvent.change(pageIDInput, {target: {value: '1234'}});
 
-        rerender(
-            <SubscriptionModal
-                {...baseProps}
-                subscription={subscription}
-            />,
-        );
+        await act(async () => {
+            rerender(
+                <SubscriptionModal
+                    {...baseProps}
+                    subscription={subscription}
+                />,
+            );
+        });
 
         fireEvent.change(nameInput, {target: {value: 'Xyz'}});
 
@@ -235,7 +261,10 @@ describe('components/ChannelSettingsModal', () => {
             ...baseProps,
             visibility: true,
         };
-        render(<SubscriptionModal {...props}/>);
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
 
         const nameInput = screen.getByTestId('subscription-name-input');
         const urlInput = screen.getByTestId('subscription-url-input');
@@ -263,16 +292,34 @@ describe('components/ChannelSettingsModal', () => {
         expect(props.editChannelSubscription).not.toHaveBeenCalled();
     });
 
-    test('cancel closes the modal', () => {
+    test('cancel closes the modal', async () => {
         const props = {
             ...baseProps,
             visibility: true,
         };
-        render(<SubscriptionModal {...props}/>);
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
 
         const cancelButton = screen.getByText('Cancel');
         fireEvent.click(cancelButton);
 
         expect(props.close).toHaveBeenCalled();
+    });
+
+    test('loads plugin config on mount', async () => {
+        const props = {
+            ...baseProps,
+            visibility: true,
+        };
+
+        await act(async () => {
+            render(<SubscriptionModal {...props}/>);
+        });
+
+        await waitFor(() => {
+            expect(props.getPluginConfig).toHaveBeenCalled();
+        });
     });
 });
