@@ -17,6 +17,7 @@ const initialState = {
     pageID: '',
     subscriptionType: Constants.SUBSCRIPTION_TYPE[0],
     events: Constants.CONFLUENCE_EVENTS,
+    supportedEvents: Constants.CONFLUENCE_EVENTS,
     error: '',
     saving: false,
 };
@@ -30,6 +31,7 @@ export default class SubscriptionModal extends React.PureComponent {
         saveChannelSubscription: PropTypes.func.isRequired,
         currentChannelID: PropTypes.string.isRequired,
         editChannelSubscription: PropTypes.func.isRequired,
+        getPluginConfig: PropTypes.func.isRequired,
     };
 
     static defaultProps = {
@@ -43,10 +45,26 @@ export default class SubscriptionModal extends React.PureComponent {
         this.validator = new Validator();
     }
 
+    async componentDidMount() {
+        await this.loadPluginConfig();
+    }
+
     componentDidUpdate(prevProps) {
         if (this.props.subscription !== prevProps.subscription) {
             this.setData();
         }
+    }
+
+    loadPluginConfig = async () => {
+        const result = await this.props.getPluginConfig();
+        this.setState({
+            supportedEvents: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
+            events: result?.data?.supportedEvents || Constants.CONFLUENCE_EVENTS,
+        }, () => {
+            if (this.props.subscription?.alias) {
+                this.setData();
+            }
+        });
     }
 
     setData = () => {
@@ -54,12 +72,13 @@ export default class SubscriptionModal extends React.PureComponent {
             alias, baseURL, spaceKey, events, pageID,
         } = this.props.subscription;
         if (alias) {
+            const availableEvents = this.state.supportedEvents.filter((option) => events.includes(option.value));
             this.setState({
                 alias,
                 baseURL,
                 spaceKey,
                 pageID,
-                events: Constants.CONFLUENCE_EVENTS.filter((option) => events.includes(option.value)),
+                events: availableEvents,
                 subscriptionType: pageID ? Constants.SUBSCRIPTION_TYPE[1] : Constants.SUBSCRIPTION_TYPE[0],
             });
         }
@@ -69,7 +88,14 @@ export default class SubscriptionModal extends React.PureComponent {
         if (e && e.preventDefault) {
             e.preventDefault();
         }
-        this.setState(initialState, this.props.close);
+
+        // Preserve supportedEvents from the config, only reset form fields
+        const {supportedEvents} = this.state;
+        this.setState({
+            ...initialState,
+            supportedEvents,
+            events: supportedEvents,
+        }, this.props.close);
     };
 
     handleAlias = (e) => {
@@ -158,7 +184,7 @@ export default class SubscriptionModal extends React.PureComponent {
         const {visibility, subscription} = this.props;
         const editSubscription = Boolean(subscription && subscription.alias);
         const isModalVisible = Boolean(visibility || editSubscription);
-        const {error, saving, subscriptionType} = this.state;
+        const {error, saving, subscriptionType, supportedEvents, events} = this.state;
         let typeField = (
             <ConfluenceField
                 formGroupStyle={getStyle.typeValue}
@@ -267,8 +293,8 @@ export default class SubscriptionModal extends React.PureComponent {
                             fieldType={'dropDown'}
                             required={true}
                             theme={this.props.theme}
-                            options={Constants.CONFLUENCE_EVENTS}
-                            value={this.state.events}
+                            options={supportedEvents}
+                            value={events}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
                             onChange={this.handleEvents}

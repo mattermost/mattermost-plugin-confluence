@@ -2,23 +2,28 @@ package serializer
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 )
 
 const (
-	CommentCreatedEvent   = "comment_created"
-	CommentUpdatedEvent   = "comment_updated"
-	CommentRemovedEvent   = "comment_removed"
-	PageCreatedEvent      = "page_created"
-	PageUpdatedEvent      = "page_updated"
-	PageTrashedEvent      = "page_trashed"
-	PageRestoredEvent     = "page_restored"
-	PageRemovedEvent      = "page_removed"
+	// Webhook Events
+	CommentCreatedEvent = "comment_created"
+	CommentUpdatedEvent = "comment_updated"
+	CommentRemovedEvent = "comment_removed"
+	PageCreatedEvent    = "page_created"
+	PageUpdatedEvent    = "page_updated"
+	PageTrashedEvent    = "page_trashed"
+	PageRestoredEvent   = "page_restored"
+	PageRemovedEvent    = "page_removed"
+	SpaceUpdatedEvent   = "space_updated"
+
+	// Subscription Types
 	SubscriptionTypeSpace = "space_subscription"
-	SpaceUpdatedEvent     = "space_updated"
 	SubscriptionTypePage  = "page_subscription"
 
+	// Error messages
 	aliasAlreadyExist       = "a subscription with the same name already exists in this channel"
 	urlSpaceKeyAlreadyExist = "a subscription with the same url and space key already exists in this channel"
 	urlPageIDAlreadyExist   = "a subscription with the same url and page id already exists in this channel"
@@ -34,6 +39,48 @@ var eventDisplayName = map[string]string{
 	PageRestoredEvent:   "Page Restore",
 	PageRemovedEvent:    "Page Remove",
 }
+
+// SupportedEventsV8AndBelow contains all events supported by Confluence Server v8 and below
+var SupportedEventsV8AndBelow = []string{
+	CommentCreatedEvent,
+	CommentUpdatedEvent,
+	CommentRemovedEvent,
+	PageCreatedEvent,
+	PageUpdatedEvent,
+	PageTrashedEvent,
+	PageRestoredEvent,
+	PageRemovedEvent,
+}
+
+// SupportedEventsV9AndAbove contains events supported by Confluence Server v9+
+var SupportedEventsV9AndAbove = []string{
+	CommentCreatedEvent,
+	CommentUpdatedEvent,
+	// CommentRemovedEvent -- Removed as it's NOT supported in v9+
+	PageCreatedEvent,
+	PageUpdatedEvent,
+	PageTrashedEvent,
+	PageRestoredEvent,
+	PageRemovedEvent,
+}
+
+// supportedEventsV8Map is a lookup map for V8 and below events
+var supportedEventsV8Map = func() map[string]bool {
+	m := make(map[string]bool, len(SupportedEventsV8AndBelow))
+	for _, event := range SupportedEventsV8AndBelow {
+		m[event] = true
+	}
+	return m
+}()
+
+// supportedEventsV9Map is a lookup map for V9+ events
+var supportedEventsV9Map = func() map[string]bool {
+	m := make(map[string]bool, len(SupportedEventsV9AndAbove))
+	for _, event := range SupportedEventsV9AndAbove {
+		m[event] = true
+	}
+	return m
+}()
 
 type Subscription interface {
 	Add(*Subscriptions) error
@@ -181,4 +228,51 @@ func (s StringSubscription) GetInsensitiveCase(key string) (Subscription, bool) 
 		}
 	}
 	return nil, false
+}
+
+// GetSupportedEvents returns the list of supported events based on server version
+func GetSupportedEvents(isV9OrAbove bool) []string {
+	if isV9OrAbove {
+		return SupportedEventsV9AndAbove
+	}
+	return SupportedEventsV8AndBelow
+}
+
+// GetSupportedEventsMap returns the map of supported events based on server version
+func GetSupportedEventsMap(isV9OrAbove bool) map[string]bool {
+	if isV9OrAbove {
+		return supportedEventsV9Map
+	}
+	return supportedEventsV8Map
+}
+
+// EventDisplayName returns the display name for an event
+func EventDisplayName(event string) string {
+	if name, ok := eventDisplayName[event]; ok {
+		return name
+	}
+	return event
+}
+
+// ValidateEventsForServerVersion validates that subscription events are supported by the server version
+func ValidateEventsForServerVersion(subscription Subscription, isV9OrAbove bool) error {
+	supportedEventsMap := GetSupportedEventsMap(isV9OrAbove)
+
+	var events []string
+	switch sub := subscription.(type) {
+	case SpaceSubscription:
+		events = sub.Events
+	case PageSubscription:
+		events = sub.Events
+	default:
+		events = []string{}
+	}
+
+	for _, event := range events {
+		if !supportedEventsMap[event] {
+			return fmt.Errorf("event '%s' is not supported by the current Confluence Server version", event)
+		}
+	}
+
+	return nil
 }
