@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from 'react-bootstrap';
+import {ControlLabel, FormControl, FormGroup} from 'react-bootstrap';
 import Select from 'react-select';
 
 import {getStyleForReactSelect} from '../utils/react_select_styles';
@@ -99,7 +99,7 @@ export default class ConfluenceField extends React.PureComponent {
         let field = null;
         if (fieldType === 'input') {
             field = (
-                <Form.Control
+                <FormControl
                     style={formControlStyle}
                     type={type}
                     placeholder={placeholder}
@@ -126,8 +126,8 @@ export default class ConfluenceField extends React.PureComponent {
             );
         }
         return (
-            <Form.Group style={formGroupStyle}>
-                <Form.Label>{label}</Form.Label>
+            <FormGroup style={formGroupStyle}>
+                <ControlLabel>{label}</ControlLabel>
                 {required &&
                 <span
                     className='error-text'
@@ -137,7 +137,7 @@ export default class ConfluenceField extends React.PureComponent {
                 </span> }
                 {field}
                 {requiredError}
-            </Form.Group>
+            </FormGroup>
         );
     }
 }
