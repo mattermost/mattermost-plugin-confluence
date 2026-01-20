@@ -198,6 +198,7 @@ export default class SubscriptionModal extends React.PureComponent {
                 addValidation={this.validator.addValidation}
                 removeValidation={this.validator.removeValidation}
                 onChange={this.handleSpaceKey}
+                testId='subscription-space-key-input'
             />
         );
         if (subscriptionType === Constants.SUBSCRIPTION_TYPE[1]) {
@@ -214,6 +215,7 @@ export default class SubscriptionModal extends React.PureComponent {
                     addValidation={this.validator.addValidation}
                     removeValidation={this.validator.removeValidation}
                     onChange={this.handlePageID}
+                    testId='subscription-page-id-input'
                 />
             );
         }
@@ -233,6 +235,7 @@ export default class SubscriptionModal extends React.PureComponent {
                     addValidation={this.validator.addValidation}
                     removeValidation={this.validator.removeValidation}
                     onChange={this.handleSubscriptionType}
+                    testId='subscription-type-select'
                 />
                 {typeField}
             </div>
@@ -273,6 +276,7 @@ export default class SubscriptionModal extends React.PureComponent {
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
                             onChange={this.handleAlias}
+                            testId='subscription-name-input'
                         />
                         <ConfluenceField
                             label={'Confluence Base URL'}
@@ -284,6 +288,7 @@ export default class SubscriptionModal extends React.PureComponent {
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
                             onChange={this.handleBaseURLChange}
+                            testId='subscription-url-input'
                         />
                         {innerFields}
                         <ConfluenceField
@@ -298,6 +303,7 @@ export default class SubscriptionModal extends React.PureComponent {
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
                             onChange={this.handleEvents}
+                            testId='subscription-events-select'
                         />
                         {createError}
                     </div>
