@@ -28,7 +28,7 @@ export default class Hooks {
         const user = getCurrentUser(state);
 
         if (commandTrimmed && commandTrimmed === '/confluence subscribe') {
-            const {data: subscriptionAccessData, error} = await this.store.dispatch(getSubscriptionAccess());
+            const {data: subscriptionAccessData, error} = await getSubscriptionAccess()(this.store.dispatch);
 
             if (error) {
                 this.store.dispatch(sendEphemeralPost(Constants.ERROR_EXECUTING_COMMAND, contextArgs.channel_id, user.id));
@@ -41,10 +41,10 @@ export default class Hooks {
                 return Promise.resolve({});
             }
 
-            this.store.dispatch(openSubscriptionModal());
+            openSubscriptionModal()(this.store.dispatch);
             return Promise.resolve({});
         } else if (commandTrimmed && commandTrimmed.startsWith('/confluence edit')) {
-            const {data: subscriptionAccessData, error} = await this.store.dispatch(getSubscriptionAccess());
+            const {data: subscriptionAccessData, error} = await getSubscriptionAccess()(this.store.dispatch);
 
             if (error) {
                 this.store.dispatch(sendEphemeralPost(Constants.ERROR_EXECUTING_COMMAND, contextArgs.channel_id, user.id));
@@ -62,7 +62,7 @@ export default class Hooks {
                 this.store.dispatch(sendEphemeralPost(Constants.SPECIFY_ALIAS, contextArgs.channel_id, user.id));
             } else {
                 const alias = args.slice(2).join(' ');
-                this.store.dispatch(getChannelSubscription(contextArgs.channel_id, alias, user.id));
+                getChannelSubscription(contextArgs.channel_id, alias, user.id)(this.store.dispatch);
             }
             return Promise.resolve({});
         }
