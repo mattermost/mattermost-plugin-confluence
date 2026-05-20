@@ -1,0 +1,69 @@
+modules:
+  trigger:
+    - key: page-created
+      function: enqueue
+      events:
+        - avi:confluence:created:page
+    - key: page-updated
+      function: enqueue
+      events:
+        - avi:confluence:updated:page
+    - key: page-trashed
+      function: enqueue
+      events:
+        - avi:confluence:trashed:page
+    - key: page-restored
+      function: enqueue
+      events:
+        - avi:confluence:restored:page
+    - key: page-deleted
+      function: enqueue
+      events:
+        - avi:confluence:deleted:page
+    - key: comment-created
+      function: enqueue
+      events:
+        - avi:confluence:created:comment
+    - key: comment-updated
+      function: enqueue
+      events:
+        - avi:confluence:updated:comment
+    - key: comment-deleted
+      function: enqueue
+      events:
+        - avi:confluence:deleted:comment
+    - key: app-installed
+      function: onInstalled
+      events:
+        - avi:forge:installed:app
+
+  webtrigger:
+    - key: drain
+      function: drain
+      urlFormat: v2
+      response:
+        type: dynamic
+    - key: register
+      function: register
+      urlFormat: v2
+      response:
+        type: dynamic
+
+  function:
+    - key: enqueue
+      handler: index.enqueue
+    - key: drain
+      handler: index.drain
+    - key: register
+      handler: index.register
+    - key: onInstalled
+      handler: index.onInstalled
+
+app:
+  runtime:
+    name: nodejs20.x
+  id: ari:cloud:ecosystem::app/REPLACE_WITH_FORGE_APP_ID
+
+permissions:
+  scopes:
+    - storage:app
