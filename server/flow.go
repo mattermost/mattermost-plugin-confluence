@@ -151,12 +151,12 @@ const (
 	keyIsOAuthConfigured = "IsOAuthConfigured"
 	keyOAuthCompleteURL  = "OAuthCompleteURL"
 	keyForgeInstallURL   = "ForgeInstallURL"
-	keyForgeSharedSecret = "ForgeSharedSecret"
+	keyForgeSharedSecret = "ForgeSharedSecret" //nolint:gosec
 )
 
 // confluenceCloudScopes is the 3LO scope list the wizard advertises and the
 // plugin requests. Mirrors GetCloudOAuth2Config in instance_cloud.go.
-const confluenceCloudScopes = "offline_access, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
+const confluenceCloudScopes = "offline_access, read:confluence-user, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
 
 // forgeInstallURL is the private-distribution install link for the Mattermost
 // Confluence Forge bridge. We deploy the Forge app once into the Mattermost
@@ -741,6 +741,7 @@ func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string
 	cfg := fm.getConfiguration()
 	cfg.ConfluenceOAuthClientID = strings.TrimSpace(clientID)
 	cfg.ConfluenceOAuthClientSecret = strings.TrimSpace(clientSecret)
+	cfg.IsCloud = true
 	cfg.Sanitize()
 
 	configMap, err := cfg.ToMap()

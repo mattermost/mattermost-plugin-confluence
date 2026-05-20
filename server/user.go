@@ -236,7 +236,7 @@ func (p *Plugin) completeCloudOAuth2(mmuser *model.User, mattermostUserID, code,
 		MattermostUserID: mattermostUserID,
 	}
 
-	client, err := p.GetCloudClient(cloudID, connection)
+	client, err := p.GetCloudClient(instanceID, cloudID, connection)
 	if err != nil {
 		p.client.Log.Error("Error getting cloud client", "error", err.Error())
 		return nil, nil, err
@@ -267,9 +267,6 @@ func matchCloudResource(resources []AccessibleResource, instanceURL string) stri
 		if got == want {
 			return r.ID
 		}
-	}
-	if len(resources) == 1 {
-		return resources[0].ID
 	}
 	return ""
 }

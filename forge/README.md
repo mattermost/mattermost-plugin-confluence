@@ -101,7 +101,7 @@ Forge collapses Connect's `removed` onto `deleted`. See
 ## Not in scope here
 
 - Plugin-side Cloud 3LO OAuth (lives in `server/instance_cloud.go` and
-  the new `server/cloud_oauth_flow.go`).
+  the Cloud branches of `server/user.go` / `server/flow.go`).
 - Plugin-side polling loop (lives in `server/forge_poller.go`).
 - Migration of existing Connect installs (we leave those running until
   Atlassian's Q4 2026 EOS).

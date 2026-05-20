@@ -35,10 +35,11 @@ export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
     }
 
     if (body.ack?.length) {
-        await Promise.all(body.ack.map((k) => storage.delete(k)));
+        const ackable = body.ack.filter((k) => typeof k === 'string' && k.startsWith(QUEUE_PREFIX));
+        await Promise.all(ackable.map((k) => storage.delete(k)));
     }
 
-    const limit = Math.min(body.limit ?? MAX_DRAIN_BATCH, MAX_DRAIN_BATCH);
+    const limit = clampLimit(body.limit);
     const results = await storage
         .query()
         .where('key', { condition: 'STARTS_WITH', value: QUEUE_PREFIX })
@@ -113,6 +114,12 @@ const headerValue = (req: WebTriggerRequest, name: string): string | undefined =
 };
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);
+
+const clampLimit = (raw: unknown): number => {
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return MAX_DRAIN_BATCH;
+    return Math.min(Math.floor(n), MAX_DRAIN_BATCH);
+};
 
 type DrainRequest = { limit?: number; ack?: string[] };
 

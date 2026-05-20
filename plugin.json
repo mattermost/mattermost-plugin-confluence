@@ -50,7 +50,7 @@
           "key": "ForgeSharedSecret",
           "display_name": "Forge Bridge Shared Secret",
           "type": "generated",
-          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). After regenerating, POST the new value to the Forge app's `register` web trigger.",
+          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). After regenerating, POST the new value to the Forge app's register web trigger.",
           "regenerate_help_text": "Regenerates the shared secret. Existing Forge bridge installations must be re-registered with the new value.",
           "secret": true
         },
@@ -58,7 +58,7 @@
           "key": "ForgeDrainURL",
           "display_name": "Forge Drain URL",
           "type": "text",
-          "help_text": "Web trigger URL of the Mattermost Confluence Forge bridge `drain` endpoint. Set after installing the bridge on your Confluence Cloud site. The plugin polls this URL to fetch buffered Confluence events.",
+          "help_text": "Web trigger URL of the Mattermost Confluence Forge bridge drain endpoint. Set after installing the bridge on your Confluence Cloud site. The plugin polls this URL to fetch buffered Confluence events.",
           "secret": true
         }
     ]

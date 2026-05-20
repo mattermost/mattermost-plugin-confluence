@@ -22,7 +22,7 @@ import (
 // Docs: https://developer.atlassian.com/cloud/confluence/oauth-2-authorization-code-grants-3lo-for-apps/
 const (
 	cloudAuthURL                = "https://auth.atlassian.com/authorize"
-	cloudTokenURL               = "https://auth.atlassian.com/oauth/token"
+	cloudTokenURL               = "https://auth.atlassian.com/oauth/token" //nolint:gosec
 	cloudAudience               = "api.atlassian.com"
 	cloudAccessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
 	cloudAPIBaseFmt             = "https://api.atlassian.com/ex/confluence/%s"
@@ -42,6 +42,7 @@ func (p *Plugin) GetCloudOAuth2Config(isAdmin bool) (*oauth2.Config, error) {
 
 	scopes := []string{
 		"offline_access",
+		"read:confluence-user",
 		"read:confluence-content.summary",
 		"read:confluence-content.all",
 		"read:confluence-space.summary",
@@ -109,13 +110,13 @@ func (p *Plugin) GetCloudAccessibleResources(ctx context.Context, token *oauth2.
 	return resources, nil
 }
 
-func (p *Plugin) GetCloudClient(cloudID string, connection *types.Connection) (Client, error) {
+func (p *Plugin) GetCloudClient(instanceURL, cloudID string, connection *types.Connection) (Client, error) {
 	oconf, err := p.GetCloudOAuth2Config(connection.IsAdmin)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := p.refreshAndStoreToken(connection, cloudID, oconf)
+	token, err := p.refreshAndStoreToken(connection, instanceURL, oconf)
 	if err != nil {
 		return nil, err
 	}
