@@ -148,6 +148,13 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 		return nil, nil, fmt.Errorf("failed to load user %s", mattermostUserID)
 	}
 
+	if config.GetConfig().IsCloud {
+		return p.completeCloudOAuth2(mmuser, mattermostUserID, code, instanceID, isAdmin)
+	}
+	return p.completeServerOAuth2(mmuser, mattermostUserID, code, instanceID, isAdmin)
+}
+
+func (p *Plugin) completeServerOAuth2(mmuser *model.User, mattermostUserID, code, instanceID string, isAdmin bool) (*types.ConfluenceUser, *model.User, error) {
 	oconf, err := p.GetServerOAuth2Config(instanceID, isAdmin)
 	if err != nil {
 		p.client.Log.Error("Error getting server OAuth2 config", "InstanceID", instanceID, "error", err.Error())
@@ -158,7 +165,7 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 	defer cancel()
 	tok, err := oconf.Exchange(ctx, code)
 	if err != nil {
-		p.client.Log.Error("Error converting authorization code into token", "error", err.Error())
+		p.client.Log.Error("Error exchanging server authorization code", "error", err.Error())
 		return nil, nil, err
 	}
 
@@ -179,36 +186,118 @@ func (p *Plugin) CompleteOAuth2(mattermostUserID, code, state string, instanceID
 		return nil, nil, err
 	}
 
-	confluenceUser, err := client.GetSelf()
+	cuser, err := client.GetSelf()
 	if err != nil {
-		p.client.Log.Error("Error getting the Confluence user from client", "error", err.Error())
+		p.client.Log.Error("Error getting the Confluence user from server client", "error", err.Error())
 		return nil, nil, err
 	}
-	connection.ConfluenceUser = *confluenceUser
+	connection.ConfluenceUser = *cuser
 
-	err = p.connectUser(instanceID, mattermostUserID, connection)
-	if err != nil {
+	if err = p.connectUser(instanceID, mattermostUserID, connection); err != nil {
 		return nil, nil, err
 	}
-
 	return &connection.ConfluenceUser, mmuser, nil
 }
 
+func (p *Plugin) completeCloudOAuth2(mmuser *model.User, mattermostUserID, code, instanceID string, isAdmin bool) (*types.ConfluenceUser, *model.User, error) {
+	oconf, err := p.GetCloudOAuth2Config(isAdmin)
+	if err != nil {
+		p.client.Log.Error("Error getting cloud OAuth2 config", "error", err.Error())
+		return nil, nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tok, err := oconf.Exchange(ctx, code)
+	if err != nil {
+		p.client.Log.Error("Error exchanging cloud authorization code", "error", err.Error())
+		return nil, nil, err
+	}
+
+	// 3LO grants a token scoped across one or more Cloud sites; resolve the
+	// site this install is configured against to get its cloudId.
+	resources, err := p.GetCloudAccessibleResources(ctx, tok)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "cloud accessible-resources lookup failed")
+	}
+	cloudID := matchCloudResource(resources, instanceID)
+	if cloudID == "" {
+		return nil, nil, errors.Errorf("authenticated user has no access to %s", instanceID)
+	}
+
+	encryptedToken, err := p.NewEncodedAuthToken(tok)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	connection := &types.Connection{
+		OAuth2Token:      encryptedToken,
+		IsAdmin:          isAdmin,
+		MattermostUserID: mattermostUserID,
+	}
+
+	client, err := p.GetCloudClient(cloudID, connection)
+	if err != nil {
+		p.client.Log.Error("Error getting cloud client", "error", err.Error())
+		return nil, nil, err
+	}
+
+	cuser, err := client.GetSelf()
+	if err != nil {
+		p.client.Log.Error("Error getting the Confluence user from cloud client", "error", err.Error())
+		return nil, nil, err
+	}
+	connection.ConfluenceUser = *cuser
+
+	if err = p.connectUser(instanceID, mattermostUserID, connection); err != nil {
+		return nil, nil, err
+	}
+	return &connection.ConfluenceUser, mmuser, nil
+}
+
+// matchCloudResource picks the cloudId whose site URL matches the configured
+// instance. Confluence Cloud URLs typically look like "https://acme.atlassian.net"
+// while the wizard often captures "https://acme.atlassian.net/wiki"; compare on
+// the host-prefix to be robust.
+func matchCloudResource(resources []AccessibleResource, instanceURL string) string {
+	want := strings.TrimSuffix(strings.TrimSpace(instanceURL), "/")
+	want = strings.TrimSuffix(want, "/wiki")
+	for _, r := range resources {
+		got := strings.TrimSuffix(r.URL, "/")
+		if got == want {
+			return r.ID
+		}
+	}
+	if len(resources) == 1 {
+		return resources[0].ID
+	}
+	return ""
+}
+
 func (p *Plugin) getUserConnectURL(instanceID string, mattermostUserID string, isAdmin bool) (string, error) {
+	state := fmt.Sprintf("%v_%v", model.NewId()[0:15], mattermostUserID)
+	if isAdmin {
+		state = fmt.Sprintf("%v_%v", state, AdminMattermostUserID)
+	}
+	if err := store.StoreOAuth2State(state); err != nil {
+		p.client.Log.Error("Error storing the OAuth2 state", "InstanceID", instanceID, "State", state, "error", err.Error())
+		return "", err
+	}
+
+	if config.GetConfig().IsCloud {
+		url, err := p.GetCloudAuthCodeURL(state, isAdmin)
+		if err != nil {
+			p.client.Log.Error("Error building cloud auth code URL", "error", err.Error())
+			return "", err
+		}
+		return url, nil
+	}
+
 	conf, err := p.GetServerOAuth2Config(instanceID, isAdmin)
 	if err != nil {
 		p.client.Log.Error("Error getting server OAuth2 config", "InstanceID", instanceID, "error", err.Error())
 		return "", err
 	}
-	state := fmt.Sprintf("%v_%v", model.NewId()[0:15], mattermostUserID)
-	if isAdmin {
-		state = fmt.Sprintf("%v_%v", state, AdminMattermostUserID)
-	}
-	if err = store.StoreOAuth2State(state); err != nil {
-		p.client.Log.Error("Error storing the OAuth2 state", "InstanceID", instanceID, "State", state, "error", err.Error())
-		return "", err
-	}
-
 	return conf.AuthCodeURL(state, oauth2.AccessTypeOffline), nil
 }
 

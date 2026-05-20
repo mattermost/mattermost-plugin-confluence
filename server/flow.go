@@ -27,6 +27,7 @@ type FlowManager struct {
 	GetRedirectURL   func() string
 	webhookURL       string
 	setupFlow        *flow.Flow
+	cloudFlow        *flow.Flow
 	completionFlow   *flow.Flow
 	announcementFlow *flow.Flow
 }
@@ -54,6 +55,9 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 	setupFlow.WithSteps(
 		fm.stepWelcome(),
 		fm.stepInstanceURL(),
+		fm.stepEditionQuestion(),
+		fm.stepCloudOAuthConfigure(),
+		fm.stepCloudForgeBridge(),
 		fm.stepServerVersionQuestion(),
 		fm.stepCSversionGreaterthan9(),
 		fm.stepCSversionLessthan9(),
@@ -65,6 +69,22 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 		fm.stepCancel("install <instance-type>"),
 	)
 	fm.setupFlow = setupFlow
+
+	cloudFlow, err := fm.newFlow("cloud-setup")
+	if err != nil {
+		p.client.Log.Error("Error creating cloud setup flow", "error", err.Error())
+		return nil, err
+	}
+	cloudFlow.WithSteps(
+		fm.stepCloudWelcome(),
+		fm.stepCloudInstanceURL(),
+		fm.stepCloudOAuthConfigure(),
+		fm.stepCloudForgeBridge(),
+		fm.stepOAuthConnect(),
+		fm.stepDone(),
+		fm.stepCancel("install cloud"),
+	)
+	fm.cloudFlow = cloudFlow
 
 	completionFlow, err := fm.newFlow("completion")
 	if err != nil {
@@ -112,6 +132,9 @@ func (fm *FlowManager) newFlow(name flow.Name) (*flow.Flow, error) {
 
 const (
 	stepWelcome                  flow.Name = "welcome"
+	stepEditionQuestion          flow.Name = "edition-question"
+	stepCloudOAuthConfigure      flow.Name = "cloud-oauth-configure"
+	stepCloudForgeBridge         flow.Name = "cloud-forge-bridge"
 	stepServerVersionQuestion    flow.Name = "server-verstion-question"
 	stepConfluenceURL            flow.Name = "confluence-url"
 	stepOAuthInput               flow.Name = "oauth-input"
@@ -126,7 +149,20 @@ const (
 
 	keyConfluenceURL     = "ConfluenceURL"
 	keyIsOAuthConfigured = "IsOAuthConfigured"
+	keyOAuthCompleteURL  = "OAuthCompleteURL"
+	keyForgeInstallURL   = "ForgeInstallURL"
+	keyForgeSharedSecret = "ForgeSharedSecret"
 )
+
+// confluenceCloudScopes is the 3LO scope list the wizard advertises and the
+// plugin requests. Mirrors GetCloudOAuth2Config in instance_cloud.go.
+const confluenceCloudScopes = "offline_access, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
+
+// forgeInstallURL is the private-distribution install link for the Mattermost
+// Confluence Forge bridge. We deploy the Forge app once into the Mattermost
+// developer account and publish the link here. Override at build time if a
+// fork ships its own bridge.
+var forgeInstallURL = "https://developer.atlassian.com/console/install/mattermost-confluence-bridge"
 
 func cancelButton() flow.Button {
 	return flow.Button{
@@ -156,11 +192,14 @@ func continueButton(next flow.Name) flow.Button {
 }
 
 func (fm *FlowManager) getBaseState() flow.State {
-	config := fm.getConfiguration()
-	isOAuthConfigured := config.ConfluenceOAuthClientID != "" || config.ConfluenceOAuthClientSecret != ""
+	cfg := fm.getConfiguration()
+	isOAuthConfigured := cfg.ConfluenceOAuthClientID != "" || cfg.ConfluenceOAuthClientSecret != ""
 	return flow.State{
-		keyConfluenceURL:     config.GetConfluenceBaseURL(),
+		keyConfluenceURL:     cfg.GetConfluenceBaseURL(),
 		keyIsOAuthConfigured: isOAuthConfigured,
+		keyOAuthCompleteURL:  util.GetPluginURL() + routeUserComplete,
+		keyForgeInstallURL:   forgeInstallURL,
+		keyForgeSharedSecret: cfg.ForgeSharedSecret,
 	}
 }
 
@@ -175,6 +214,15 @@ func (fm *FlowManager) StartSetupWizard(userID string, delegatedFrom string) err
 
 	fm.client.Log.Debug("Started setup wizard", "userID", userID, "delegatedFrom", delegatedFrom)
 
+	return nil
+}
+
+func (fm *FlowManager) StartCloudSetupWizard(userID string) error {
+	state := fm.getBaseState()
+	if err := fm.cloudFlow.ForUser(userID).Start(state); err != nil {
+		fm.plugin.client.Log.Error("Error starting cloud setup flow", "UserID", userID, "error", err.Error())
+		return err
+	}
 	return nil
 }
 
@@ -327,11 +375,12 @@ func (fm *FlowManager) submitConfluenceURL(_ *flow.Flow, submitted map[string]in
 		return "", nil, errorList, nil
 	}
 
-	config := fm.getConfiguration()
-	config.ConfluenceURL = confluenceURL
-	config.Sanitize()
+	cfg := fm.getConfiguration()
+	cfg.ConfluenceURL = confluenceURL
+	cfg.IsCloud = false
+	cfg.Sanitize()
 
-	configMap, err := config.ToMap()
+	configMap, err := cfg.ToMap()
 	if err != nil {
 		fm.plugin.client.Log.Error("Error converting config to map", "Flow step", stepConfluenceURL, "error", err.Error())
 		return "", nil, nil, err
@@ -342,8 +391,8 @@ func (fm *FlowManager) submitConfluenceURL(_ *flow.Flow, submitted map[string]in
 		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
 	}
 
-	return stepServerVersionQuestion, flow.State{
-		keyConfluenceURL: config.GetConfluenceBaseURL(),
+	return stepEditionQuestion, flow.State{
+		keyConfluenceURL: cfg.GetConfluenceBaseURL(),
 	}, nil, nil
 }
 
@@ -539,4 +588,193 @@ func (fm *FlowManager) getConfluenceBaseURL() string {
 	pluginConfig := config.GetConfig()
 
 	return pluginConfig.ConfluenceURL
+}
+
+func (fm *FlowManager) stepCloudWelcome() flow.Step {
+	welcomeText := fmt.Sprintf(
+		":wave: Welcome — let's connect Mattermost to a Confluence **Cloud** site.\n\n"+
+			"This sets up two things:\n"+
+			"1. **OAuth 2.0** so Mattermost can act on Confluence as your users.\n"+
+			"2. A small **Forge bridge app** that delivers Confluence events into Mattermost (the GA replacement for the Connect descriptor Atlassian removed on March 31, 2026).\n\n"+
+			"[Learn more](%s)",
+		documentationURL,
+	)
+	return flow.NewStep(stepWelcome).
+		WithPretext("##### :white_check_mark: Step 1: Confluence Cloud URL").
+		WithText(welcomeText).
+		WithButton(continueButton(stepConfluenceURL)).
+		WithButton(cancelButton())
+}
+
+func (fm *FlowManager) stepCloudInstanceURL() flow.Step {
+	return flow.NewStep(stepConfluenceURL).
+		WithText("Click **Continue** to enter your Confluence Cloud site URL (e.g. `https://acme.atlassian.net/wiki`).").
+		WithButton(flow.Button{
+			Name:  "Continue",
+			Color: flow.ColorPrimary,
+			Dialog: &model.Dialog{
+				Title:            "Confluence Cloud URL",
+				IntroductionText: "Enter your Confluence Cloud site URL.",
+				SubmitLabel:      "Save & continue",
+				Elements: []model.DialogElement{
+					{
+						DisplayName: "Confluence Cloud URL",
+						Name:        "confluence_url",
+						Type:        "text",
+						SubType:     "url",
+						Placeholder: "https://acme.atlassian.net/wiki",
+					},
+				},
+			},
+			OnDialogSubmit: fm.submitCloudConfluenceURL,
+		}).
+		WithButton(cancelButton())
+}
+
+func (fm *FlowManager) submitCloudConfluenceURL(_ *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
+	confluenceURL, ok := submitted["confluence_url"].(string)
+	if !ok || strings.TrimSpace(confluenceURL) == "" {
+		return "", nil, map[string]string{"confluence_url": "Confluence URL is required"}, nil
+	}
+	confluenceURL = strings.TrimSpace(confluenceURL)
+
+	if _, err := service.CheckConfluenceURL(fm.MMSiteURL, confluenceURL, false); err != nil {
+		return "", nil, map[string]string{"confluence_url": err.Error()}, nil
+	}
+
+	cfg := fm.getConfiguration()
+	cfg.ConfluenceURL = confluenceURL
+	cfg.IsCloud = true
+	cfg.Sanitize()
+	configMap, err := cfg.ToMap()
+	if err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to convert config to map")
+	}
+	if err = fm.client.Configuration.SavePluginConfig(configMap); err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
+	}
+
+	return stepCloudOAuthConfigure, flow.State{
+		keyConfluenceURL: cfg.GetConfluenceBaseURL(),
+	}, nil, nil
+}
+
+func (fm *FlowManager) stepEditionQuestion() flow.Step {
+	return flow.NewStep(stepEditionQuestion).
+		WithText("Is this a Confluence **Cloud** site (`*.atlassian.net`) or a self-hosted **Server / Data Center** instance?").
+		WithButton(flow.Button{
+			Name:    "Cloud",
+			Color:   flow.ColorPrimary,
+			OnClick: flow.Goto(stepCloudOAuthConfigure),
+		}).
+		WithButton(flow.Button{
+			Name:    "Server / Data Center",
+			Color:   flow.ColorDefault,
+			OnClick: flow.Goto(stepServerVersionQuestion),
+		}).
+		WithButton(cancelButton())
+}
+
+// stepCloudOAuthConfigure walks the admin through registering a 3LO app in
+// the Atlassian developer console. Mirrors stepCloudOAuthConfigure in the
+// Jira plugin (see mattermost-plugin-jira/server/setup_flow.go).
+func (fm *FlowManager) stepCloudOAuthConfigure() flow.Step {
+	oauthCompleteURL := util.GetPluginURL() + routeUserComplete
+	text := fmt.Sprintf("##### :white_check_mark: Register an OAuth 2.0 app in Atlassian\n\n"+
+		"1. Open the [Atlassian Developer Console](https://developer.atlassian.com/console/myapps/create-3lo-app/) and create an **OAuth 2.0 integration**.\n"+
+		"2. Name it something like `Mattermost Confluence Plugin — <your company>`. Accept the terms and create.\n"+
+		"3. In **Permissions**, add the **Confluence API** and configure these scopes:\n"+
+		"   %s\n"+
+		"   These may be split between **Classic** and **Granular** scopes in the console.\n"+
+		"4. In **Authorization** → **OAuth 2.0 (3LO)** → **Add**, set the Callback URL to:\n"+
+		"   `%s`\n"+
+		"5. In **Settings**, copy the **Client ID** and **Secret**.\n"+
+		"6. Optionally share the app with your org from **Distribution**.\n"+
+		"7. Click **Configure** below and paste the credentials.",
+		confluenceCloudScopes, oauthCompleteURL)
+
+	return flow.NewStep(stepCloudOAuthConfigure).
+		WithText(text).
+		WithButton(flow.Button{
+			Name:  "Configure",
+			Color: flow.ColorPrimary,
+			Dialog: &model.Dialog{
+				Title:       "Confluence Cloud OAuth 2.0",
+				SubmitLabel: "Continue",
+				Elements: []model.DialogElement{
+					{
+						DisplayName: "Confluence Cloud OAuth Client ID",
+						Name:        "client_id",
+						Type:        "text",
+						SubType:     "text",
+						HelpText:    "The Client ID from the Atlassian developer console.",
+					},
+					{
+						DisplayName: "Confluence Cloud OAuth Client Secret",
+						Name:        "client_secret",
+						Type:        "text",
+						SubType:     "text",
+						HelpText:    "The Client Secret from the Atlassian developer console.",
+					},
+				},
+			},
+			OnDialogSubmit: fm.submitCloudOAuthConfig,
+		}).
+		WithButton(cancelButton())
+}
+
+func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
+	errorList := map[string]string{}
+
+	clientID, ok := submitted["client_id"].(string)
+	if !ok || strings.TrimSpace(clientID) == "" {
+		errorList["client_id"] = "Client ID is required"
+	}
+	clientSecret, ok := submitted["client_secret"].(string)
+	if !ok || strings.TrimSpace(clientSecret) == "" {
+		errorList["client_secret"] = "Client Secret is required"
+	}
+	if len(errorList) != 0 {
+		return "", nil, errorList, nil
+	}
+
+	cfg := fm.getConfiguration()
+	cfg.ConfluenceOAuthClientID = strings.TrimSpace(clientID)
+	cfg.ConfluenceOAuthClientSecret = strings.TrimSpace(clientSecret)
+	cfg.Sanitize()
+
+	configMap, err := cfg.ToMap()
+	if err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to convert config to map")
+	}
+	if err = fm.client.Configuration.SavePluginConfig(configMap); err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
+	}
+
+	return stepCloudForgeBridge, flow.State{
+		keyForgeInstallURL:   forgeInstallURL,
+		keyForgeSharedSecret: cfg.ForgeSharedSecret,
+	}, nil, nil
+}
+
+// stepCloudForgeBridge tells the admin to install the Forge bridge that
+// replaces the dead Connect descriptor's webhook subscriptions.
+func (fm *FlowManager) stepCloudForgeBridge() flow.Step {
+	text := "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
+		"Atlassian removed the Connect-descriptor install path for new Confluence Cloud sites on March 31, 2026. " +
+		"Event subscriptions on Cloud now run through a small Forge app we publish.\n\n" +
+		"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
+		"2. After installation, run `forge webtrigger` against your tenant (or open the install log) to copy the **drain URL** and **register URL**.\n" +
+		"3. Paste the **drain URL** into **System Console → Plugins → Confluence → Forge Drain URL**.\n" +
+		"4. POST the shared secret below to the **register URL** once:\n" +
+		"```\n" +
+		"curl -X POST -H 'Content-Type: application/json' \\\n" +
+		"  -d '{\"secret\":\"{{.ForgeSharedSecret}}\"}' \\\n" +
+		"  '<register-url>'\n" +
+		"```\n" +
+		"The Mattermost plugin will then poll the bridge for events and post to subscribed channels."
+
+	return flow.NewStep(stepCloudForgeBridge).
+		WithText(text).
+		WithButton(continueButton(stepOAuthConnect))
 }

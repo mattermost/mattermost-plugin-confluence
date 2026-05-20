@@ -82,3 +82,10 @@ bin
 # webapp test cases
 webapp/build/test-results.xml
 webapp/junit.xml
+
+# Forge bridge
+forge/dist/
+forge/scripts-dist/
+forge/node_modules/
+forge/.forge/
+forge/package-lock.json

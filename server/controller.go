@@ -26,7 +26,6 @@ type Endpoint struct {
 // Endpoints is a map of endpoint key to endpoint object
 // Usage: getEndpointKey(GetMetadata): GetMetadata
 var Endpoints = map[string]*Endpoint{
-	getEndpointKey(atlassianConnectJSON):                atlassianConnectJSON,
 	getEndpointKey(confluenceCloudWebhook):              confluenceCloudWebhook,
 	getEndpointKey(saveChannelSubscription):             saveChannelSubscription,
 	getEndpointKey(editChannelSubscription):             editChannelSubscription,

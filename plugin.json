@@ -45,6 +45,21 @@
           "type": "text",
           "help_text": "Set this [API token](https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html) to get notified for confluence events when the user triggering the event is not connected to Confluence.\n**Note:** API token should be created using an admin Confluence account. Otherwise, the notification will not be delivered for the spaces/pages user does not have access.",
           "secret": true
+        },
+        {
+          "key": "ForgeSharedSecret",
+          "display_name": "Forge Bridge Shared Secret",
+          "type": "generated",
+          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). After regenerating, POST the new value to the Forge app's `register` web trigger.",
+          "regenerate_help_text": "Regenerates the shared secret. Existing Forge bridge installations must be re-registered with the new value.",
+          "secret": true
+        },
+        {
+          "key": "ForgeDrainURL",
+          "display_name": "Forge Drain URL",
+          "type": "text",
+          "help_text": "Web trigger URL of the Mattermost Confluence Forge bridge `drain` endpoint. Set after installing the bridge on your Confluence Cloud site. The plugin polls this URL to fetch buffered Confluence events.",
+          "secret": true
         }
     ]
   }

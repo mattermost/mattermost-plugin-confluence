@@ -37,6 +37,7 @@ type Plugin struct {
 	Router *mux.Router
 
 	flowManager *FlowManager
+	forgePoller *ForgePoller
 
 	// templates are loaded on startup
 	templates map[string]*template.Template
@@ -83,6 +84,16 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
+	p.forgePoller = NewForgePoller(p)
+	p.forgePoller.Start()
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	if p.forgePoller != nil {
+		p.forgePoller.Stop()
+	}
 	return nil
 }
 

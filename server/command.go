@@ -55,22 +55,9 @@ const (
 	generalDeleteError = "error occurred while deleting subscription with name **%s**"
 )
 
-const (
-	installCloudHelp = `
-To finish the configuration, add a new app in your Confluence Cloud instance following these steps:
-1. Open the [Atlassian Admin](https://admin.atlassian.com/) page while logged in with an admin account.
-2. Select **Apps** from the side panel.
-3. Choose **Sites** and select the site that will be connected to Mattermost.
-4. Select **Connected Apps** from the side panel.
-5. Navigate to the **Settings** tab and enable **Development Mode**.
-6. Press **Install a private app** at the top of the page.
-7. Select **Confluence** as the product to install the app on.
-8. In **App descriptor URL**, enter: %s
-9. Press **Install app** to complete the installation.
-
-Once these steps are completed, your Confluence Cloud instance is fully configured and ready to use. You can now create subscriptions to receive notifications in Mattermost.
-`
-)
+// The legacy Connect-descriptor install path was killed by Atlassian on
+// 2026-03-31. Cloud setup now runs through the OAuth 2.0 (3LO) + Forge
+// bridge wizard in flow.go (see stepCloudOAuthConfigure).
 
 var ConfluenceCommandHandler = Handler{
 	handlers: map[string]HandlerFunc{
@@ -223,15 +210,22 @@ func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, _ ...string) *mod
 	return p.responsef(commArgs, "You have successfully disconnected your Confluence account (**%s**).", disconnected.DisplayName)
 }
 
-func showInstallCloudHelp(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
+func showInstallCloudHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
 	if !util.IsSystemAdmin(context.UserId) {
 		postCommandResponse(context, installOnlySystemAdmin)
 		return &model.CommandResponse{}
 	}
 
-	cloudURL := util.GetPluginURL() + util.GetAtlassianConnectURLPath()
-	postCommandResponse(context, fmt.Sprintf(installCloudHelp, cloudURL))
-	return &model.CommandResponse{}
+	if err := p.flowManager.StartCloudSetupWizard(context.UserId); err != nil {
+		p.client.Log.Error("Failed to start cloud setup wizard", "user_id", context.UserId, "error", err.Error())
+		return &model.CommandResponse{
+			Text: "Failed to start cloud setup wizard",
+		}
+	}
+
+	return &model.CommandResponse{
+		Text: "Please continue with the Confluence bot DM for Cloud setup.",
+	}
 }
 
 func showInstallServerHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
