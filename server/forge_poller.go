@@ -43,7 +43,13 @@ type ForgePoller struct {
 func NewForgePoller(p *Plugin) *ForgePoller {
 	return &ForgePoller{
 		plugin: p,
-		client: &http.Client{Timeout: forgePollTimeout},
+		client: &http.Client{
+			Timeout: forgePollTimeout,
+			// Refuse redirects so the HMAC-signed body stays on the validated host.
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 }
 

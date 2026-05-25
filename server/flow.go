@@ -830,11 +830,11 @@ func (fm *FlowManager) submitForgeBridgeURLs(_ *flow.Flow, submitted map[string]
 	drainURL = strings.TrimSpace(drainURL)
 	registerURL = strings.TrimSpace(registerURL)
 
-	if !isHTTPSURL(drainURL) {
-		errorList["drain_url"] = "Must be an https:// URL"
+	if !isForgeWebtriggerURL(drainURL) {
+		errorList["drain_url"] = "Must be a Forge web trigger URL (https://<id>.webtrigger.atlassian.app/public/...)"
 	}
-	if !isHTTPSURL(registerURL) {
-		errorList["register_url"] = "Must be an https:// URL"
+	if !isForgeWebtriggerURL(registerURL) {
+		errorList["register_url"] = "Must be a Forge web trigger URL (https://<id>.webtrigger.atlassian.app/public/...)"
 	}
 	if len(errorList) != 0 {
 		return "", nil, errorList, nil
@@ -863,7 +863,10 @@ func (fm *FlowManager) submitForgeBridgeURLs(_ *flow.Flow, submitted map[string]
 	return stepOAuthConnect, nil, nil, nil
 }
 
-func isHTTPSURL(raw string) bool {
+// Pinned to prevent secret leak / SSRF if an admin pastes a non-Forge URL.
+const forgeWebtriggerHostSuffix = ".webtrigger.atlassian.app"
+
+func isForgeWebtriggerURL(raw string) bool {
 	if raw == "" {
 		return false
 	}
@@ -871,7 +874,13 @@ func isHTTPSURL(raw string) bool {
 	if err != nil {
 		return false
 	}
-	return u.Scheme == "https" && u.Host != ""
+	if u.Scheme != "https" || u.Host == "" {
+		return false
+	}
+	if !strings.HasSuffix(strings.ToLower(u.Host), forgeWebtriggerHostSuffix) {
+		return false
+	}
+	return strings.HasPrefix(u.Path, "/public/")
 }
 
 func postForgeRegister(registerURL, secret string) error {
@@ -889,7 +898,14 @@ func postForgeRegister(registerURL, secret string) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	// Refuse redirects so the secret stays on the validated host.
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "failed to reach register URL")
 	}
