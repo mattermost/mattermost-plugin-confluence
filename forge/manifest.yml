@@ -1,69 +1,71 @@
 modules:
   trigger:
     - key: page-created
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:created:page
     - key: page-updated
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:updated:page
     - key: page-trashed
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:trashed:page
     - key: page-restored
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:restored:page
     - key: page-deleted
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:deleted:page
     - key: comment-created
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:created:comment
     - key: comment-updated
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:updated:comment
     - key: comment-deleted
-      function: enqueue
+      function: enqueueFn
       events:
         - avi:confluence:deleted:comment
     - key: app-installed
-      function: onInstalled
+      function: onInstalledFn
       events:
         - avi:forge:installed:app
 
   webtrigger:
     - key: drain
-      function: drain
+      function: drainFn
       urlFormat: v2
       response:
         type: dynamic
     - key: register
-      function: register
+      function: registerFn
       urlFormat: v2
       response:
         type: dynamic
 
   function:
-    - key: enqueue
+    - key: enqueueFn
       handler: index.enqueue
-    - key: drain
+    - key: drainFn
       handler: index.drain
-    - key: register
+    - key: registerFn
       handler: index.register
-    - key: onInstalled
+    - key: onInstalledFn
       handler: index.onInstalled
 
 app:
   runtime:
-    name: nodejs20.x
-  id: ari:cloud:ecosystem::app/REPLACE_WITH_FORGE_APP_ID
+    name: nodejs22.x
+  id: ari:cloud:ecosystem::app/e78f4d26-6f49-4a3e-a591-18fe466fc5b0
 
 permissions:
   scopes:
     - storage:app
+    - read:confluence-content.summary
+    - write:confluence-content

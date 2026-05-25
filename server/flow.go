@@ -1,8 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -17,19 +24,20 @@ import (
 )
 
 type FlowManager struct {
-	client           *pluginapi.Client
-	plugin           *Plugin
-	pluginID         string
-	botUserID        string
-	router           *mux.Router
-	getConfiguration func() *config.Configuration
-	MMSiteURL        string
-	GetRedirectURL   func() string
-	webhookURL       string
-	setupFlow        *flow.Flow
-	cloudFlow        *flow.Flow
-	completionFlow   *flow.Flow
-	announcementFlow *flow.Flow
+	client              *pluginapi.Client
+	plugin              *Plugin
+	pluginID            string
+	botUserID           string
+	router              *mux.Router
+	getConfiguration    func() *config.Configuration
+	MMSiteURL           string
+	GetRedirectURL      func() string
+	webhookURL          string
+	setupFlow           *flow.Flow
+	cloudFlow           *flow.Flow
+	completionFlow      *flow.Flow
+	cloudCompletionFlow *flow.Flow
+	announcementFlow    *flow.Flow
 }
 
 func (p *Plugin) NewFlowManager() (*FlowManager, error) {
@@ -98,6 +106,17 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 	)
 	fm.completionFlow = completionFlow
 
+	cloudCompletionFlow, err := fm.newFlow("cloud-completion")
+	if err != nil {
+		p.client.Log.Error("Error creating new flow for cloud completion", "error", err.Error())
+		return nil, err
+	}
+	cloudCompletionFlow.WithSteps(
+		fm.stepCloudCompletionDone(),
+		fm.stepCancel("cloud-completion"),
+	)
+	fm.cloudCompletionFlow = cloudCompletionFlow
+
 	announcementFlow, err := fm.newFlow("announcement")
 	if err != nil {
 		p.client.Log.Error("Error creating new flow for announcement", "error", err.Error())
@@ -151,17 +170,10 @@ const (
 	keyIsOAuthConfigured = "IsOAuthConfigured"
 	keyOAuthCompleteURL  = "OAuthCompleteURL"
 	keyForgeInstallURL   = "ForgeInstallURL"
-	keyForgeSharedSecret = "ForgeSharedSecret" //nolint:gosec
 )
 
-// confluenceCloudScopes is the 3LO scope list the wizard advertises and the
-// plugin requests. Mirrors GetCloudOAuth2Config in instance_cloud.go.
 const confluenceCloudScopes = "offline_access, read:confluence-user, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
 
-// forgeInstallURL is the private-distribution install link for the Mattermost
-// Confluence Forge bridge. We deploy the Forge app once into the Mattermost
-// developer account and publish the link here. Override at build time if a
-// fork ships its own bridge.
 var forgeInstallURL = "https://developer.atlassian.com/console/install/mattermost-confluence-bridge"
 
 func cancelButton() flow.Button {
@@ -199,7 +211,6 @@ func (fm *FlowManager) getBaseState() flow.State {
 		keyIsOAuthConfigured: isOAuthConfigured,
 		keyOAuthCompleteURL:  util.GetPluginURL() + routeUserComplete,
 		keyForgeInstallURL:   forgeInstallURL,
-		keyForgeSharedSecret: cfg.ForgeSharedSecret,
 	}
 }
 
@@ -229,7 +240,12 @@ func (fm *FlowManager) StartCloudSetupWizard(userID string) error {
 func (fm *FlowManager) StartCompletionWizard(userID string) error {
 	state := fm.getBaseState()
 
-	if err := fm.completionFlow.ForUser(userID).Start(state); err != nil {
+	wizard := fm.completionFlow
+	if config.GetConfig().IsCloud {
+		wizard = fm.cloudCompletionFlow
+	}
+
+	if err := wizard.ForUser(userID).Start(state); err != nil {
 		fm.plugin.client.Log.Error("Error creating setup flow for user", "UserID", userID, "error", err.Error())
 		return err
 	}
@@ -584,6 +600,14 @@ func (fm *FlowManager) stepDone() flow.Step {
 		WithText(":tada: You successfully installed Confluence.")
 }
 
+func (fm *FlowManager) stepCloudCompletionDone() flow.Step {
+	return flow.NewStep(stepDone).
+		Terminal().
+		WithPretext("##### :white_check_mark: Confluence Cloud account connected").
+		WithText(":tada: You're all set. Events from Confluence will arrive through the Forge bridge — no webhook configuration needed on your Atlassian side.\n\n" +
+			"Run `/confluence subscribe` from any channel to start receiving notifications.")
+}
+
 func (fm *FlowManager) getConfluenceBaseURL() string {
 	pluginConfig := config.GetConfig()
 
@@ -638,9 +662,14 @@ func (fm *FlowManager) submitCloudConfluenceURL(_ *flow.Flow, submitted map[stri
 	}
 	confluenceURL = strings.TrimSpace(confluenceURL)
 
-	if _, err := service.CheckConfluenceURL(fm.MMSiteURL, confluenceURL, false); err != nil {
+	normalized, err := service.NormalizeConfluenceURL(confluenceURL)
+	if err != nil {
 		return "", nil, map[string]string{"confluence_url": err.Error()}, nil
 	}
+	if normalized == strings.TrimSuffix(fm.MMSiteURL, "/") {
+		return "", nil, map[string]string{"confluence_url": "This is the Mattermost site URL. Please use the Confluence Cloud URL."}, nil
+	}
+	confluenceURL = normalized
 
 	cfg := fm.getConfiguration()
 	cfg.ConfluenceURL = confluenceURL
@@ -675,9 +704,6 @@ func (fm *FlowManager) stepEditionQuestion() flow.Step {
 		WithButton(cancelButton())
 }
 
-// stepCloudOAuthConfigure walks the admin through registering a 3LO app in
-// the Atlassian developer console. Mirrors stepCloudOAuthConfigure in the
-// Jira plugin (see mattermost-plugin-jira/server/setup_flow.go).
 func (fm *FlowManager) stepCloudOAuthConfigure() flow.Step {
 	oauthCompleteURL := util.GetPluginURL() + routeUserComplete
 	text := fmt.Sprintf("##### :white_check_mark: Register an OAuth 2.0 app in Atlassian\n\n"+
@@ -753,29 +779,132 @@ func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string
 	}
 
 	return stepCloudForgeBridge, flow.State{
-		keyForgeInstallURL:   forgeInstallURL,
-		keyForgeSharedSecret: cfg.ForgeSharedSecret,
+		keyForgeInstallURL: forgeInstallURL,
 	}, nil, nil
 }
 
-// stepCloudForgeBridge tells the admin to install the Forge bridge that
-// replaces the dead Connect descriptor's webhook subscriptions.
 func (fm *FlowManager) stepCloudForgeBridge() flow.Step {
 	text := "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
 		"Atlassian removed the Connect-descriptor install path for new Confluence Cloud sites on March 31, 2026. " +
 		"Event subscriptions on Cloud now run through a small Forge app we publish.\n\n" +
 		"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
-		"2. After installation, run `forge webtrigger` against your tenant (or open the install log) to copy the **drain URL** and **register URL**.\n" +
-		"3. Paste the **drain URL** into **System Console → Plugins → Confluence → Forge Drain URL**.\n" +
-		"4. POST the shared secret below to the **register URL** once:\n" +
-		"```\n" +
-		"curl -X POST -H 'Content-Type: application/json' \\\n" +
-		"  -d '{\"secret\":\"{{.ForgeSharedSecret}}\"}' \\\n" +
-		"  '<register-url>'\n" +
-		"```\n" +
-		"The Mattermost plugin will then poll the bridge for events and post to subscribed channels."
+		"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
+		"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
+		":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
 
 	return flow.NewStep(stepCloudForgeBridge).
 		WithText(text).
-		WithButton(continueButton(stepOAuthConnect))
+		WithButton(flow.Button{
+			Name:  "Register bridge",
+			Color: flow.ColorPrimary,
+			Dialog: &model.Dialog{
+				Title:       "Forge bridge URLs",
+				SubmitLabel: "Register",
+				Elements: []model.DialogElement{
+					{
+						DisplayName: "Drain URL",
+						Name:        "drain_url",
+						Type:        "text",
+						SubType:     "url",
+						HelpText:    "The webtrigger URL labelled `drain` from the Forge install log.",
+					},
+					{
+						DisplayName: "Register URL",
+						Name:        "register_url",
+						Type:        "text",
+						SubType:     "url",
+						HelpText:    "The webtrigger URL labelled `register` from the Forge install log. Used once.",
+					},
+				},
+			},
+			OnDialogSubmit: fm.submitForgeBridgeURLs,
+		}).
+		WithButton(cancelButton())
+}
+
+func (fm *FlowManager) submitForgeBridgeURLs(_ *flow.Flow, submitted map[string]interface{}) (flow.Name, flow.State, map[string]string, error) {
+	errorList := map[string]string{}
+
+	drainURL, _ := submitted["drain_url"].(string)
+	registerURL, _ := submitted["register_url"].(string)
+	drainURL = strings.TrimSpace(drainURL)
+	registerURL = strings.TrimSpace(registerURL)
+
+	if !isHTTPSURL(drainURL) {
+		errorList["drain_url"] = "Must be an https:// URL"
+	}
+	if !isHTTPSURL(registerURL) {
+		errorList["register_url"] = "Must be an https:// URL"
+	}
+	if len(errorList) != 0 {
+		return "", nil, errorList, nil
+	}
+
+	cfg := fm.getConfiguration()
+	if strings.TrimSpace(cfg.ForgeSharedSecret) == "" {
+		return "", nil, nil, errors.New("Forge Bridge Shared Secret is not set on this plugin; reload the plugin to regenerate it")
+	}
+
+	if err := postForgeRegister(registerURL, cfg.ForgeSharedSecret); err != nil {
+		errorList["register_url"] = err.Error()
+		return "", nil, errorList, nil
+	}
+
+	cfg.ForgeDrainURL = drainURL
+	cfg.Sanitize()
+	configMap, err := cfg.ToMap()
+	if err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to convert config to map")
+	}
+	if err = fm.client.Configuration.SavePluginConfig(configMap); err != nil {
+		return "", nil, nil, errors.Wrap(err, "failed to save plugin config")
+	}
+
+	return stepOAuthConnect, nil, nil, nil
+}
+
+func isHTTPSURL(raw string) bool {
+	if raw == "" {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "https" && u.Host != ""
+}
+
+func postForgeRegister(registerURL, secret string) error {
+	body, err := json.Marshal(map[string]string{"secret": secret})
+	if err != nil {
+		return errors.Wrap(err, "failed to encode register payload")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, registerURL, bytes.NewReader(body))
+	if err != nil {
+		return errors.Wrap(err, "failed to build register request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to reach register URL")
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusNoContent, http.StatusConflict:
+		// 409 = already registered with this secret on a previous run; treat as success.
+		return nil
+	default:
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		snippet := strings.TrimSpace(string(respBody))
+		if snippet == "" {
+			snippet = resp.Status
+		}
+		return errors.Errorf("bridge rejected registration (%d): %s", resp.StatusCode, snippet)
+	}
 }

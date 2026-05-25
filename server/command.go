@@ -63,6 +63,7 @@ var ConfluenceCommandHandler = Handler{
 	handlers: map[string]HandlerFunc{
 		"list":           listChannelSubscription,
 		"unsubscribe":    deleteSubscription,
+		"install":        showInstallEditionPrompt,
 		"install/cloud":  showInstallCloudHelp,
 		"install/server": showInstallServerHelp,
 		"connect":        executeConnect,
@@ -208,6 +209,18 @@ func executeDisconnect(p *Plugin, commArgs *model.CommandArgs, _ ...string) *mod
 		return p.responsef(commArgs, "Failed to complete the **disconnection** request. Error: %v", err)
 	}
 	return p.responsef(commArgs, "You have successfully disconnected your Confluence account (**%s**).", disconnected.DisplayName)
+}
+
+func showInstallEditionPrompt(_ *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
+	if !util.IsSystemAdmin(context.UserId) {
+		postCommandResponse(context, installOnlySystemAdmin)
+		return &model.CommandResponse{}
+	}
+	postCommandResponse(context,
+		"Please specify which Confluence edition you're connecting:\n"+
+			"* `/confluence install cloud` — Confluence Cloud (`*.atlassian.net`)\n"+
+			"* `/confluence install server` — Confluence Server or Data Center")
+	return &model.CommandResponse{}
 }
 
 func showInstallCloudHelp(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {

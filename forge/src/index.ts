@@ -118,7 +118,7 @@ const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);
 const clampLimit = (raw: unknown): number => {
     const n = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(n) || n <= 0) return MAX_DRAIN_BATCH;
-    return Math.min(Math.floor(n), MAX_DRAIN_BATCH);
+    return Math.min(Math.max(Math.floor(n), 1), MAX_DRAIN_BATCH);
 };
 
 type DrainRequest = { limit?: number; ack?: string[] };

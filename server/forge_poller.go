@@ -108,10 +108,6 @@ type forgeDrainResponse struct {
 	NextCursor *string           `json:"nextCursor"`
 }
 
-type forgeEventTypePeek struct {
-	EventType string `json:"eventType"`
-}
-
 func (fp *ForgePoller) drainOnce(ctx context.Context) error {
 	cfg := config.GetConfig()
 	if cfg.ForgeDrainURL == "" || cfg.ForgeSharedSecret == "" {
@@ -177,21 +173,19 @@ func (fp *ForgePoller) post(ctx context.Context, url, secret string, body []byte
 }
 
 func (fp *ForgePoller) dispatch(evt forgeDrainEvent) error {
-	var peek forgeEventTypePeek
-	if err := json.Unmarshal(evt.Value.Event, &peek); err != nil {
-		return errors.Wrap(err, "peek event type")
-	}
-	internal, ok := forgeToInternalEvent[peek.EventType]
-	if !ok {
-		return fmt.Errorf("unmapped forge event type %q", peek.EventType)
-	}
-
-	cloudEvent, err := serializer.ConfluenceCloudEventFromJSON(bytes.NewReader(evt.Value.Event))
+	forgeEvent, err := serializer.ForgeEventFromJSON(bytes.NewReader(evt.Value.Event))
 	if err != nil {
-		return errors.Wrap(err, "deserialize cloud event")
+		return errors.Wrap(err, "deserialize forge event")
 	}
 
-	go service.SendConfluenceNotifications(cloudEvent, internal)
+	internal, ok := forgeToInternalEvent[forgeEvent.EventType]
+	if !ok {
+		return fmt.Errorf("unmapped forge event type %q", forgeEvent.EventType)
+	}
+
+	forgeEvent.BaseURL = config.GetConfig().GetConfluenceBaseURL()
+
+	go service.SendConfluenceNotifications(forgeEvent, internal)
 	return nil
 }
 

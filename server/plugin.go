@@ -114,17 +114,30 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
-	if len(configuration.EncryptionKey) != 32 {
+	regenerated := false
+	for _, field := range []struct {
+		name string
+		ptr  *string
+	}{
+		{"Webhook Secret", &configuration.Secret},
+		{"Encryption Key", &configuration.EncryptionKey},
+		{"Forge Bridge Shared Secret", &configuration.ForgeSharedSecret},
+	} {
+		if len(*field.ptr) == 32 {
+			continue
+		}
 		newKey, err := generateRandomKey(32)
 		if err != nil {
-			config.Mattermost.LogError("Error generating encryption key.", "Error", err.Error())
+			config.Mattermost.LogError("Error generating "+field.name+".", "Error", err.Error())
 			return err
 		}
-		configuration.EncryptionKey = newKey
-		config.Mattermost.LogInfo("Auto-generated missing Encryption Key.")
-
+		*field.ptr = newKey
+		config.Mattermost.LogInfo("Auto-generated missing " + field.name + ".")
+		regenerated = true
+	}
+	if regenerated {
 		if err := p.savePluginConfig(&configuration); err != nil {
-			config.Mattermost.LogError("Error saving auto-generated encryption key.", "Error", err.Error())
+			config.Mattermost.LogError("Error saving auto-generated secrets.", "Error", err.Error())
 			return err
 		}
 	}

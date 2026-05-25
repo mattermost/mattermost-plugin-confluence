@@ -352,11 +352,6 @@ func (p *Plugin) connectUser(instanceID, mattermostUserID string, connection *ty
 		return err
 	}
 
-	if err = store.StoreConnection(instanceID, mattermostUserID, connection); err != nil {
-		p.client.Log.Error("Error storing connection", "InstanceID", instanceID, "UserID", mattermostUserID, "error", err.Error())
-		return err
-	}
-
 	if err = store.StoreConnection(instanceID, AdminMattermostUserID, connection); err != nil {
 		p.client.Log.Error("Error storing connection", "InstanceID", instanceID, "UserID", mattermostUserID, "error", err.Error())
 		return err
