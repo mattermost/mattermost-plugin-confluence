@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
@@ -25,21 +26,23 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 )
 
+const forgePollerJobKey = "forge_drain_poller"
+
 const (
 	forgePollInterval = 30 * time.Second
 	forgePollTimeout  = 20 * time.Second
 	forgeDrainBatch   = 100
 )
 
-// ForgePoller drains events from the Confluence Forge bridge on a ticker.
-// One instance per plugin process.
+// ForgePoller drains events from the Confluence Forge bridge. In a clustered
+// deployment, cluster.Schedule guarantees only one node runs the poll loop at
+// any time via a distributed mutex.
 type ForgePoller struct {
 	plugin *Plugin
 	client *http.Client
 
-	mu      sync.Mutex
-	stop    chan struct{}
-	stopped chan struct{}
+	mu  sync.Mutex
+	job *cluster.Job
 }
 
 func NewForgePoller(p *Plugin) *ForgePoller {
@@ -58,40 +61,36 @@ func NewForgePoller(p *Plugin) *ForgePoller {
 func (fp *ForgePoller) Start() {
 	fp.mu.Lock()
 	defer fp.mu.Unlock()
-	if fp.stop != nil {
-		return // already running
+	if fp.job != nil {
+		return
 	}
-	fp.stop = make(chan struct{})
-	fp.stopped = make(chan struct{})
-	go fp.loop(fp.stop, fp.stopped)
+	job, err := cluster.Schedule(
+		fp.plugin.API,
+		forgePollerJobKey,
+		cluster.MakeWaitForInterval(forgePollInterval),
+		func() {
+			if err := fp.drainOnce(context.Background()); err != nil {
+				fp.plugin.client.Log.Debug("forge drain failed", "error", err.Error())
+			}
+		},
+	)
+	if err != nil {
+		fp.plugin.client.Log.Error("failed to schedule forge drain poller", "error", err.Error())
+		return
+	}
+	fp.job = job
 }
 
 func (fp *ForgePoller) Stop() {
 	fp.mu.Lock()
-	stop, stopped := fp.stop, fp.stopped
-	fp.stop, fp.stopped = nil, nil
+	job := fp.job
+	fp.job = nil
 	fp.mu.Unlock()
-	if stop == nil {
+	if job == nil {
 		return
 	}
-	close(stop)
-	<-stopped
-}
-
-func (fp *ForgePoller) loop(stop, stopped chan struct{}) {
-	defer close(stopped)
-	t := time.NewTicker(forgePollInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-stop:
-			return
-		case <-t.C:
-			if err := fp.drainOnce(context.Background()); err != nil {
-				fp.plugin.client.Log.Debug("forge drain failed", "error", err.Error())
-			}
-		}
+	if err := job.Close(); err != nil {
+		fp.plugin.client.Log.Warn("failed to stop forge drain poller", "error", err.Error())
 	}
 }
 
