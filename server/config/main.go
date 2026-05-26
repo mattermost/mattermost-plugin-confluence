@@ -33,6 +33,11 @@ type Configuration struct {
 	IsCloud           bool   `json:"iscloud"`
 	ForgeSharedSecret string `json:"forgesharedsecret"`
 	ForgeDrainURL     string `json:"forgedrainurl"`
+	ForgeInstallURL   string `json:"forgeinstallurl"`
+}
+
+func (c *Configuration) GetForgeInstallURL() string {
+	return strings.TrimSpace(c.ForgeInstallURL)
 }
 
 func GetConfig() *Configuration {

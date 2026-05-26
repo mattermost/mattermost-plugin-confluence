@@ -18,8 +18,6 @@ type Manifest = {
     };
 };
 
-const PLACEHOLDER_APP_ID = 'REPLACE_WITH_FORGE_APP_ID';
-
 const manifestPath = path.resolve(__dirname, '..', 'manifest.yml');
 const raw = fs.readFileSync(manifestPath, 'utf8');
 const manifest = yaml.load(raw) as Manifest;
@@ -67,10 +65,6 @@ if (fetchBackend.length > 0) {
         'permissions.external.fetch.backend must be empty (pull architecture, no egress); ' +
             `found: ${JSON.stringify(fetchBackend)}`,
     );
-}
-
-if (manifest.app?.id?.includes(PLACEHOLDER_APP_ID)) {
-    warnings.push(`app.id still has the placeholder "${PLACEHOLDER_APP_ID}" — expected before first deploy`);
 }
 
 if (warnings.length > 0) {

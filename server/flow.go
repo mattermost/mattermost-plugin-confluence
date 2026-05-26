@@ -174,8 +174,6 @@ const (
 
 const confluenceCloudScopes = "offline_access, read:confluence-user, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
 
-var forgeInstallURL = "https://developer.atlassian.com/console/install/mattermost-confluence-bridge"
-
 func cancelButton() flow.Button {
 	return flow.Button{
 		Name:    "Cancel setup",
@@ -210,7 +208,7 @@ func (fm *FlowManager) getBaseState() flow.State {
 		keyConfluenceURL:     cfg.GetConfluenceBaseURL(),
 		keyIsOAuthConfigured: isOAuthConfigured,
 		keyOAuthCompleteURL:  util.GetPluginURL() + routeUserComplete,
-		keyForgeInstallURL:   forgeInstallURL,
+		keyForgeInstallURL:   cfg.GetForgeInstallURL(),
 	}
 }
 
@@ -619,7 +617,7 @@ func (fm *FlowManager) stepCloudWelcome() flow.Step {
 		":wave: Welcome — let's connect Mattermost to a Confluence **Cloud** site.\n\n"+
 			"This sets up two things:\n"+
 			"1. **OAuth 2.0** so Mattermost can act on Confluence as your users.\n"+
-			"2. A small **Forge bridge app** that delivers Confluence events into Mattermost (the GA replacement for the Connect descriptor Atlassian removed on March 31, 2026).\n\n"+
+			"2. A small **Forge bridge app** that delivers Confluence events into Mattermost.\n\n"+
 			"[Learn more](%s)",
 		documentationURL,
 	)
@@ -779,21 +777,31 @@ func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string
 	}
 
 	return stepCloudForgeBridge, flow.State{
-		keyForgeInstallURL: forgeInstallURL,
+		keyForgeInstallURL: fm.getConfiguration().GetForgeInstallURL(),
 	}, nil, nil
 }
 
 func (fm *FlowManager) stepCloudForgeBridge() flow.Step {
-	text := "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
-		"Atlassian removed the Connect-descriptor install path for new Confluence Cloud sites on March 31, 2026. " +
-		"Event subscriptions on Cloud now run through a small Forge app we publish.\n\n" +
-		"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
-		"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
-		"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
-		":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
+	installURL := fm.getConfiguration().GetForgeInstallURL()
+	var text string
+	if installURL == "" {
+		text = "##### :warning: Forge bridge install URL not configured\n\n" +
+			"Event subscriptions on Confluence Cloud run through a small Forge app. The install URL for that app has not been set in the plugin configuration.\n\n" +
+			"Ask your Mattermost System Administrator to set **Forge Bridge Install URL** in **System Console → Plugins → Confluence**, then restart this setup."
+	} else {
+		text = "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
+			"Event subscriptions on Confluence Cloud run through a small Forge app we publish.\n\n" +
+			"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
+			"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
+			"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
+			":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
+	}
 
-	return flow.NewStep(stepCloudForgeBridge).
-		WithText(text).
+	step := flow.NewStep(stepCloudForgeBridge).WithText(text)
+	if installURL == "" {
+		return step.WithButton(cancelButton())
+	}
+	return step.
 		WithButton(flow.Button{
 			Name:  "Register bridge",
 			Color: flow.ColorPrimary,
@@ -912,8 +920,11 @@ func postForgeRegister(registerURL, secret string) error {
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
-	case http.StatusOK, http.StatusNoContent, http.StatusConflict:
-		// 409 = already registered with this secret on a previous run; treat as success.
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	case http.StatusConflict:
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		config.Mattermost.LogInfo("Forge register returned 409 (treated as already registered)", "body", string(respBody))
 		return nil
 	default:
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))

@@ -60,6 +60,12 @@
           "type": "text",
           "help_text": "Web trigger URL of the Mattermost Confluence Forge bridge drain endpoint. Set after installing the bridge on your Confluence Cloud site. The plugin polls this URL to fetch buffered Confluence events.",
           "secret": true
+        },
+        {
+          "key": "ForgeInstallURL",
+          "display_name": "Forge Bridge Install URL",
+          "type": "text",
+          "help_text": "URL the setup wizard sends admins to so they can install the Forge bridge on their Confluence Cloud site. Required for Cloud installs. Set this to the install link of the Mattermost-published Forge app once it is deployed, or to your own Forge app if you self-host the bridge."
         }
     ]
   }
