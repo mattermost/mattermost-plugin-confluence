@@ -14,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
+	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
@@ -46,6 +47,8 @@ func (p *Plugin) GetCloudOAuth2Config(isAdmin bool) (*oauth2.Config, error) {
 		"read:confluence-content.summary",
 		"read:confluence-content.all",
 		"read:confluence-space.summary",
+		"read:page:confluence",
+		"read:comment:confluence",
 	}
 	if isAdmin {
 		scopes = append(scopes, "write:confluence-content")
@@ -125,4 +128,22 @@ func (p *Plugin) GetCloudClient(instanceURL, cloudID string, connection *types.C
 	httpClient.Timeout = 10 * time.Second
 
 	return newCloudClient(fmt.Sprintf(cloudAPIBaseFmt, cloudID), httpClient), nil
+}
+
+// cloudClientForActor builds a Cloud REST client using the OAuth token of the
+// Atlassian account that triggered the event. Returns an error if that account
+// isn't connected to a Mattermost user.
+func (p *Plugin) cloudClientForActor(instanceURL, cloudID, actorAccountID string) (Client, error) {
+	if instanceURL == "" || cloudID == "" || actorAccountID == "" {
+		return nil, errors.New("missing instance / cloudID / actor")
+	}
+	mmUserIDPtr, err := store.GetMattermostUserIDFromConfluenceID(instanceURL, actorAccountID)
+	if err != nil || mmUserIDPtr == nil || *mmUserIDPtr == "" {
+		return nil, errors.New("event actor is not connected")
+	}
+	connection, err := store.LoadConnection(instanceURL, *mmUserIDPtr)
+	if err != nil {
+		return nil, errors.Wrap(err, "load actor connection")
+	}
+	return p.GetCloudClient(instanceURL, cloudID, connection)
 }
