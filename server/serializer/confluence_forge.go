@@ -53,6 +53,7 @@ type ForgeContent struct {
 	Space      ForgeSpace      `json:"space"`
 	Container  *ForgeContent   `json:"container,omitempty"`
 	Extensions ForgeExtensions `json:"extensions,omitempty"`
+	Body       string          `json:"body,omitempty"`
 }
 
 type ForgeExtensions struct {
@@ -190,13 +191,6 @@ func (e *ForgeEvent) GetNotificationPost(eventType string) *model.Post {
 
 func (e *ForgeEvent) ActorAccountID() string {
 	return e.AtlassianID
-}
-
-func (e *ForgeEvent) CommentLocation() string {
-	if e.Content == nil {
-		return ""
-	}
-	return e.Content.Extensions.Location
 }
 
 // MentionPageContext returns the parent page's title and URL: the page itself

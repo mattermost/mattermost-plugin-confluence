@@ -782,26 +782,15 @@ func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string
 }
 
 func (fm *FlowManager) stepCloudForgeBridge() flow.Step {
-	installURL := fm.getConfiguration().GetForgeInstallURL()
-	var text string
-	if installURL == "" {
-		text = "##### :warning: Forge bridge install URL not configured\n\n" +
-			"Event subscriptions on Confluence Cloud run through a small Forge app. The install URL for that app has not been set in the plugin configuration.\n\n" +
-			"Ask your Mattermost System Administrator to set **Forge Bridge Install URL** in **System Console → Plugins → Confluence**, then restart this setup."
-	} else {
-		text = "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
-			"Event subscriptions on Confluence Cloud run through a small Forge app we publish.\n\n" +
-			"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
-			"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
-			"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
-			":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
-	}
+	text := "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
+		"Event subscriptions on Confluence Cloud run through a small Forge app we publish.\n\n" +
+		"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
+		"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
+		"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
+		":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
 
-	step := flow.NewStep(stepCloudForgeBridge).WithText(text)
-	if installURL == "" {
-		return step.WithButton(cancelButton())
-	}
-	return step.
+	return flow.NewStep(stepCloudForgeBridge).
+		WithText(text).
 		WithButton(flow.Button{
 			Name:  "Register bridge",
 			Color: flow.ColorPrimary,

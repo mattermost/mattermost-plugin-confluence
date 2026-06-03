@@ -16,14 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
-	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 )
 
 const forgePollerJobKey = "forge_drain_poller"
@@ -118,8 +116,12 @@ type forgeDrainResponse struct {
 func (fp *ForgePoller) drainOnce(ctx context.Context) error {
 	cfg := config.GetConfig()
 	if cfg.ForgeDrainURL == "" || cfg.ForgeSharedSecret == "" {
-		return nil // not configured, nothing to do
+		fp.plugin.client.Log.Debug("forge drain: skipped, missing config",
+			"drain_url_set", cfg.ForgeDrainURL != "",
+			"shared_secret_set", cfg.ForgeSharedSecret != "")
+		return nil
 	}
+	fp.plugin.client.Log.Debug("drain: invoked", "url", cfg.ForgeDrainURL)
 
 	body, err := json.Marshal(forgeDrainRequest{Limit: forgeDrainBatch})
 	if err != nil {
@@ -191,6 +193,7 @@ func (fp *ForgePoller) dispatch(evt forgeDrainEvent) error {
 	}
 
 	forgeEvent.BaseURL = config.GetConfig().GetConfluenceBaseURL()
+	fp.plugin.client.Log.Debug("forge dispatch", "event", internal, "base_url", forgeEvent.BaseURL, "space_key", forgeEvent.GetSpaceKey(), "page_id", forgeEvent.GetPageID())
 
 	go service.SendConfluenceNotifications(forgeEvent, internal)
 	go fp.dispatchMentionDMs(forgeEvent, internal)
@@ -198,77 +201,45 @@ func (fp *ForgePoller) dispatch(evt forgeDrainEvent) error {
 }
 
 func (fp *ForgePoller) dispatchMentionDMs(evt *serializer.ForgeEvent, internalEvent string) {
-	if evt == nil || evt.Content == nil || !mentionEligibleEvent(internalEvent) {
+	log := fp.plugin.client.Log
+	if evt == nil || evt.Content == nil {
+		log.Debug("mention DM: skipped, no content on event", "event", internalEvent)
+		return
+	}
+	if !mentionEligibleEvent(internalEvent) {
+		log.Debug("mention DM: skipped, event not mention-eligible", "event", internalEvent, "content_id", evt.Content.ID.String())
+		return
+	}
+	if evt.Content.Body == "" {
+		log.Debug("mention DM: skipped, event has no body", "event", internalEvent, "content_id", evt.Content.ID.String())
 		return
 	}
 
-	instanceURL := config.GetConfig().GetConfluenceBaseURL()
-	client, err := fp.plugin.cloudClientForActor(instanceURL, evt.Context.CloudID, evt.ActorAccountID())
+	accountIDs, err := service.ExtractMentionAccountIDsFromADF([]byte(evt.Content.Body))
 	if err != nil {
-		fp.plugin.client.Log.Debug("mention DM: no cloud client", "error", err.Error())
+		log.Warn("mention DM: failed to parse ADF body", "content_id", evt.Content.ID.String(), "error", err.Error())
 		return
 	}
-
-	var (
-		kind       service.ContentKind
-		accountIDs []string
-	)
-	if evt.Content.Type == "comment" {
-		kind = service.ContentKindComment
-		accountIDs, err = client.MentionAccountIDsInComment(evt.Content.ID.String(), evt.CommentLocation())
-	} else {
-		kind = service.ContentKindPage
-		accountIDs, err = client.MentionAccountIDsInPage(evt.Content.ID.String())
-	}
-	if err != nil {
-		if errors.Is(err, ErrCloudInsufficientScope) {
-			fp.notifyActorToReconnect(instanceURL, evt.ActorAccountID())
-		}
-		fp.plugin.client.Log.Debug("mention DM: failed to fetch mentions", "error", err.Error())
-		return
-	}
+	log.Debug("mention DM: parsed mentions", "event", internalEvent, "content_id", evt.Content.ID.String(), "mention_count", len(accountIDs), "account_ids", accountIDs)
 	if len(accountIDs) == 0 {
 		return
 	}
 
+	kind := service.ContentKindPage
+	if evt.Content.Type == "comment" {
+		kind = service.ContentKindComment
+	}
 	pageTitle, pageURL := evt.MentionPageContext()
+	instanceID := config.GetConfig().GetConfluenceBaseURL()
+	log.Debug("mention DM: dispatching", "instance_id", instanceID, "actor_account_id", evt.ActorAccountID(), "kind", kind, "page_url", pageURL)
 	service.SendMentionDMs(service.MentionDispatchParams{
-		InstanceID:     instanceURL,
+		InstanceID:     instanceID,
 		AccountIDs:     accountIDs,
 		Kind:           kind,
 		PageTitle:      pageTitle,
 		PageURL:        pageURL,
 		ActorAccountID: evt.ActorAccountID(),
 	})
-}
-
-func (fp *ForgePoller) notifyActorToReconnect(instanceURL, actorAccountID string) {
-	if actorAccountID == "" {
-		return
-	}
-	mmUserIDPtr, err := store.GetMattermostUserIDFromConfluenceID(instanceURL, actorAccountID)
-	if err != nil || mmUserIDPtr == nil || *mmUserIDPtr == "" {
-		return
-	}
-	mmUserID := *mmUserIDPtr
-
-	flagKey := "mm_reconnect_notice_v1_" + mmUserID
-	if existing, _ := config.Mattermost.KVGet(flagKey); len(existing) > 0 {
-		return
-	}
-
-	dm, appErr := config.Mattermost.GetDirectChannel(mmUserID, config.BotUserID)
-	if appErr != nil || dm == nil {
-		return
-	}
-	msg := "Your Confluence connection needs to be refreshed to enable new @-mention DM notifications. " +
-		"Please run `/confluence disconnect` and then `/confluence connect` to grant the additional permissions."
-	if _, appErr := config.Mattermost.CreatePost(&model.Post{
-		UserId: config.BotUserID, ChannelId: dm.Id, Message: msg,
-	}); appErr != nil {
-		return
-	}
-	_ = config.Mattermost.KVSet(flagKey, []byte("1"))
 }
 
 func mentionEligibleEvent(internal string) bool {

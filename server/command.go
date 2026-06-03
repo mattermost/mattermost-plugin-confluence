@@ -38,7 +38,7 @@ const (
 		"* `/confluence unsubscribe \"<name>\"` - Unsubscribe the current channel from notifications associated with the given subscription name.\n" +
 		"* `/confluence list` - List all subscriptions for the current channel.\n" +
 		"* `/confluence edit \"<name>\"` - Edit the subscription settings associated with the given subscription name.\n" +
-		"* `/confluence notifications [on|off]` - Show or change whether you get a direct message when you are @-mentioned in Confluence.\n"
+		"* `/confluence settings notifications [on|off]` - Show or change whether you get a direct message when you are @-mentioned in Confluence.\n"
 
 	sysAdminHelpText = "\n###### For System Administrators:\n" +
 		"Setup Instructions:\n" +
@@ -67,12 +67,12 @@ var ConfluenceCommandHandler = Handler{
 		"install":           showInstallEditionPrompt,
 		"install/cloud":     showInstallCloudHelp,
 		"install/server":    showInstallServerHelp,
-		"connect":           executeConnect,
-		"disconnect":        executeDisconnect,
-		"help":              confluenceHelpCommand,
-		"notifications":     executeNotificationsStatus,
-		"notifications/on":  executeNotificationsOn,
-		"notifications/off": executeNotificationsOff,
+		"connect":                    executeConnect,
+		"disconnect":                 executeDisconnect,
+		"help":                       confluenceHelpCommand,
+		"settings/notifications":     executeNotificationsStatus,
+		"settings/notifications/on":  executeNotificationsOn,
+		"settings/notifications/off": executeNotificationsOff,
 	},
 	defaultHandler: executeConfluenceDefault,
 }
@@ -88,7 +88,7 @@ func GetCommand(pAPI PluginAPI) (*model.Command, error) {
 		DisplayName:          "Confluence",
 		Description:          "Integration with Confluence.",
 		AutoComplete:         true,
-		AutoCompleteDesc:     "Available commands: connect, disconnect, subscribe, list, unsubscribe, edit, notifications, help.",
+		AutoCompleteDesc:     "Available commands: connect, disconnect, subscribe, list, unsubscribe, edit, settings, help.",
 		AutoCompleteHint:     "[command]",
 		AutocompleteData:     getAutoCompleteData(),
 		AutocompleteIconData: iconData,
@@ -96,7 +96,7 @@ func GetCommand(pAPI PluginAPI) (*model.Command, error) {
 }
 
 func getAutoCompleteData() *model.AutocompleteData {
-	confluence := model.NewAutocompleteData("confluence", "[command]", "Available commands: connect, disconnect, subscribe, list, unsubscribe, edit, notifications, help")
+	confluence := model.NewAutocompleteData("confluence", "[command]", "Available commands: connect, disconnect, subscribe, list, unsubscribe, edit, settings, help")
 
 	install := model.NewAutocompleteData("install", "", "Connect Mattermost to a Confluence instance")
 	install.RoleID = model.SystemAdminRoleId
@@ -133,12 +133,14 @@ func getAutoCompleteData() *model.AutocompleteData {
 	disconnect := model.NewAutocompleteData("disconnect", "", "Disconnect your Mattermost account from your Confluence account")
 	confluence.AddCommand(disconnect)
 
+	settings := model.NewAutocompleteData("settings", "", "Manage personal Confluence plugin settings")
 	notifications := model.NewAutocompleteData("notifications", "[on|off]", "Show or change @-mention DM notifications")
 	notifications.AddStaticListArgument("", false, []model.AutocompleteListItem{
 		{HelpText: "Enable DMs when you are mentioned in Confluence", Item: "on"},
 		{HelpText: "Disable DMs when you are mentioned in Confluence", Item: "off"},
 	})
-	confluence.AddCommand(notifications)
+	settings.AddCommand(notifications)
+	confluence.AddCommand(settings)
 
 	return confluence
 }
@@ -381,7 +383,7 @@ func executeNotificationsStatus(p *Plugin, context *model.CommandArgs, _ ...stri
 		state = "off"
 	}
 	return p.responsef(context,
-		"@-mention DM notifications are currently **%s**. Use `/confluence notifications on` or `/confluence notifications off` to change.",
+		"@-mention DM notifications are currently **%s**. Use `/confluence settings notifications on` or `/confluence settings notifications off` to change.",
 		state)
 }
 

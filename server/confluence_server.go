@@ -288,8 +288,11 @@ func (p *Plugin) GetEventDataWithAPIToken(webhookPayload *serializer.ConfluenceS
 func (p *Plugin) GetMentionAccountIDsWithAPIToken(contentID string, pluginConfig *config.Configuration) ([]string, error) {
 	path := fmt.Sprintf("%s%s%s?expand=body.storage", pluginConfig.ConfluenceURL, PathContentData, contentID)
 	body, statusCode, err := p.MakeHTTPCallWithAPIToken(path)
-	if err != nil || statusCode != http.StatusOK {
+	if err != nil {
 		return nil, err
+	}
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("admin-token mention fetch returned %d for content %s", statusCode, contentID)
 	}
 	var resp serverStorageBodyResponse
 	if err := json.Unmarshal(body, &resp); err != nil {

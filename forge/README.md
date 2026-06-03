@@ -3,6 +3,34 @@
 This Forge app is the GA replacement for the Atlassian Connect webhook
 descriptor that Atlassian closed for new installs on March 31, 2026.
 
+## What this means for your Confluence site
+
+Mattermost publishes one Forge app, and every customer Confluence Cloud
+site installs its own private copy of it. Atlassian enforces strict
+isolation between those copies, so:
+
+- Your queued Confluence events, the secret that protects your bridge,
+  and any data the bridge holds live only inside your tenant's copy.
+  Other Mattermost customers cannot see them, and Mattermost staff
+  cannot read them.
+- The bridge does not store Confluence page content anywhere. It only
+  forwards events into your own Mattermost server when your Mattermost
+  server asks for them.
+- Each tenant gets its own bridge URLs. There is no single URL that
+  could be used to read another customer's events.
+- The shared secret used to authenticate Mattermost to the bridge is
+  set once by your admin during install and is never sent to or stored
+  by Mattermost-the-company.
+
+### If you would rather run the bridge yourself
+
+Customers with strict data-residency or compliance requirements (most
+often on-prem Mattermost deployments) can run the bridge under their
+own Atlassian developer account instead of using the Mattermost-published
+one. The full bridge source is in this directory. After you deploy it
+yourself, point the plugin at your install link via
+**System Console → Plugins → Confluence → Forge Bridge Install URL**.
+
 ## Shape
 
 This is a **pull** bridge:
@@ -22,23 +50,23 @@ Trade-off: Atlassian's Forge `trigger` module already has up to 3 minutes
 of delivery delay, so the additional ~30s polling latency we add on the
 plugin side is small in context.
 
-## Install (operator workflow)
-
-We `forge deploy` this app once into the Mattermost Atlassian developer
-account, then share a private install link. Customers do NOT run
-`forge deploy` themselves.
+## Operator workflow (Mattermost — one-time, ships the app)
 
 1. `npm install` in this directory.
 2. `forge login` and `forge register` (one-time, generates the app ID —
    paste it into `manifest.yml` under `app.id`).
 3. `forge deploy --environment production`.
-4. `forge install --site https://<test-tenant>.atlassian.net` to verify on
-   a test tenant. For end-customer distribution, generate a private
-   distribution link from the Atlassian developer console.
+4. `forge install --site https://<test-tenant>.atlassian.net` to verify
+   on a test tenant.
+5. From the Atlassian developer console, generate a private distribution
+   link and publish it as the `Forge Bridge Install URL` plugin setting
+   default for downstream Mattermost installs.
 
-## Wire-up (customer workflow)
+## Customer workflow (each Confluence Cloud tenant — one-time)
 
-1. Confluence admin clicks the install link → app installs on their site.
+1. Confluence admin clicks the install link from the Mattermost setup
+   wizard → app installs on their site (Atlassian creates a per-tenant
+   install with isolated storage and unique web trigger URLs).
 2. Confluence admin runs `forge webtrigger` (or reads the install logs)
    to get the `register` and `drain` URLs. We'll wrap this in a UI Kit
    admin page in a follow-up.

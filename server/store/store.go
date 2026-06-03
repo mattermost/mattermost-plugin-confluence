@@ -163,12 +163,13 @@ func StoreConnection(instanceID, mattermostUserID string, connection *types.Conn
 		return err
 	}
 
-	if err := set(keyWithInstanceID(instanceID, connection.ConfluenceAccountID()), mattermostUserID); err != nil {
-		return err
+	// Skip the reverse AccountID -> mattermostUserID mapping when storing under the
+	// admin sentinel ("admin"), otherwise it overwrites the real user's reverse mapping
+	// and DM dispatch will resolve to the literal "admin" string instead of a user ID.
+	if mattermostUserID == AdminMattermostUserID {
+		return nil
 	}
 
-	// Also store AccountID -> mattermostUserID because Confluence Cloud is deprecating the name field
-	// https://developer.atlassian.com/cloud/Confluence/platform/api-changes-for-user-privacy-announcement/
 	if err := set(keyWithInstanceID(instanceID, connection.ConfluenceAccountID()), mattermostUserID); err != nil {
 		return err
 	}

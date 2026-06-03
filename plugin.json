@@ -65,7 +65,8 @@
           "key": "ForgeInstallURL",
           "display_name": "Forge Bridge Install URL",
           "type": "text",
-          "help_text": "URL the setup wizard sends admins to so they can install the Forge bridge on their Confluence Cloud site. Required for Cloud installs. Set this to the install link of the Mattermost-published Forge app once it is deployed, or to your own Forge app if you self-host the bridge."
+          "help_text": "URL the setup wizard sends admins to so they can install the Forge bridge on their Confluence Cloud site. Required for Cloud installs. Set this to the install link of the Mattermost-published Forge app once it is deployed, or to your own Forge app if you self-host the bridge.",
+          "secret": true
         }
     ]
   }

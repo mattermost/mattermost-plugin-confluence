@@ -68,6 +68,31 @@ func TestSendMentionDMs_DMsConnectedUser(t *testing.T) {
 	api.AssertCalled(t, "CreatePost", mock.Anything)
 }
 
+func TestSendMentionDMs_DedupesRepeatedAccountIDs(t *testing.T) {
+	api := baseMock()
+	config.BotUserID = "bot-user-id"
+	defer func() { config.BotUserID = "" }()
+
+	instanceID := "https://example.atlassian.net"
+
+	api.On("KVGet", instanceID+"_acct-target").Return(kvValueForMMUser(t, "mm-user-1"), (*model.AppError)(nil))
+	api.On("KVGet", mentionNotifKey("mm-user-1")).Return(([]byte)(nil), (*model.AppError)(nil))
+	api.On("GetDirectChannel", "mm-user-1", "bot-user-id").
+		Return(&model.Channel{Id: "dm-channel"}, (*model.AppError)(nil))
+	api.On("CreatePost", mock.Anything).Return(&model.Post{}, (*model.AppError)(nil))
+
+	SendMentionDMs(MentionDispatchParams{
+		InstanceID:     instanceID,
+		AccountIDs:     []string{"acct-target", "acct-target", "acct-target"},
+		Kind:           ContentKindPage,
+		PageTitle:      "Test Page",
+		PageURL:        "https://example.atlassian.net/spaces/AAA/pages/p1",
+		ActorAccountID: "acct-author",
+	})
+
+	api.AssertNumberOfCalls(t, "CreatePost", 1)
+}
+
 func TestSendMentionDMs_RespectsUserOptOut(t *testing.T) {
 	api := baseMock()
 	config.BotUserID = "bot-user-id"
