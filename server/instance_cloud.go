@@ -126,4 +126,3 @@ func (p *Plugin) GetCloudClient(instanceURL, cloudID string, connection *types.C
 
 	return newCloudClient(fmt.Sprintf(cloudAPIBaseFmt, cloudID), httpClient), nil
 }
-

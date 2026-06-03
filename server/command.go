@@ -62,11 +62,11 @@ const (
 
 var ConfluenceCommandHandler = Handler{
 	handlers: map[string]HandlerFunc{
-		"list":              listChannelSubscription,
-		"unsubscribe":       deleteSubscription,
-		"install":           showInstallEditionPrompt,
-		"install/cloud":     showInstallCloudHelp,
-		"install/server":    showInstallServerHelp,
+		"list":                       listChannelSubscription,
+		"unsubscribe":                deleteSubscription,
+		"install":                    showInstallEditionPrompt,
+		"install/cloud":              showInstallCloudHelp,
+		"install/server":             showInstallServerHelp,
 		"connect":                    executeConnect,
 		"disconnect":                 executeDisconnect,
 		"help":                       confluenceHelpCommand,
