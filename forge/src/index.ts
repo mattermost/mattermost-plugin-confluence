@@ -6,6 +6,9 @@ const SECRET_KEY = 'mm.drainSecret';
 const REGISTERED_KEY = 'mm.registered';
 const MAX_DRAIN_BATCH = 100;
 
+const FORGE_STORAGE_MAX_BYTES = 240 * 1024;
+const FORGE_STORAGE_ENVELOPE_HEADROOM = 16 * 1024;
+
 type ForgeEvent = {
     eventType?: string;
     content?: {
@@ -28,14 +31,30 @@ export const enqueue = async (event: unknown, context: unknown): Promise<void> =
     console.log(`enqueue: type=${eventType} cloudId=${cloudId} spaceKey=${spaceKey} contentID=${contentID} key=${key}`);
 
     const enriched = await enrichWithBody(evt);
+    const safe = enforceStorageLimit(enriched, contentID);
 
     try {
-        await storage.set(key, { event: enriched, context, enqueuedAt: Date.now() });
-        console.log(`enqueue: stored key=${key} bodyAttached=${Boolean(enriched.content?.body)}`);
+        await storage.set(key, { event: safe, context, enqueuedAt: Date.now() });
+        console.log(`enqueue: stored key=${key} bodyAttached=${Boolean(safe.content?.body)}`);
     } catch (err) {
         console.error(`enqueue: storage.set failed key=${key} error=${(err as Error)?.message ?? err}`);
         throw err;
     }
+};
+
+const enforceStorageLimit = (evt: ForgeEvent, contentID: string | number): ForgeEvent => {
+    if (!evt.content?.body) return evt;
+    const budget = FORGE_STORAGE_MAX_BYTES - FORGE_STORAGE_ENVELOPE_HEADROOM;
+    const size = byteLength(JSON.stringify(evt));
+    if (size <= budget) return evt;
+    console.log(`enqueue: body too large for Forge storage (size=${size} budget=${budget} contentId=${contentID}); dropping body, mentions will be skipped for this event`);
+    const {body: _body, ...restContent} = evt.content;
+    return { ...evt, content: restContent };
+};
+
+const byteLength = (s: string): number => {
+    // Node 18+ on Forge runtime exposes TextEncoder globally.
+    return new TextEncoder().encode(s).length;
 };
 
 const enrichWithBody = async (evt: ForgeEvent): Promise<ForgeEvent> => {
