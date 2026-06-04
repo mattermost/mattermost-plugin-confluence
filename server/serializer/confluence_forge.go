@@ -43,14 +43,21 @@ type ForgeContext struct {
 	ModuleKey string `json:"moduleKey"`
 }
 
-// Container is populated only for comments and points at the parent page.
+// Container is populated only for comments; Extensions.Location is "footer"
+// or "inline" on comment events.
 type ForgeContent struct {
-	ID        forgeID       `json:"id"`
-	Type      string        `json:"type"`
-	Title     string        `json:"title"`
-	Status    string        `json:"status"`
-	Space     ForgeSpace    `json:"space"`
-	Container *ForgeContent `json:"container,omitempty"`
+	ID         forgeID         `json:"id"`
+	Type       string          `json:"type"`
+	Title      string          `json:"title"`
+	Status     string          `json:"status"`
+	Space      ForgeSpace      `json:"space"`
+	Container  *ForgeContent   `json:"container,omitempty"`
+	Extensions ForgeExtensions `json:"extensions,omitempty"`
+	Body       string          `json:"body,omitempty"`
+}
+
+type ForgeExtensions struct {
+	Location string `json:"location,omitempty"`
 }
 
 type ForgeSpace struct {
@@ -180,4 +187,20 @@ func (e *ForgeEvent) GetNotificationPost(eventType string) *model.Post {
 		Type:    model.PostTypeDefault,
 		Message: message,
 	}
+}
+
+func (e *ForgeEvent) ActorAccountID() string {
+	return e.AtlassianID
+}
+
+// MentionPageContext returns the parent page's title and URL: the page itself
+// for page events, Content.Container for comment events.
+func (e *ForgeEvent) MentionPageContext() (string, string) {
+	if e.Content == nil {
+		return "", ""
+	}
+	if e.Content.Type == "comment" && e.Content.Container != nil {
+		return e.Content.Container.Title, e.pageURL(e.Content.Container.ID.String())
+	}
+	return e.Content.Title, e.pageURL(e.Content.ID.String())
 }

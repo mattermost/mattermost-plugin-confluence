@@ -100,6 +100,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 
 				eventData.BaseURL = pluginConfig.ConfluenceURL
 				notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
+				go p.dispatchServerMentionDMsWithAPIToken(event, eventData, pluginConfig)
 			} else {
 				p.client.Log.Info("Error getting client for the user who triggered webhook event. Sending generic notification")
 				notification.SendGenericWHNotification(event, p.BotUserID, pluginConfig.ConfluenceURL)
@@ -151,6 +152,7 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 		}
 
 		notification.SendConfluenceNotifications(eventData, event.Event, p.BotUserID, eventTriggerer.DisplayName)
+		go p.dispatchServerMentionDMs(event, client, eventData)
 	} else {
 		event, err := serializer.ConfluenceServerEventFromJSON(r.Body)
 		if err != nil {
@@ -283,6 +285,25 @@ func (p *Plugin) GetEventDataWithAPIToken(webhookPayload *serializer.ConfluenceS
 	return &confluenceServerEvent, nil
 }
 
+func (p *Plugin) GetMentionAccountIDsWithAPIToken(contentID string, pluginConfig *config.Configuration) ([]string, error) {
+	path := fmt.Sprintf("%s%s%s?expand=body.storage", pluginConfig.ConfluenceURL, PathContentData, contentID)
+	body, statusCode, err := p.MakeHTTPCallWithAPIToken(path)
+	if err != nil {
+		return nil, err
+	}
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("admin-token mention fetch returned %d for content %s", statusCode, contentID)
+	}
+	var resp serverStorageBodyResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, errors.Wrap(err, "decode storage body with API token")
+	}
+	if resp.Body.Storage.Value == "" {
+		return nil, nil
+	}
+	return service.ExtractMentionAccountIDsFromStorage([]byte(resp.Body.Storage.Value))
+}
+
 func (p *Plugin) GetCommentDataWithAPIToken(webhookPayload *serializer.ConfluenceServerWebhookPayload, pluginConfig *config.Configuration) (*CommentResponse, error) {
 	commentResponse := &CommentResponse{}
 	path := fmt.Sprintf("%s%s", pluginConfig.ConfluenceURL, fmt.Sprintf("%s%s?expand=body.view,container,space,history", PathContentData, strconv.FormatInt(webhookPayload.Comment.ID, 10)))
@@ -375,6 +396,114 @@ func (p *Plugin) SetAdminAPITokenRequestHeader(req *http.Request) error {
 	req.Header.Set("Accept", "application/json")
 
 	return nil
+}
+
+func (p *Plugin) dispatchServerMentionDMs(event *serializer.ConfluenceServerWebhookPayload, client Client, eventData *ConfluenceServerEvent) {
+	if event == nil || client == nil || eventData == nil {
+		return
+	}
+
+	pageBaseURL := config.GetConfig().ConfluenceURL
+
+	var (
+		kind       service.ContentKind
+		accountIDs []string
+		err        error
+		pageTitle  string
+		pageURL    string
+	)
+
+	switch event.Event {
+	case serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent:
+		if eventData.Comment == nil {
+			return
+		}
+		kind = service.ContentKindComment
+		pageTitle = eventData.Comment.Container.Title
+		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
+			pageBaseURL, eventData.Comment.Space.Key, eventData.Comment.Container.ID)
+		accountIDs, err = client.MentionAccountIDsInComment(eventData.Comment.ID, "")
+	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent:
+		if eventData.Page == nil {
+			return
+		}
+		kind = service.ContentKindPage
+		pageTitle = eventData.Page.Title
+		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
+			pageBaseURL, eventData.Page.Space.Key, eventData.Page.ID)
+		accountIDs, err = client.MentionAccountIDsInPage(eventData.Page.ID)
+	default:
+		return
+	}
+	if err != nil {
+		p.client.Log.Debug("mention DM: failed to fetch mentions", "error", err.Error())
+		return
+	}
+	if len(accountIDs) == 0 {
+		return
+	}
+
+	service.SendMentionDMs(service.MentionDispatchParams{
+		InstanceID:     pageBaseURL,
+		AccountIDs:     accountIDs,
+		Kind:           kind,
+		PageTitle:      pageTitle,
+		PageURL:        pageURL,
+		ActorAccountID: event.UserKey,
+	})
+}
+
+func (p *Plugin) dispatchServerMentionDMsWithAPIToken(event *serializer.ConfluenceServerWebhookPayload, eventData *ConfluenceServerEvent, pluginConfig *config.Configuration) {
+	if event == nil || eventData == nil || pluginConfig.AdminAPIToken == "" {
+		return
+	}
+
+	var (
+		contentID string
+		kind      service.ContentKind
+		pageTitle string
+		pageURL   string
+	)
+	switch event.Event {
+	case serializer.CommentCreatedEvent, serializer.CommentUpdatedEvent:
+		if eventData.Comment == nil {
+			return
+		}
+		contentID = eventData.Comment.ID
+		kind = service.ContentKindComment
+		pageTitle = eventData.Comment.Container.Title
+		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
+			pluginConfig.ConfluenceURL, eventData.Comment.Space.Key, eventData.Comment.Container.ID)
+	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent:
+		if eventData.Page == nil {
+			return
+		}
+		contentID = eventData.Page.ID
+		kind = service.ContentKindPage
+		pageTitle = eventData.Page.Title
+		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
+			pluginConfig.ConfluenceURL, eventData.Page.Space.Key, eventData.Page.ID)
+	default:
+		return
+	}
+
+	accountIDs, err := p.GetMentionAccountIDsWithAPIToken(contentID, pluginConfig)
+	if err != nil {
+		p.client.Log.Debug("mention DM (API token): failed to fetch mentions", "error", err.Error())
+		return
+	}
+	if len(accountIDs) == 0 {
+		return
+	}
+
+	service.SendMentionDMs(service.MentionDispatchParams{
+		InstanceID:     pluginConfig.ConfluenceURL,
+		AccountIDs:     accountIDs,
+		Kind:           kind,
+		PageTitle:      pageTitle,
+		PageURL:        pageURL,
+		ActorAccountID: event.UserKey,
+	})
 }
 
 func respondToTestConnection(body []byte) bool {

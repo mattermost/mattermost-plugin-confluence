@@ -69,3 +69,5 @@ permissions:
     - storage:app
     - read:confluence-content.summary
     - write:confluence-content
+    - read:page:confluence
+    - read:comment:confluence

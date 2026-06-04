@@ -244,6 +244,35 @@ type ConfluenceUser struct {
 	} `json:"_links"`
 }
 
+type serverStorageBodyResponse struct {
+	Body struct {
+		Storage struct {
+			Value          string `json:"value"`
+			Representation string `json:"representation"`
+		} `json:"storage"`
+	} `json:"body"`
+}
+
+func (csc *confluenceServerClient) MentionAccountIDsInPage(pageID string) ([]string, error) {
+	return csc.mentionAccountIDsFromStorage(pageID)
+}
+
+func (csc *confluenceServerClient) MentionAccountIDsInComment(commentID, _ string) ([]string, error) {
+	return csc.mentionAccountIDsFromStorage(commentID)
+}
+
+func (csc *confluenceServerClient) mentionAccountIDsFromStorage(contentID string) ([]string, error) {
+	path := fmt.Sprintf("%s%s?expand=body.storage", PathContentData, contentID)
+	resp := &serverStorageBodyResponse{}
+	if _, _, err := service.CallJSONWithURL(csc.URL, path, http.MethodGet, nil, resp, csc.HTTPClient); err != nil {
+		return nil, err
+	}
+	if resp.Body.Storage.Value == "" {
+		return nil, nil
+	}
+	return service.ExtractMentionAccountIDsFromStorage([]byte(resp.Body.Storage.Value))
+}
+
 func (csc *confluenceServerClient) GetUserFromUserKey(userKey string) (*ConfluenceUser, error) {
 	var user ConfluenceUser
 

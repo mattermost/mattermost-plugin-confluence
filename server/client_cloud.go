@@ -83,3 +83,11 @@ func (c *confluenceCloudClient) GetPageData(int) (*PageResponse, error) {
 func (c *confluenceCloudClient) GetSpaceKeyFromSpaceID(int64) (string, error) {
 	return "", errors.New("GetSpaceKeyFromSpaceID is not implemented for Confluence Cloud")
 }
+
+func (c *confluenceCloudClient) MentionAccountIDsInPage(string) ([]string, error) {
+	return nil, errors.New("not supported on Cloud: mentions are parsed from the Forge event body")
+}
+
+func (c *confluenceCloudClient) MentionAccountIDsInComment(string, string) ([]string, error) {
+	return nil, errors.New("not supported on Cloud: mentions are parsed from the Forge event body")
+}

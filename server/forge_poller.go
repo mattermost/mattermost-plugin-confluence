@@ -116,8 +116,12 @@ type forgeDrainResponse struct {
 func (fp *ForgePoller) drainOnce(ctx context.Context) error {
 	cfg := config.GetConfig()
 	if cfg.ForgeDrainURL == "" || cfg.ForgeSharedSecret == "" {
-		return nil // not configured, nothing to do
+		fp.plugin.client.Log.Debug("forge drain: skipped, missing config",
+			"drain_url_set", cfg.ForgeDrainURL != "",
+			"shared_secret_set", cfg.ForgeSharedSecret != "")
+		return nil
 	}
+	fp.plugin.client.Log.Debug("drain: invoked", "url", cfg.ForgeDrainURL)
 
 	body, err := json.Marshal(forgeDrainRequest{Limit: forgeDrainBatch})
 	if err != nil {
@@ -189,9 +193,64 @@ func (fp *ForgePoller) dispatch(evt forgeDrainEvent) error {
 	}
 
 	forgeEvent.BaseURL = config.GetConfig().GetConfluenceBaseURL()
+	fp.plugin.client.Log.Debug("forge dispatch", "event", internal, "base_url", forgeEvent.BaseURL, "space_key", forgeEvent.GetSpaceKey(), "page_id", forgeEvent.GetPageID())
 
 	go service.SendConfluenceNotifications(forgeEvent, internal)
+	go fp.dispatchMentionDMs(forgeEvent, internal)
 	return nil
+}
+
+func (fp *ForgePoller) dispatchMentionDMs(evt *serializer.ForgeEvent, internalEvent string) {
+	log := fp.plugin.client.Log
+	if evt == nil || evt.Content == nil {
+		log.Debug("mention DM: skipped, no content on event", "event", internalEvent)
+		return
+	}
+	if !mentionEligibleEvent(internalEvent) {
+		log.Debug("mention DM: skipped, event not mention-eligible", "event", internalEvent, "content_id", evt.Content.ID.String())
+		return
+	}
+	if evt.Content.Body == "" {
+		log.Debug("mention DM: skipped, event has no body", "event", internalEvent, "content_id", evt.Content.ID.String())
+		return
+	}
+
+	accountIDs, err := service.ExtractMentionAccountIDsFromADF([]byte(evt.Content.Body))
+	if err != nil {
+		log.Warn("mention DM: failed to parse ADF body", "content_id", evt.Content.ID.String(), "error", err.Error())
+		return
+	}
+	log.Debug("mention DM: parsed mentions", "event", internalEvent, "content_id", evt.Content.ID.String(), "mention_count", len(accountIDs), "account_ids", accountIDs)
+	if len(accountIDs) == 0 {
+		return
+	}
+
+	kind := service.ContentKindPage
+	if evt.Content.Type == "comment" {
+		kind = service.ContentKindComment
+	}
+	pageTitle, pageURL := evt.MentionPageContext()
+	instanceID := config.GetConfig().GetConfluenceBaseURL()
+	log.Debug("mention DM: dispatching", "instance_id", instanceID, "actor_account_id", evt.ActorAccountID(), "kind", kind, "page_url", pageURL)
+	service.SendMentionDMs(service.MentionDispatchParams{
+		InstanceID:     instanceID,
+		AccountIDs:     accountIDs,
+		Kind:           kind,
+		PageTitle:      pageTitle,
+		PageURL:        pageURL,
+		ActorAccountID: evt.ActorAccountID(),
+	})
+}
+
+func mentionEligibleEvent(internal string) bool {
+	switch internal {
+	case serializer.PageCreatedEvent,
+		serializer.PageUpdatedEvent,
+		serializer.CommentCreatedEvent,
+		serializer.CommentUpdatedEvent:
+		return true
+	}
+	return false
 }
 
 func signForgeBody(secret string, body []byte) string {
