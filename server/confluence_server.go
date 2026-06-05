@@ -420,8 +420,7 @@ func (p *Plugin) dispatchServerMentionDMs(event *serializer.ConfluenceServerWebh
 		}
 		kind = service.ContentKindComment
 		pageTitle = eventData.Comment.Container.Title
-		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
-			pageBaseURL, eventData.Comment.Space.Key, eventData.Comment.Container.ID)
+		pageURL = joinURL(pageBaseURL, eventData.Comment.Container.Links.Self)
 		accountIDs, err = client.MentionAccountIDsInComment(eventData.Comment.ID, "")
 	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent:
 		if eventData.Page == nil {
@@ -429,8 +428,7 @@ func (p *Plugin) dispatchServerMentionDMs(event *serializer.ConfluenceServerWebh
 		}
 		kind = service.ContentKindPage
 		pageTitle = eventData.Page.Title
-		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
-			pageBaseURL, eventData.Page.Space.Key, eventData.Page.ID)
+		pageURL = joinURL(pageBaseURL, eventData.Page.Links.Self)
 		accountIDs, err = client.MentionAccountIDsInPage(eventData.Page.ID)
 	default:
 		return
@@ -472,8 +470,7 @@ func (p *Plugin) dispatchServerMentionDMsWithAPIToken(event *serializer.Confluen
 		contentID = eventData.Comment.ID
 		kind = service.ContentKindComment
 		pageTitle = eventData.Comment.Container.Title
-		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
-			pluginConfig.ConfluenceURL, eventData.Comment.Space.Key, eventData.Comment.Container.ID)
+		pageURL = joinURL(pluginConfig.ConfluenceURL, eventData.Comment.Container.Links.Self)
 	case serializer.PageCreatedEvent, serializer.PageUpdatedEvent:
 		if eventData.Page == nil {
 			return
@@ -481,8 +478,7 @@ func (p *Plugin) dispatchServerMentionDMsWithAPIToken(event *serializer.Confluen
 		contentID = eventData.Page.ID
 		kind = service.ContentKindPage
 		pageTitle = eventData.Page.Title
-		pageURL = fmt.Sprintf("%s/spaces/%s/pages/%s",
-			pluginConfig.ConfluenceURL, eventData.Page.Space.Key, eventData.Page.ID)
+		pageURL = joinURL(pluginConfig.ConfluenceURL, eventData.Page.Links.Self)
 	default:
 		return
 	}

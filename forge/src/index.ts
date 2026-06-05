@@ -139,7 +139,7 @@ export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
 // refused. To re-register, an operator must clear the flag via the Forge CLI:
 //   forge install --upgrade   then re-POST to register
 export const register = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
-    let payload: { secret?: string; force?: boolean };
+    let payload: { secret?: string };
     try {
         payload = JSON.parse(req.body ?? '{}');
     } catch {
@@ -150,8 +150,8 @@ export const register = async (req: WebTriggerRequest): Promise<WebTriggerRespon
         return jsonResponse(400, { error: 'secret must be at least 32 characters' });
     }
 
-    if ((await storage.get(REGISTERED_KEY)) && !payload.force) {
-        return jsonResponse(409, { error: 'already registered; re-POST with {"force": true} to overwrite' });
+    if (await storage.get(REGISTERED_KEY)) {
+        return jsonResponse(409, { error: 'already registered; clear mm.registered from Forge storage to reset' });
     }
 
     await storage.setSecret(SECRET_KEY, payload.secret);

@@ -219,6 +219,12 @@ func DeleteConnectionFromKVStore(instanceID, mattermostUserID string, c *types.C
 		return appErr
 	}
 
+	if mattermostUserID == AdminMattermostUserID {
+		config.Mattermost.LogDebug("Deleted: admin sentinel, reverse mapping preserved",
+			"key", keyWithInstanceID(instanceID, mattermostUserID))
+		return nil
+	}
+
 	if appErr := config.Mattermost.KVDelete(keyWithInstanceID(instanceID, c.ConfluenceAccountID())); appErr != nil {
 		return appErr
 	}

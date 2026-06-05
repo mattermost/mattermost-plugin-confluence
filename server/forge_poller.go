@@ -220,7 +220,7 @@ func (fp *ForgePoller) dispatchMentionDMs(evt *serializer.ForgeEvent, internalEv
 		log.Warn("mention DM: failed to parse ADF body", "content_id", evt.Content.ID.String(), "error", err.Error())
 		return
 	}
-	log.Debug("mention DM: parsed mentions", "event", internalEvent, "content_id", evt.Content.ID.String(), "mention_count", len(accountIDs), "account_ids", accountIDs)
+	log.Debug("mention DM: parsed mentions", "event", internalEvent, "content_id", evt.Content.ID.String(), "mention_count", len(accountIDs))
 	if len(accountIDs) == 0 {
 		return
 	}
@@ -231,7 +231,7 @@ func (fp *ForgePoller) dispatchMentionDMs(evt *serializer.ForgeEvent, internalEv
 	}
 	pageTitle, pageURL := evt.MentionPageContext()
 	instanceID := config.GetConfig().GetConfluenceBaseURL()
-	log.Debug("mention DM: dispatching", "instance_id", instanceID, "actor_account_id", evt.ActorAccountID(), "kind", kind, "page_url", pageURL)
+	log.Debug("mention DM: dispatching", "instance_id", instanceID, "kind", kind, "page_url", pageURL, "recipients", len(accountIDs))
 	service.SendMentionDMs(service.MentionDispatchParams{
 		InstanceID:     instanceID,
 		AccountIDs:     accountIDs,

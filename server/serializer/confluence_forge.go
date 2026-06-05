@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/mattermost/mattermost/server/public/model"
 
@@ -131,7 +132,11 @@ func (e *ForgeEvent) pageURL(pageID string) string {
 	if e.BaseURL == "" || spaceKey == "" || pageID == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/spaces/%s/pages/%s", e.BaseURL, spaceKey, pageID)
+	base := strings.TrimRight(e.BaseURL, "/")
+	if !strings.HasSuffix(base, "/wiki") {
+		base += "/wiki"
+	}
+	return fmt.Sprintf("%s/spaces/%s/pages/%s", base, spaceKey, pageID)
 }
 
 func (e *ForgeEvent) GetNotificationPost(eventType string) *model.Post {
