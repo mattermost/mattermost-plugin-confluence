@@ -713,7 +713,7 @@ func (fm *FlowManager) stepCloudOAuthConfigure() flow.Step {
 		"4. In **Authorization** → **OAuth 2.0 (3LO)** → **Add**, set the Callback URL to:\n"+
 		"   `%s`\n"+
 		"5. In **Settings**, copy the **Client ID** and **Secret**.\n"+
-		"6. Optionally share the app with your org from **Distribution**.\n"+
+		"6. In **Distribution** → **Edit**, set **Distribution status** to **Sharing** and save. Without this, only the Atlassian account that created the app can complete the OAuth consent — every other Mattermost user will see *\"you don't have access to this app\"* when running `/confluence connect`.\n"+
 		"7. Click **Configure** below and paste the credentials.",
 		confluenceCloudScopes, oauthCompleteURL)
 
@@ -783,8 +783,13 @@ func (fm *FlowManager) submitCloudOAuthConfig(_ *flow.Flow, submitted map[string
 
 func (fm *FlowManager) stepCloudForgeBridge() flow.Step {
 	text := "##### :white_check_mark: Install the Forge bridge for event delivery\n\n" +
-		"Event subscriptions on Confluence Cloud run through a small Forge app we publish.\n\n" +
-		"1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
+		"Event subscriptions on Confluence Cloud run through a small [Forge](https://developer.atlassian.com/platform/forge/) app. " +
+		"Mattermost ships the bridge as source under [`forge/` in the plugin repo](https://github.com/mattermost/mattermost-plugin-confluence/tree/master/forge) " +
+		"and each customer self-hosts it under their own Atlassian developer account.\n\n" +
+		"{{if .ForgeInstallURL}}1. Install the bridge on your site: [{{.ForgeInstallURL}}]({{.ForgeInstallURL}}).\n" +
+		"{{else}}1. Follow the [self-host runbook](https://github.com/mattermost/mattermost-plugin-confluence/blob/master/forge/README.md) to deploy and install the bridge on your Confluence Cloud site. " +
+		"A System Admin can also pre-populate **Forge Bridge Install URL** in System Console → Plugins → Confluence so future installers get a click-through link here.\n" +
+		"{{end}}" +
 		"2. After installation, open the install log (or run `forge webtrigger` against your tenant) and copy the **drain URL** and **register URL**.\n" +
 		"3. Click **Register bridge** below and paste both URLs. The plugin will register itself with the bridge and start polling for events.\n\n" +
 		":lock: The shared secret never leaves the plugin — it is sent directly from the server to your bridge's register endpoint."
