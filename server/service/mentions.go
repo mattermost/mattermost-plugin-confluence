@@ -30,7 +30,7 @@ type MentionDispatchParams struct {
 
 func SendMentionDMs(p MentionDispatchParams) {
 	if len(p.AccountIDs) == 0 || p.InstanceID == "" {
-		config.Mattermost.LogDebug("mention DM: skipped, empty AccountIDs or InstanceID", "instance_id", p.InstanceID, "count", len(p.AccountIDs))
+		config.Mattermost.LogInfo("mention DM: skipped, empty AccountIDs or InstanceID", "instance_id", p.InstanceID, "count", len(p.AccountIDs))
 		return
 	}
 
@@ -50,19 +50,19 @@ func SendMentionDMs(p MentionDispatchParams) {
 
 		mmUserIDPtr, err := store.GetMattermostUserIDFromConfluenceID(p.InstanceID, accountID)
 		if err != nil || mmUserIDPtr == nil || *mmUserIDPtr == "" {
-			config.Mattermost.LogDebug("mention DM: no Mattermost user mapped for Confluence account", "instance_id", p.InstanceID, "account_id", accountID, "err", errString(err))
+			config.Mattermost.LogInfo("mention DM: no Mattermost user mapped for Confluence account", "instance_id", p.InstanceID, "account_id", accountID, "err", errString(err))
 			continue
 		}
 		mmUserID := *mmUserIDPtr
 
 		if !IsMentionNotificationEnabled(mmUserID) {
-			config.Mattermost.LogDebug("mention DM: user has notifications disabled", "user_id", mmUserID, "account_id", accountID)
+			config.Mattermost.LogInfo("mention DM: user has notifications disabled", "user_id", mmUserID, "account_id", accountID)
 			continue
 		}
 
 		dmChannel, appErr := config.Mattermost.GetDirectChannel(mmUserID, config.BotUserID)
 		if appErr != nil || dmChannel == nil {
-			config.Mattermost.LogDebug("mention DM: failed to open DM channel", "user_id", mmUserID, "err", appErrString(appErr))
+			config.Mattermost.LogWarn("mention DM: failed to open DM channel", "user_id", mmUserID, "err", appErrString(appErr))
 			continue
 		}
 
@@ -75,7 +75,7 @@ func SendMentionDMs(p MentionDispatchParams) {
 			config.Mattermost.LogError("mention DM: failed to create post", "user_id", mmUserID, "error", appErr.Error())
 			continue
 		}
-		config.Mattermost.LogDebug("mention DM: sent", "user_id", mmUserID, "account_id", accountID, "channel_id", dmChannel.Id)
+		config.Mattermost.LogInfo("mention DM: sent", "user_id", mmUserID, "account_id", accountID, "channel_id", dmChannel.Id)
 	}
 }
 

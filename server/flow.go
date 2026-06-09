@@ -172,7 +172,7 @@ const (
 	keyForgeInstallURL   = "ForgeInstallURL"
 )
 
-const confluenceCloudScopes = "offline_access, read:confluence-user, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
+const confluenceCloudScopes = "read:confluence-user, read:confluence-content.summary, read:confluence-content.all, read:confluence-space.summary, write:confluence-content"
 
 func cancelButton() flow.Button {
 	return flow.Button{
@@ -709,7 +709,7 @@ func (fm *FlowManager) stepCloudOAuthConfigure() flow.Step {
 		"2. Name it something like `Mattermost Confluence Plugin — <your company>`. Accept the terms and create.\n"+
 		"3. In **Permissions**, add the **Confluence API** and configure these scopes:\n"+
 		"   %s\n"+
-		"   These may be split between **Classic** and **Granular** scopes in the console.\n"+
+		"   These may be split between **Classic** and **Granular** scopes in the console. You do **not** need to add `offline_access` here — it is not a console-configurable scope; the plugin requests it automatically at the `/authorize` step so refresh tokens are issued.\n"+
 		"4. In **Authorization** → **OAuth 2.0 (3LO)** → **Add**, set the Callback URL to:\n"+
 		"   `%s`\n"+
 		"5. In **Settings**, copy the **Client ID** and **Secret**.\n"+
@@ -912,9 +912,7 @@ func postForgeRegister(registerURL, secret string) error {
 	case http.StatusOK, http.StatusNoContent:
 		return nil
 	case http.StatusConflict:
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		config.Mattermost.LogInfo("Forge register returned 409 (treated as already registered)", "body", string(respBody))
-		return nil
+		return errors.New("Forge bridge is already registered with a different shared secret. Have the Forge admin delete the `mm.registered` and `mm.drainSecret` storage keys (`forge storage delete mm.registered && forge storage delete mm.drainSecret`), then re-run this wizard.")
 	default:
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		snippet := strings.TrimSpace(string(respBody))

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -114,6 +115,8 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
+	forgeSecretMissingWithBridge := configuration.ForgeSharedSecret == "" && strings.TrimSpace(configuration.ForgeDrainURL) != ""
+
 	regenerated := false
 	for _, field := range []struct {
 		name string
@@ -134,6 +137,11 @@ func (p *Plugin) OnConfigurationChange() error {
 		*field.ptr = newKey
 		config.Mattermost.LogInfo("Auto-generated missing " + field.name + ".")
 		regenerated = true
+	}
+	if forgeSecretMissingWithBridge {
+		config.Mattermost.LogError(
+			"Auto-generated a new Forge Bridge Shared Secret while a drain URL was already configured. Forge events will be rejected (HTTP 403) until the bridge is re-registered. Re-run `/confluence install cloud` to push the new secret to the Forge bridge.",
+		)
 	}
 	if regenerated {
 		if err := p.savePluginConfig(&configuration); err != nil {

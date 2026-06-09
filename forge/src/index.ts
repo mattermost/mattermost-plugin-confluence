@@ -151,12 +151,25 @@ export const register = async (req: WebTriggerRequest): Promise<WebTriggerRespon
     }
 
     if (await storage.get(REGISTERED_KEY)) {
-        return jsonResponse(409, { error: 'already registered; clear mm.registered from Forge storage to reset' });
+        const existing = (await storage.getSecret(SECRET_KEY)) as string | undefined;
+        if (existing && secretsMatch(existing, payload.secret)) {
+            return jsonResponse(200, { ok: true, alreadyRegistered: true });
+        }
+        return jsonResponse(409, {
+            error: 'already registered with a different shared secret; clear mm.registered and mm.drainSecret from Forge storage to reset',
+        });
     }
 
     await storage.setSecret(SECRET_KEY, payload.secret);
     await storage.set(REGISTERED_KEY, true);
     return jsonResponse(200, { ok: true });
+};
+
+const secretsMatch = (a: string, b: string): boolean => {
+    const ab = Buffer.from(a);
+    const bb = Buffer.from(b);
+    if (ab.length !== bb.length) return false;
+    return timingSafeEqual(ab, bb);
 };
 
 export const onInstalled = async (): Promise<void> => {
