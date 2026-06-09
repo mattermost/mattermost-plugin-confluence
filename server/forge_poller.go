@@ -37,6 +37,8 @@ const (
 	alertKeySecretEmpty = "secret_empty"
 	alertKeyHMAC        = "hmac_mismatch"
 	alertKeyNotRegd     = "not_registered"
+
+	alertKeyKVKey = "forge_alert_key"
 )
 
 // ForgePoller drains events from the Confluence Forge bridge. In a clustered
@@ -46,9 +48,8 @@ type ForgePoller struct {
 	plugin *Plugin
 	client *http.Client
 
-	mu       sync.Mutex
-	job      *cluster.Job
-	alertKey string // empty == healthy; non-empty == we've already DM'd for this failure class
+	mu  sync.Mutex
+	job *cluster.Job
 }
 
 func NewForgePoller(p *Plugin) *ForgePoller {
@@ -121,7 +122,6 @@ type forgeDrainResponse struct {
 	NextCursor *string           `json:"nextCursor"`
 }
 
-// drainHTTPError lets handleDrainError distinguish HTTP-level failures
 type drainHTTPError struct {
 	StatusCode int
 	Body       string
@@ -154,8 +154,6 @@ func (fp *ForgePoller) drainOnce(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// Drain succeeded: bridge is reachable, secret matches, and `mm.registered`
-	// is set. Clear any prior alert so the next failure DMs again.
 	fp.clearAlert()
 
 	if len(resp.Events) == 0 {
@@ -303,26 +301,48 @@ func (fp *ForgePoller) handleDrainError(err error) {
 
 func (fp *ForgePoller) alertOnce(key, msg string) {
 	fp.mu.Lock()
-	if fp.alertKey == key {
+	if fp.loadAlertKey() == key {
 		fp.mu.Unlock()
 		return
 	}
-	fp.alertKey = key
+	fp.storeAlertKey(key)
 	fp.mu.Unlock()
 
 	fp.plugin.client.Log.Error(msg)
 	fp.dmSysadmins(msg)
 }
 
-// clearAlert is called after every successful drain. Resets the dedup key so
-// the next transition into a broken state produces a fresh DM.
 func (fp *ForgePoller) clearAlert() {
 	fp.mu.Lock()
-	if fp.alertKey != "" {
-		fp.plugin.client.Log.Info("forge drain: recovered, clearing alert", "previous_key", fp.alertKey)
-		fp.alertKey = ""
+	prev := fp.loadAlertKey()
+	if prev == "" {
+		fp.mu.Unlock()
+		return
 	}
+	fp.storeAlertKey("")
 	fp.mu.Unlock()
+	fp.plugin.client.Log.Info("forge drain: recovered, clearing alert", "previous_key", prev)
+}
+
+func (fp *ForgePoller) loadAlertKey() string {
+	data, appErr := fp.plugin.API.KVGet(alertKeyKVKey)
+	if appErr != nil {
+		fp.plugin.client.Log.Warn("forge alert: failed to load alert key from KV", "error", appErr.Error())
+		return ""
+	}
+	return string(data)
+}
+
+func (fp *ForgePoller) storeAlertKey(key string) {
+	if key == "" {
+		if appErr := fp.plugin.API.KVDelete(alertKeyKVKey); appErr != nil {
+			fp.plugin.client.Log.Warn("forge alert: failed to clear alert key in KV", "error", appErr.Error())
+		}
+		return
+	}
+	if appErr := fp.plugin.API.KVSet(alertKeyKVKey, []byte(key)); appErr != nil {
+		fp.plugin.client.Log.Warn("forge alert: failed to persist alert key to KV", "error", appErr.Error())
+	}
 }
 
 func (fp *ForgePoller) dmSysadmins(msg string) {
