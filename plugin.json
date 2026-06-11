@@ -47,6 +47,25 @@
           "secret": true
         },
         {
+          "key": "ConfluenceURL",
+          "display_name": "Confluence URL",
+          "type": "text",
+          "help_text": "Configured via the /confluence install setup command."
+        },
+        {
+          "key": "ConfluenceOAuthClientID",
+          "display_name": "Confluence OAuth Client ID",
+          "type": "text",
+          "help_text": "Configured via the /confluence install cloud setup command."
+        },
+        {
+          "key": "ConfluenceOAuthClientSecret",
+          "display_name": "Confluence OAuth Client Secret",
+          "type": "text",
+          "help_text": "Configured via the /confluence install cloud setup command. Declared here so it is redacted from support packets.",
+          "secret": true
+        },
+        {
           "key": "ForgeSharedSecret",
           "display_name": "Forge Bridge Shared Secret",
           "type": "generated",
