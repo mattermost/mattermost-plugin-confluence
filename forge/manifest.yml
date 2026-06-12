@@ -62,7 +62,7 @@ modules:
 app:
   runtime:
     name: nodejs22.x
-  id: ari:cloud:ecosystem::app/e78f4d26-6f49-4a3e-a591-18fe466fc5b0
+  id: ari:cloud:ecosystem::app/ecfbedb0-1bc1-4ade-b983-96d8e6be1cb8
 
 permissions:
   scopes:
