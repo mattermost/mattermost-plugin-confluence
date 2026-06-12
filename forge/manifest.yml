@@ -1,0 +1,73 @@
+modules:
+  trigger:
+    - key: page-created
+      function: enqueueFn
+      events:
+        - avi:confluence:created:page
+    - key: page-updated
+      function: enqueueFn
+      events:
+        - avi:confluence:updated:page
+    - key: page-trashed
+      function: enqueueFn
+      events:
+        - avi:confluence:trashed:page
+    - key: page-restored
+      function: enqueueFn
+      events:
+        - avi:confluence:restored:page
+    - key: page-deleted
+      function: enqueueFn
+      events:
+        - avi:confluence:deleted:page
+    - key: comment-created
+      function: enqueueFn
+      events:
+        - avi:confluence:created:comment
+    - key: comment-updated
+      function: enqueueFn
+      events:
+        - avi:confluence:updated:comment
+    - key: comment-deleted
+      function: enqueueFn
+      events:
+        - avi:confluence:deleted:comment
+    - key: app-installed
+      function: onInstalledFn
+      events:
+        - avi:forge:installed:app
+
+  webtrigger:
+    - key: drain
+      function: drainFn
+      urlFormat: v2
+      response:
+        type: dynamic
+    - key: register
+      function: registerFn
+      urlFormat: v2
+      response:
+        type: dynamic
+
+  function:
+    - key: enqueueFn
+      handler: index.enqueue
+    - key: drainFn
+      handler: index.drain
+    - key: registerFn
+      handler: index.register
+    - key: onInstalledFn
+      handler: index.onInstalled
+
+app:
+  runtime:
+    name: nodejs22.x
+  id: ari:cloud:ecosystem::app/ecfbedb0-1bc1-4ade-b983-96d8e6be1cb8
+
+permissions:
+  scopes:
+    - storage:app
+    - read:confluence-content.summary
+    - write:confluence-content
+    - read:page:confluence
+    - read:comment:confluence

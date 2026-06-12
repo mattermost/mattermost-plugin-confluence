@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -37,6 +38,7 @@ type Plugin struct {
 	Router *mux.Router
 
 	flowManager *FlowManager
+	forgePoller *ForgePoller
 
 	// templates are loaded on startup
 	templates map[string]*template.Template
@@ -83,6 +85,16 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
+	p.forgePoller = NewForgePoller(p)
+	p.forgePoller.Start()
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	if p.forgePoller != nil {
+		p.forgePoller.Stop()
+	}
 	return nil
 }
 
@@ -103,17 +115,37 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
-	if len(configuration.EncryptionKey) != 32 {
+	forgeSecretMissingWithBridge := configuration.ForgeSharedSecret == "" && strings.TrimSpace(configuration.ForgeDrainURL) != ""
+
+	regenerated := false
+	for _, field := range []struct {
+		name string
+		ptr  *string
+	}{
+		{"Webhook Secret", &configuration.Secret},
+		{"Encryption Key", &configuration.EncryptionKey},
+		{"Forge Bridge Shared Secret", &configuration.ForgeSharedSecret},
+	} {
+		if len(*field.ptr) == 32 {
+			continue
+		}
 		newKey, err := generateRandomKey(32)
 		if err != nil {
-			config.Mattermost.LogError("Error generating encryption key.", "Error", err.Error())
+			config.Mattermost.LogError("Error generating "+field.name+".", "Error", err.Error())
 			return err
 		}
-		configuration.EncryptionKey = newKey
-		config.Mattermost.LogInfo("Auto-generated missing Encryption Key.")
-
+		*field.ptr = newKey
+		config.Mattermost.LogInfo("Auto-generated missing " + field.name + ".")
+		regenerated = true
+	}
+	if forgeSecretMissingWithBridge {
+		config.Mattermost.LogError(
+			"Auto-generated a new Forge Bridge Shared Secret while a drain URL was already configured. Forge events will be rejected (HTTP 403) until the bridge is re-registered. Re-run `/confluence install cloud` to push the new secret to the Forge bridge.",
+		)
+	}
+	if regenerated {
 		if err := p.savePluginConfig(&configuration); err != nil {
-			config.Mattermost.LogError("Error saving auto-generated encryption key.", "Error", err.Error())
+			config.Mattermost.LogError("Error saving auto-generated secrets.", "Error", err.Error())
 			return err
 		}
 	}

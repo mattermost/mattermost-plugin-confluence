@@ -1,0 +1,26 @@
+{
+    "name": "mattermost-confluence-forge",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Forge bridge that forwards Confluence Cloud events to the Mattermost Confluence plugin. Replaces the legacy Atlassian Connect descriptor path that Atlassian deprecated in 2026.",
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "validate-manifest": "tsc -p tsconfig.scripts.json && node scripts-dist/validate-manifest.js",
+        "ci": "npm run typecheck && npm run validate-manifest && npm run build",
+        "deploy": "forge deploy",
+        "install:dev": "forge install --upgrade"
+    },
+    "dependencies": {
+        "@forge/api": "^4.0.0"
+    },
+    "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
+        "@types/node": "^20.0.0",
+        "js-yaml": "^4.1.1",
+        "typescript": "^5.5.0"
+    },
+    "optionalDependencies": {
+        "@forge/cli": "^11.0.0"
+    }
+}

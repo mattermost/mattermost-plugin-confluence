@@ -50,21 +50,41 @@
           "key": "ConfluenceURL",
           "display_name": "Confluence URL",
           "type": "text",
-          "help_text": "Configured via the /confluence install setup command. Declared here so it is redacted from support packets.",
-          "secret": true
+          "help_text": "Configured via the /confluence install setup command."
         },
         {
           "key": "ConfluenceOAuthClientID",
           "display_name": "Confluence OAuth Client ID",
           "type": "text",
-          "help_text": "Configured via the /confluence install cloud setup command. Declared here so it is redacted from support packets.",
-          "secret": true
+          "help_text": "Configured via the /confluence install cloud setup command."
         },
         {
           "key": "ConfluenceOAuthClientSecret",
           "display_name": "Confluence OAuth Client Secret",
           "type": "text",
           "help_text": "Configured via the /confluence install cloud setup command. Declared here so it is redacted from support packets.",
+          "secret": true
+        },
+        {
+          "key": "ForgeSharedSecret",
+          "display_name": "Forge Bridge Shared Secret",
+          "type": "generated",
+          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). After regenerating, POST the new value to the Forge app's register web trigger.",
+          "regenerate_help_text": "Regenerates the shared secret. Existing Forge bridge installations must be re-registered with the new value.",
+          "secret": true
+        },
+        {
+          "key": "ForgeDrainURL",
+          "display_name": "Forge Drain URL",
+          "type": "text",
+          "help_text": "Web trigger URL of the Mattermost Confluence Forge bridge drain endpoint. Set after installing the bridge on your Confluence Cloud site. The plugin polls this URL to fetch buffered Confluence events.",
+          "secret": true
+        },
+        {
+          "key": "ForgeInstallURL",
+          "display_name": "Forge Bridge Install URL",
+          "type": "text",
+          "help_text": "URL the setup wizard sends admins to so they can install the Forge bridge on their Confluence Cloud site. Required for Cloud installs. Set this to the install link of the Mattermost-published Forge app once it is deployed, or to your own Forge app if you self-host the bridge.",
           "secret": true
         }
     ]

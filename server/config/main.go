@@ -27,6 +27,17 @@ type Configuration struct {
 	ConfluenceOAuthClientSecret string `json:"confluenceoauthclientsecret"`
 	ConfluenceURL               string `json:"confluenceurl"`
 	ServerVersionGreaterthan9   bool   `json:"serverversiongreaterthan9"`
+	// IsCloud is set by the install-cloud wizard. Determines whether
+	// /confluence connect runs against Atlassian's 3LO endpoints or the
+	// configured Server's local OAuth endpoints.
+	IsCloud           bool   `json:"iscloud"`
+	ForgeSharedSecret string `json:"forgesharedsecret"`
+	ForgeDrainURL     string `json:"forgedrainurl"`
+	ForgeInstallURL   string `json:"forgeinstallurl"`
+}
+
+func (c *Configuration) GetForgeInstallURL() string {
+	return strings.TrimSpace(c.ForgeInstallURL)
 }
 
 func GetConfig() *Configuration {

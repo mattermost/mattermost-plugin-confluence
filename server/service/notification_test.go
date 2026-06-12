@@ -18,7 +18,20 @@ func baseMock() *plugintest.API {
 	mockAPI := &plugintest.API{}
 	config.Mattermost = mockAPI
 
+	allowLogs(mockAPI)
 	return mockAPI
+}
+
+func allowLogs(mockAPI *plugintest.API) {
+	for _, level := range []string{"LogDebug", "LogInfo", "LogWarn", "LogError"} {
+		for n := 1; n <= 11; n += 2 {
+			args := make([]interface{}, n)
+			for i := range args {
+				args[i] = mock.Anything
+			}
+			mockAPI.On(level, args...).Return().Maybe()
+		}
+	}
 }
 
 func TestGetNotificationsChannelIDs(t *testing.T) {

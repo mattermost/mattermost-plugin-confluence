@@ -88,7 +88,9 @@ func TestGenerateRandomKey(t *testing.T) {
 	})
 }
 
-func TestOnConfigurationChange_AutoGenerateEncryptionKey(t *testing.T) {
+func TestOnConfigurationChange_AutoGenerateSecrets(t *testing.T) {
+	const valid = "12345678901234567890123456789012" // 32 chars
+
 	t.Run("auto-generates encryption key when missing", func(t *testing.T) {
 		mockAPI := &plugintest.API{}
 		config.Mattermost = mockAPI
@@ -96,11 +98,11 @@ func TestOnConfigurationChange_AutoGenerateEncryptionKey(t *testing.T) {
 		p := &Plugin{}
 		p.SetAPI(mockAPI)
 
-		// Configuration with valid secret but missing encryption key
 		mockAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.Configuration")).Run(func(args mock.Arguments) {
 			cfg := args.Get(0).(*config.Configuration)
-			cfg.Secret = "12345678901234567890123456789012" // 32 chars
-			cfg.EncryptionKey = ""                          // Empty - should be auto-generated
+			cfg.Secret = valid
+			cfg.EncryptionKey = "" // missing — expect regen
+			cfg.ForgeSharedSecret = valid
 		}).Return(nil)
 
 		mockAPI.On("LogInfo", "Auto-generated missing Encryption Key.").Return()
@@ -108,30 +110,89 @@ func TestOnConfigurationChange_AutoGenerateEncryptionKey(t *testing.T) {
 
 		err := p.OnConfigurationChange()
 		require.NoError(t, err)
-
-		// Verify SavePluginConfig was called (meaning key was generated and saved)
 		mockAPI.AssertCalled(t, "SavePluginConfig", mock.AnythingOfType("map[string]interface {}"))
 	})
 
-	t.Run("does not overwrite existing valid encryption key", func(t *testing.T) {
+	t.Run("auto-generates webhook secret when missing", func(t *testing.T) {
 		mockAPI := &plugintest.API{}
 		config.Mattermost = mockAPI
 
 		p := &Plugin{}
 		p.SetAPI(mockAPI)
 
-		existingKey := "abcdefghijklmnopqrstuvwxyz123456" // 32 chars
+		mockAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.Configuration")).Run(func(args mock.Arguments) {
+			cfg := args.Get(0).(*config.Configuration)
+			cfg.Secret = "" // missing — expect regen
+			cfg.EncryptionKey = valid
+			cfg.ForgeSharedSecret = valid
+		}).Return(nil)
+
+		mockAPI.On("LogInfo", "Auto-generated missing Webhook Secret.").Return()
+		mockAPI.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil)
+
+		err := p.OnConfigurationChange()
+		require.NoError(t, err)
+		mockAPI.AssertCalled(t, "SavePluginConfig", mock.AnythingOfType("map[string]interface {}"))
+	})
+
+	t.Run("auto-generates forge shared secret when missing", func(t *testing.T) {
+		mockAPI := &plugintest.API{}
+		config.Mattermost = mockAPI
+
+		p := &Plugin{}
+		p.SetAPI(mockAPI)
 
 		mockAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.Configuration")).Run(func(args mock.Arguments) {
 			cfg := args.Get(0).(*config.Configuration)
-			cfg.Secret = "12345678901234567890123456789012"
-			cfg.EncryptionKey = existingKey
+			cfg.Secret = valid
+			cfg.EncryptionKey = valid
+			cfg.ForgeSharedSecret = "" // missing — expect regen
+		}).Return(nil)
+
+		mockAPI.On("LogInfo", "Auto-generated missing Forge Bridge Shared Secret.").Return()
+		mockAPI.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil)
+
+		err := p.OnConfigurationChange()
+		require.NoError(t, err)
+		mockAPI.AssertCalled(t, "SavePluginConfig", mock.AnythingOfType("map[string]interface {}"))
+	})
+
+	t.Run("regenerates all three when all missing", func(t *testing.T) {
+		mockAPI := &plugintest.API{}
+		config.Mattermost = mockAPI
+
+		p := &Plugin{}
+		p.SetAPI(mockAPI)
+
+		// Fresh upload: LoadPluginConfiguration leaves the config zero-valued.
+		mockAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.Configuration")).Return(nil)
+
+		mockAPI.On("LogInfo", "Auto-generated missing Webhook Secret.").Return()
+		mockAPI.On("LogInfo", "Auto-generated missing Encryption Key.").Return()
+		mockAPI.On("LogInfo", "Auto-generated missing Forge Bridge Shared Secret.").Return()
+		mockAPI.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil).Once()
+
+		err := p.OnConfigurationChange()
+		require.NoError(t, err)
+		mockAPI.AssertNumberOfCalls(t, "SavePluginConfig", 1) // single batched save
+	})
+
+	t.Run("does not overwrite existing valid secrets", func(t *testing.T) {
+		mockAPI := &plugintest.API{}
+		config.Mattermost = mockAPI
+
+		p := &Plugin{}
+		p.SetAPI(mockAPI)
+
+		mockAPI.On("LoadPluginConfiguration", mock.AnythingOfType("*config.Configuration")).Run(func(args mock.Arguments) {
+			cfg := args.Get(0).(*config.Configuration)
+			cfg.Secret = valid
+			cfg.EncryptionKey = "abcdefghijklmnopqrstuvwxyz123456"
+			cfg.ForgeSharedSecret = valid
 		}).Return(nil)
 
 		err := p.OnConfigurationChange()
 		require.NoError(t, err)
-
-		// SavePluginConfig should NOT be called since key is valid
 		mockAPI.AssertNotCalled(t, "SavePluginConfig", mock.Anything)
 	})
 }

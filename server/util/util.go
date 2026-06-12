@@ -86,10 +86,6 @@ func GetSiteURL() string {
 	return *ptr
 }
 
-func GetAtlassianConnectURLPath() string {
-	return "/atlassian-connect.json?secret=" + url.QueryEscape(config.GetConfig().Secret)
-}
-
 func GetConfluenceServerWebhookURLPath() string {
 	return "/server/webhook?secret=" + url.QueryEscape(config.GetConfig().Secret)
 }

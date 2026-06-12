@@ -15,4 +15,8 @@ type RESTService interface {
 	GetSpaceData(string) (*SpaceResponse, error)
 	GetPageData(int) (*PageResponse, error)
 	GetSpaceKeyFromSpaceID(int64) (string, error)
+
+	// location is "footer"/"inline" for Cloud comment events; DC ignores it.
+	MentionAccountIDsInPage(pageID string) ([]string, error)
+	MentionAccountIDsInComment(commentID, location string) ([]string, error)
 }
