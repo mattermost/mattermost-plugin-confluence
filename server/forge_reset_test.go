@@ -50,6 +50,31 @@ func TestPostForgeReset(t *testing.T) {
 		assert.Contains(t, err.Error(), "install cloud")
 	})
 
+	t.Run("200 with ok=false is rejected", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok":false}`))
+		}))
+		defer server.Close()
+
+		_, err := postForgeReset(server.URL, secret)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ok=false")
+	})
+
+	t.Run("200 with unparseable body is rejected", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`not json`))
+		}))
+		defer server.Close()
+
+		_, err := postForgeReset(server.URL, secret)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unparseable")
+	})
+
 	t.Run("500 surfaces upstream body", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			http.Error(w, "boom", http.StatusInternalServerError)

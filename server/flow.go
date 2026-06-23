@@ -856,13 +856,13 @@ func (fm *FlowManager) submitForgeBridgeURLs(_ *flow.Flow, submitted map[string]
 	cfg.ForgeDrainURL = drainURL
 	cfg.ForgeRegisterURL = registerURL
 	if urls != nil {
-		if urls.Reset != "" {
+		if isForgeWebtriggerURL(urls.Reset) {
 			cfg.ForgeResetURL = urls.Reset
 		}
-		if urls.Drain != "" {
+		if isForgeWebtriggerURL(urls.Drain) {
 			cfg.ForgeDrainURL = urls.Drain
 		}
-		if urls.Register != "" {
+		if isForgeWebtriggerURL(urls.Register) {
 			cfg.ForgeRegisterURL = urls.Register
 		}
 	}

@@ -136,14 +136,6 @@ export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
     return jsonResponse(200, { events, nextCursor: results.nextCursor ?? null });
 };
 
-// reset wipes the registration so a fresh secret can be installed. Authenticated
-// via HMAC using the currently-registered secret, so only a caller that already
-// holds the shared secret (i.e. the Mattermost plugin that registered) can use
-// it. Use the `/confluence forge reset` slash command in Mattermost.
-//
-// When secrets have drifted (the plugin lost its copy, or a different MM
-// instance is trying to re-register) this endpoint cannot help — use the
-// `wipeRegistration` break-glass function via `forge invoke` instead.
 export const reset = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
     console.log('reset: invoked');
     const secret = (await kvs.getSecret(SECRET_KEY)) as string | undefined;
@@ -162,14 +154,6 @@ export const reset = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
     return jsonResponse(200, { ok: true, queuedDeleted });
 };
 
-// wipeRegistration is the break-glass equivalent of `reset`. Invoke via the
-// Forge CLI when the in-band reset cannot run (drifted secrets, plugin lost
-// its secret, etc.):
-//
-//   forge invoke -f wipeRegistrationFn -e <env>
-//
-// The Forge CLI authenticates the caller (must have developer access to this
-// app), which is the right gate for a break-glass operation.
 export const wipeRegistration = async (): Promise<{ ok: true; queuedDeleted: number }> => {
     const queuedDeleted = await wipeAllStorage();
     console.log(`wipeRegistration: cleared registration + ${queuedDeleted} queued events`);
@@ -177,8 +161,6 @@ export const wipeRegistration = async (): Promise<{ ok: true; queuedDeleted: num
 };
 
 const wipeAllStorage = async (): Promise<number> => {
-    await kvs.delete(REGISTERED_KEY);
-    await kvs.deleteSecret(SECRET_KEY);
     let cursor: string | undefined;
     let deleted = 0;
     do {
@@ -192,14 +174,11 @@ const wipeAllStorage = async (): Promise<number> => {
         deleted += page.results.length;
         cursor = page.nextCursor ?? undefined;
     } while (cursor);
+    await kvs.delete(REGISTERED_KEY);
+    await kvs.deleteSecret(SECRET_KEY);
     return deleted;
 };
 
-// register accepts the shared secret used to HMAC-sign drain requests. It is
-// idempotent for the same secret (returns 200 with alreadyRegistered:true). A
-// caller presenting a different secret is rejected with 409; the Mattermost
-// plugin should run `/confluence forge reset` to rotate, or fall back to
-// `forge invoke -f wipeRegistrationFn -e <env>` if the in-band path can't auth.
 export const register = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
     let payload: { secret?: string };
     try {

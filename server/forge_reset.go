@@ -30,8 +30,6 @@ const (
 		"Make sure the Forge app has been redeployed (so the `reset` webtrigger exists) " +
 		"and run `/confluence install cloud` once to capture its URL. " +
 		"Subsequent rotations will then run inline via this command."
-
-	forgeResetBridgeNotRegisteredMsg = "Forge bridge reports it was already cleared. Run `/confluence install cloud` to re-register from scratch."
 )
 
 func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.CommandResponse {
@@ -78,13 +76,13 @@ func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.Co
 
 	cfg.ForgeSharedSecret = newSecret
 	if urls != nil {
-		if urls.Reset != "" {
+		if isForgeWebtriggerURL(urls.Reset) {
 			cfg.ForgeResetURL = urls.Reset
 		}
-		if urls.Drain != "" {
+		if isForgeWebtriggerURL(urls.Drain) {
 			cfg.ForgeDrainURL = urls.Drain
 		}
-		if urls.Register != "" {
+		if isForgeWebtriggerURL(urls.Register) {
 			cfg.ForgeRegisterURL = urls.Register
 		}
 	}
@@ -140,7 +138,15 @@ func postForgeReset(resetURL, secret string) (int, error) {
 	switch resp.StatusCode {
 	case http.StatusOK:
 		var parsed forgeResetResponse
-		_ = json.Unmarshal(respBody, &parsed)
+		if err := json.Unmarshal(respBody, &parsed); err != nil {
+			return 0, errors.Wrap(err, "bridge returned 200 with unparseable body; reset not confirmed")
+		}
+		if !parsed.OK {
+			return 0, errors.New("bridge returned 200 but ok=false; reset not confirmed")
+		}
+		if parsed.QueuedDeleted < 0 {
+			return 0, errors.Errorf("bridge returned invalid queuedDeleted=%d", parsed.QueuedDeleted)
+		}
 		return parsed.QueuedDeleted, nil
 	case http.StatusForbidden:
 		return 0, errors.New("bridge rejected reset signature: the plugin's shared secret no longer matches the bridge. Have a Forge admin run `forge invoke -f wipeRegistrationFn -e <env>`, then re-run `/confluence install cloud`")
