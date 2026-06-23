@@ -847,12 +847,25 @@ func (fm *FlowManager) submitForgeBridgeURLs(_ *flow.Flow, submitted map[string]
 		return "", nil, nil, errors.New("Forge Bridge Shared Secret is not set on this plugin; reload the plugin to regenerate it")
 	}
 
-	if err := postForgeRegister(registerURL, cfg.ForgeSharedSecret); err != nil {
+	urls, err := postForgeRegister(registerURL, cfg.ForgeSharedSecret)
+	if err != nil {
 		errorList["register_url"] = err.Error()
 		return "", nil, errorList, nil
 	}
 
 	cfg.ForgeDrainURL = drainURL
+	cfg.ForgeRegisterURL = registerURL
+	if urls != nil {
+		if urls.Reset != "" {
+			cfg.ForgeResetURL = urls.Reset
+		}
+		if urls.Drain != "" {
+			cfg.ForgeDrainURL = urls.Drain
+		}
+		if urls.Register != "" {
+			cfg.ForgeRegisterURL = urls.Register
+		}
+	}
 	cfg.Sanitize()
 	configMap, err := cfg.ToMap()
 	if err != nil {
@@ -885,10 +898,21 @@ func isForgeWebtriggerURL(raw string) bool {
 	return strings.HasPrefix(u.Path, "/public/")
 }
 
-func postForgeRegister(registerURL, secret string) error {
+type ForgeWebtriggerURLs struct {
+	Drain    string `json:"drain"`
+	Register string `json:"register"`
+	Reset    string `json:"reset"`
+}
+
+type forgeRegisterResponse struct {
+	OK   bool                `json:"ok"`
+	URLs ForgeWebtriggerURLs `json:"urls"`
+}
+
+func postForgeRegister(registerURL, secret string) (*ForgeWebtriggerURLs, error) {
 	body, err := json.Marshal(map[string]string{"secret": secret})
 	if err != nil {
-		return errors.Wrap(err, "failed to encode register payload")
+		return nil, errors.Wrap(err, "failed to encode register payload")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -896,7 +920,7 @@ func postForgeRegister(registerURL, secret string) error {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, registerURL, bytes.NewReader(body))
 	if err != nil {
-		return errors.Wrap(err, "failed to build register request")
+		return nil, errors.Wrap(err, "failed to build register request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -909,21 +933,24 @@ func postForgeRegister(registerURL, secret string) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "failed to reach register URL")
+		return nil, errors.Wrap(err, "failed to reach register URL")
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK, http.StatusNoContent:
-		return nil
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		var parsed forgeRegisterResponse
+		_ = json.Unmarshal(respBody, &parsed) // tolerate older bridges with no urls field
+		return &parsed.URLs, nil
 	case http.StatusConflict:
-		return errors.New("Forge bridge is already registered with a different shared secret. Have the Forge admin delete the `mm.registered` and `mm.drainSecret` storage keys (`forge storage delete mm.registered && forge storage delete mm.drainSecret`), then re-run this wizard.")
+		return nil, errors.New("Forge bridge is already registered with a different shared secret. Run `/confluence forge reset` to rotate, or if that fails ask your Forge admin to run `forge invoke -f wipeRegistrationFn -e <env>`, then re-run this wizard.")
 	default:
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		snippet := strings.TrimSpace(string(respBody))
 		if snippet == "" {
 			snippet = resp.Status
 		}
-		return errors.Errorf("bridge rejected registration (%d): %s", resp.StatusCode, snippet)
+		return nil, errors.Errorf("bridge rejected registration (%d): %s", resp.StatusCode, snippet)
 	}
 }

@@ -43,7 +43,8 @@ const (
 	sysAdminHelpText = "\n###### For System Administrators:\n" +
 		"Setup Instructions:\n" +
 		"* `/confluence install cloud` - Connect Mattermost to a Confluence Cloud instance.\n" +
-		"* `/confluence install server` - Connect Mattermost to a Confluence Server or Data Center instance.\n"
+		"* `/confluence install server` - Connect Mattermost to a Confluence Server or Data Center instance.\n" +
+		"* `/confluence forge reset` - Rotate the Forge bridge shared secret in-place (Cloud only).\n"
 
 	invalidCommand              = "Invalid command."
 	installOnlySystemAdmin      = "`/confluence install` can only be run by a system administrator."
@@ -73,6 +74,7 @@ var ConfluenceCommandHandler = Handler{
 		"settings/notifications":     executeNotificationsStatus,
 		"settings/notifications/on":  executeNotificationsOn,
 		"settings/notifications/off": executeNotificationsOff,
+		"forge/reset":                executeForgeReset,
 	},
 	defaultHandler: executeConfluenceDefault,
 }
@@ -141,6 +143,13 @@ func getAutoCompleteData() *model.AutocompleteData {
 	})
 	settings.AddCommand(notifications)
 	confluence.AddCommand(settings)
+
+	forge := model.NewAutocompleteData("forge", "", "Manage the Confluence Forge bridge (System Admin)")
+	forge.RoleID = model.SystemAdminRoleId
+	reset := model.NewAutocompleteData("reset", "", "Rotate the Forge bridge shared secret")
+	reset.RoleID = model.SystemAdminRoleId
+	forge.AddCommand(reset)
+	confluence.AddCommand(forge)
 
 	return confluence
 }

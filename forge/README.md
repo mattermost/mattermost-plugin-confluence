@@ -121,20 +121,52 @@ notification.
 
 ### Operational notes
 
-- `register` is one-shot. If you need to rotate the shared secret,
-  clear `mm.registered` from Forge storage first (use `forge install
-  --upgrade` after manually wiping the entry), then re-run the
-  Mattermost wizard.
-- Forge storage values are capped at 240 KiB per entry. The bridge
-  drops the inline page body for events that would exceed this; the
-  channel notification still fires but @-mention DMs are skipped for
-  that single oversized event.
+#### Rotating the shared secret
+
+The `register` endpoint is single-use per secret. To rotate without
+re-running the install wizard, use the in-band command from Mattermost:
+
+```
+/confluence forge reset
+```
+
+This calls the bridge's HMAC-authenticated `reset` web trigger, which
+wipes `mm.registered`, `mm.drainSecret`, and any queued events; the
+plugin then generates a new secret and re-registers automatically.
+Polling resumes within ~30s. No `install cloud` rerun required.
+
+If the in-band reset fails because the plugin and bridge have drifted
+out of sync (i.e. the bridge no longer accepts the plugin's HMAC),
+break-glass via the Forge CLI:
+
+```
+forge invoke -f wipeRegistrationFn -e <environment>
+```
+
+This requires Forge developer access to the app. After it returns,
+run `/confluence install cloud` to re-register.
+
+#### Storage backend
+
+The bridge uses Forge `@forge/kvs` (the legacy `@forge/api` `storage`
+module was removed by Atlassian on 2026-06-22). Keys used:
+
+- `mm.registered` — registration flag (boolean)
+- `mm.drainSecret` — shared HMAC secret (Forge secret-type entry)
+- `evt:*` — buffered Confluence events, drained by the Mattermost plugin
+
+#### Other limits
+
+- KVS values are capped at 240 KiB per entry. The bridge drops the
+  inline page body for events that would exceed this; the channel
+  notification still fires but @-mention DMs are skipped for that
+  single oversized event.
 - Forge web trigger throttle is 1000 req/min per app/environment. At
   a 30-second poll cadence that is 2 req/min per tenant, so one bridge
   accommodates ~500 Confluence Cloud tenants before throttling.
-- Forge storage is wiped 28 days after the app is uninstalled. The
-  bridge is a buffer, not a system of record; the Mattermost plugin
-  is the durable side.
+- Forge KVS is wiped 28 days after the app is uninstalled. The bridge
+  is a buffer, not a system of record; the Mattermost plugin is the
+  durable side.
 
 ## Shape
 

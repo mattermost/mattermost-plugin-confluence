@@ -1,4 +1,5 @@
-import api, { route, storage, webTrigger } from '@forge/api';
+import api, { route, webTrigger } from '@forge/api';
+import { kvs, WhereConditions } from '@forge/kvs';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 const QUEUE_PREFIX = 'evt:';
@@ -34,10 +35,10 @@ export const enqueue = async (event: unknown, context: unknown): Promise<void> =
     const safe = enforceStorageLimit(enriched, contentID);
 
     try {
-        await storage.set(key, { event: safe, context, enqueuedAt: Date.now() });
+        await kvs.set(key, { event: safe, context, enqueuedAt: Date.now() });
         console.log(`enqueue: stored key=${key} bodyAttached=${Boolean(safe.content?.body)}`);
     } catch (err) {
-        console.error(`enqueue: storage.set failed key=${key} error=${(err as Error)?.message ?? err}`);
+        console.error(`enqueue: kvs.set failed key=${key} error=${(err as Error)?.message ?? err}`);
         throw err;
     }
 };
@@ -97,7 +98,7 @@ const enrichWithBody = async (evt: ForgeEvent): Promise<ForgeEvent> => {
 // body with the shared secret set via the `register` trigger.
 export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
     console.log('drain: invoked');
-    const secret = (await storage.getSecret(SECRET_KEY)) as string | undefined;
+    const secret = (await kvs.getSecret(SECRET_KEY)) as string | undefined;
     if (!secret) {
         console.log('drain: rejected, bridge not registered');
         return jsonResponse(503, { error: 'bridge not registered; POST credentials to register web trigger first' });
@@ -119,14 +120,14 @@ export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
 
     if (body.ack?.length) {
         const ackable = body.ack.filter((k) => typeof k === 'string' && k.startsWith(QUEUE_PREFIX));
-        await Promise.all(ackable.map((k) => storage.delete(k)));
+        await Promise.all(ackable.map((k) => kvs.delete(k)));
         console.log(`drain: acked ${ackable.length} keys`);
     }
 
     const limit = clampLimit(body.limit);
-    const results = await storage
+    const results = await kvs
         .query()
-        .where('key', { condition: 'STARTS_WITH', value: QUEUE_PREFIX })
+        .where('key', WhereConditions.beginsWith(QUEUE_PREFIX))
         .limit(limit)
         .getMany();
 
@@ -135,9 +136,70 @@ export const drain = async (req: WebTriggerRequest): Promise<WebTriggerResponse>
     return jsonResponse(200, { events, nextCursor: results.nextCursor ?? null });
 };
 
-// register is a one-shot. Once `mm.registered` is set, further calls are
-// refused. To re-register, an operator must clear the flag via the Forge CLI:
-//   forge install --upgrade   then re-POST to register
+// reset wipes the registration so a fresh secret can be installed. Authenticated
+// via HMAC using the currently-registered secret, so only a caller that already
+// holds the shared secret (i.e. the Mattermost plugin that registered) can use
+// it. Use the `/confluence forge reset` slash command in Mattermost.
+//
+// When secrets have drifted (the plugin lost its copy, or a different MM
+// instance is trying to re-register) this endpoint cannot help — use the
+// `wipeRegistration` break-glass function via `forge invoke` instead.
+export const reset = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
+    console.log('reset: invoked');
+    const secret = (await kvs.getSecret(SECRET_KEY)) as string | undefined;
+    if (!secret) {
+        console.log('reset: bridge not registered, nothing to do');
+        return jsonResponse(200, { ok: true, alreadyClear: true });
+    }
+
+    if (!verifySignature(secret, headerValue(req, 'x-mm-signature'), req.body ?? '')) {
+        console.log('reset: rejected, invalid signature');
+        return jsonResponse(403, { error: 'invalid signature' });
+    }
+
+    const queuedDeleted = await wipeAllStorage();
+    console.log(`reset: cleared registration + ${queuedDeleted} queued events`);
+    return jsonResponse(200, { ok: true, queuedDeleted });
+};
+
+// wipeRegistration is the break-glass equivalent of `reset`. Invoke via the
+// Forge CLI when the in-band reset cannot run (drifted secrets, plugin lost
+// its secret, etc.):
+//
+//   forge invoke -f wipeRegistrationFn -e <env>
+//
+// The Forge CLI authenticates the caller (must have developer access to this
+// app), which is the right gate for a break-glass operation.
+export const wipeRegistration = async (): Promise<{ ok: true; queuedDeleted: number }> => {
+    const queuedDeleted = await wipeAllStorage();
+    console.log(`wipeRegistration: cleared registration + ${queuedDeleted} queued events`);
+    return { ok: true, queuedDeleted };
+};
+
+const wipeAllStorage = async (): Promise<number> => {
+    await kvs.delete(REGISTERED_KEY);
+    await kvs.deleteSecret(SECRET_KEY);
+    let cursor: string | undefined;
+    let deleted = 0;
+    do {
+        const q = kvs
+            .query()
+            .where('key', WhereConditions.beginsWith(QUEUE_PREFIX))
+            .limit(100);
+        if (cursor) q.cursor(cursor);
+        const page = await q.getMany();
+        await Promise.all(page.results.map((r) => kvs.delete(r.key)));
+        deleted += page.results.length;
+        cursor = page.nextCursor ?? undefined;
+    } while (cursor);
+    return deleted;
+};
+
+// register accepts the shared secret used to HMAC-sign drain requests. It is
+// idempotent for the same secret (returns 200 with alreadyRegistered:true). A
+// caller presenting a different secret is rejected with 409; the Mattermost
+// plugin should run `/confluence forge reset` to rotate, or fall back to
+// `forge invoke -f wipeRegistrationFn -e <env>` if the in-band path can't auth.
 export const register = async (req: WebTriggerRequest): Promise<WebTriggerResponse> => {
     let payload: { secret?: string };
     try {
@@ -150,19 +212,28 @@ export const register = async (req: WebTriggerRequest): Promise<WebTriggerRespon
         return jsonResponse(400, { error: 'secret must be at least 32 characters' });
     }
 
-    if (await storage.get(REGISTERED_KEY)) {
-        const existing = (await storage.getSecret(SECRET_KEY)) as string | undefined;
+    if (await kvs.get(REGISTERED_KEY)) {
+        const existing = (await kvs.getSecret(SECRET_KEY)) as string | undefined;
         if (existing && secretsMatch(existing, payload.secret)) {
-            return jsonResponse(200, { ok: true, alreadyRegistered: true });
+            return jsonResponse(200, { ok: true, alreadyRegistered: true, urls: await allWebtriggerURLs() });
         }
         return jsonResponse(409, {
-            error: 'already registered with a different shared secret; clear mm.registered and mm.drainSecret from Forge storage to reset',
+            error: 'already registered with a different shared secret; run `/confluence forge reset` in Mattermost to rotate, or `forge invoke -f wipeRegistrationFn -e <env>` to break-glass',
         });
     }
 
-    await storage.setSecret(SECRET_KEY, payload.secret);
-    await storage.set(REGISTERED_KEY, true);
-    return jsonResponse(200, { ok: true });
+    await kvs.setSecret(SECRET_KEY, payload.secret);
+    await kvs.set(REGISTERED_KEY, true);
+    return jsonResponse(200, { ok: true, urls: await allWebtriggerURLs() });
+};
+
+const allWebtriggerURLs = async (): Promise<{ drain: string; register: string; reset: string }> => {
+    const [drain, register, reset] = await Promise.all([
+        webTrigger.getUrl('drain'),
+        webTrigger.getUrl('register'),
+        webTrigger.getUrl('reset'),
+    ]);
+    return { drain, register, reset };
 };
 
 const secretsMatch = (a: string, b: string): boolean => {

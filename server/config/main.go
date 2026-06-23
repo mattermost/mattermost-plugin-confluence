@@ -33,6 +33,8 @@ type Configuration struct {
 	IsCloud           bool   `json:"iscloud"`
 	ForgeSharedSecret string `json:"forgesharedsecret"`
 	ForgeDrainURL     string `json:"forgedrainurl"`
+	ForgeResetURL     string `json:"forgereseturl"`
+	ForgeRegisterURL  string `json:"forgeregisterurl"`
 	ForgeInstallURL   string `json:"forgeinstallurl"`
 }
 
