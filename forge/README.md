@@ -97,9 +97,15 @@ account that owns the app:
 forge webtrigger --environment production
 ```
 
-Pick the installed tenant when prompted. The CLI prints two URLs:
+Pick the installed tenant when prompted. The CLI prints three URLs:
 - `drain` → the URL Mattermost will poll
 - `register` → a one-shot URL used to set the shared secret
+- `reset` → HMAC-authenticated URL used by `/confluence forge reset` to
+  rotate the shared secret in-band
+
+You only need to paste `drain` and `register` into the wizard; the
+bridge announces the `reset` URL back in its `register` response and
+the plugin persists it automatically.
 
 ### Step 8 — Run the Mattermost setup wizard
 
@@ -134,6 +140,12 @@ This calls the bridge's HMAC-authenticated `reset` web trigger, which
 wipes `mm.registered`, `mm.drainSecret`, and any queued events; the
 plugin then generates a new secret and re-registers automatically.
 Polling resumes within ~30s. No `install cloud` rerun required.
+
+If the plugin is missing the `reset` URL on file (e.g. it was installed
+before this command existed) but still has the `register` URL, the
+command self-heals by calling `register` to fetch the current webtrigger
+URLs, persisting them, and then performing the rotation. No manual
+re-install required in that case either.
 
 If the in-band reset fails because the plugin and bridge have drifted
 out of sync (i.e. the bridge no longer accepts the plugin's HMAC),
