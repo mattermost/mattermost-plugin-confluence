@@ -26,10 +26,12 @@ const (
 
 	forgeResetSuccessMsg = "Forge bridge secret rotated successfully. Queued events cleared: %d. Polling will resume within ~30s."
 
-	forgeResetMissingURLsMsg = "This plugin does not have the Forge reset URL on file. " +
+	forgeResetMissingURLsMsg = "This plugin does not have the Forge reset URL on file, and the register URL is also missing so it cannot self-recover. " +
 		"Make sure the Forge app has been redeployed (so the `reset` webtrigger exists) " +
 		"and run `/confluence install cloud` once to capture its URL. " +
 		"Subsequent rotations will then run inline via this command."
+
+	forgeResetSelfHealMsg = "Forge bridge reset URL was missing from plugin config; recovered it from the register webtrigger. Retrying the rotation..."
 )
 
 func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.CommandResponse {
@@ -43,12 +45,41 @@ func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.Co
 	registerURL := strings.TrimSpace(cfg.ForgeRegisterURL)
 	currentSecret := strings.TrimSpace(cfg.ForgeSharedSecret)
 
-	if resetURL == "" || registerURL == "" {
-		postCommandResponse(ctx, forgeResetMissingURLsMsg)
-		return &model.CommandResponse{}
-	}
 	if currentSecret == "" {
 		postCommandResponse(ctx, "Forge Bridge Shared Secret is not set on this plugin; reload the plugin to regenerate it.")
+		return &model.CommandResponse{}
+	}
+
+	if resetURL == "" && registerURL != "" {
+		urls, err := postForgeRegister(registerURL, currentSecret)
+		if err != nil {
+			p.client.Log.Warn("forge reset: self-heal via register failed", "error", err.Error())
+			postCommandResponse(ctx, "Forge reset URL is missing and recovery via the register webtrigger failed: "+err.Error()+"\n\nRe-run `/confluence install cloud` to repopulate the URLs.")
+			return &model.CommandResponse{}
+		}
+		if urls == nil || !isForgeWebtriggerURL(urls.Reset) {
+			postCommandResponse(ctx, "Forge bridge did not return a `reset` webtrigger URL. Redeploy the Forge app from this branch (so the `reset` trigger exists), then retry.")
+			return &model.CommandResponse{}
+		}
+		cfg.ForgeResetURL = urls.Reset
+		if isForgeWebtriggerURL(urls.Drain) {
+			cfg.ForgeDrainURL = urls.Drain
+		}
+		if isForgeWebtriggerURL(urls.Register) {
+			cfg.ForgeRegisterURL = urls.Register
+		}
+		if err := persistForgeConfig(p, cfg); err != nil {
+			postCommandResponse(ctx, "Recovered Forge URLs from the bridge, but failed to save them: "+err.Error()+". Re-run `/confluence install cloud` to recover.")
+			return &model.CommandResponse{}
+		}
+		p.client.Log.Info("forge reset: self-healed missing reset URL from register webtrigger", "user_id", ctx.UserId)
+		resetURL = strings.TrimSpace(cfg.ForgeResetURL)
+		registerURL = strings.TrimSpace(cfg.ForgeRegisterURL)
+		postCommandResponse(ctx, forgeResetSelfHealMsg)
+	}
+
+	if resetURL == "" || registerURL == "" {
+		postCommandResponse(ctx, forgeResetMissingURLsMsg)
 		return &model.CommandResponse{}
 	}
 
@@ -86,13 +117,7 @@ func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.Co
 			cfg.ForgeRegisterURL = urls.Register
 		}
 	}
-	cfg.Sanitize()
-	configMap, err := cfg.ToMap()
-	if err != nil {
-		postCommandResponse(ctx, "Secret rotated on the bridge, but failed to serialize plugin config: "+err.Error()+". Re-run `/confluence install cloud` to recover.")
-		return &model.CommandResponse{}
-	}
-	if err := p.client.Configuration.SavePluginConfig(configMap); err != nil {
+	if err := persistForgeConfig(p, cfg); err != nil {
 		postCommandResponse(ctx, "Secret rotated on the bridge, but failed to save plugin config: "+err.Error()+". Re-run `/confluence install cloud` to recover.")
 		return &model.CommandResponse{}
 	}
@@ -100,6 +125,18 @@ func executeForgeReset(p *Plugin, ctx *model.CommandArgs, _ ...string) *model.Co
 	p.client.Log.Info("forge reset: rotated bridge secret", "queued_deleted", queuedDeleted, "user_id", ctx.UserId)
 	postCommandResponse(ctx, fmt.Sprintf(forgeResetSuccessMsg, queuedDeleted))
 	return &model.CommandResponse{}
+}
+
+func persistForgeConfig(p *Plugin, cfg *config.Configuration) error {
+	cfg.Sanitize()
+	configMap, err := cfg.ToMap()
+	if err != nil {
+		return errors.Wrap(err, "serialize plugin config")
+	}
+	if err := p.client.Configuration.SavePluginConfig(configMap); err != nil {
+		return errors.Wrap(err, "save plugin config")
+	}
+	return nil
 }
 
 type forgeResetResponse struct {
