@@ -68,9 +68,8 @@
         {
           "key": "ForgeSharedSecret",
           "display_name": "Forge Bridge Shared Secret",
-          "type": "generated",
-          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). After regenerating, POST the new value to the Forge app's register web trigger.",
-          "regenerate_help_text": "Regenerates the shared secret. Existing Forge bridge installations must be re-registered with the new value.",
+          "type": "text",
+          "help_text": "Shared secret used to HMAC-sign poll requests to the Forge bridge that delivers Confluence Cloud events (the GA replacement for the legacy Atlassian Connect descriptor). Managed by the plugin — do not edit manually. To rotate on an already-registered bridge, run /confluence forge reset; the bridge's register endpoint is one-shot per secret and will reject a manually regenerated value with HTTP 409.",
           "secret": true
         },
         {
