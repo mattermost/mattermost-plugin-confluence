@@ -12,7 +12,8 @@
         "install:dev": "forge install --upgrade"
     },
     "dependencies": {
-        "@forge/api": "^4.0.0"
+        "@forge/api": "^4.0.0",
+        "@forge/kvs": "^2.0.0"
     },
     "devDependencies": {
         "@types/js-yaml": "^4.0.9",

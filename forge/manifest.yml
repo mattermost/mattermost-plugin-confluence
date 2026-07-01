@@ -48,6 +48,11 @@ modules:
       urlFormat: v2
       response:
         type: dynamic
+    - key: reset
+      function: resetFn
+      urlFormat: v2
+      response:
+        type: dynamic
 
   function:
     - key: enqueueFn
@@ -56,8 +61,12 @@ modules:
       handler: index.drain
     - key: registerFn
       handler: index.register
+    - key: resetFn
+      handler: index.reset
     - key: onInstalledFn
       handler: index.onInstalled
+    - key: wipeRegistrationFn
+      handler: index.wipeRegistration
 
 app:
   runtime:

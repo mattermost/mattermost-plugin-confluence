@@ -291,7 +291,7 @@ func (fp *ForgePoller) handleDrainError(err error) {
 
 	switch httpErr.StatusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
-		fp.alertOnce(alertKeyHMAC, fmt.Sprintf("Confluence Forge bridge rejected drain request (HTTP %d): the shared secret on this plugin does not match the secret stored in the Forge bridge. Re-run `/confluence install cloud` to re-register, or have the Forge admin delete the `mm.registered` and `mm.drainSecret` storage keys and re-run the wizard.", httpErr.StatusCode))
+		fp.alertOnce(alertKeyHMAC, fmt.Sprintf("Confluence Forge bridge rejected drain request (HTTP %d): the shared secret on this plugin does not match the secret stored in the Forge bridge. Run `/confluence forge reset` to rotate the secret in-place. If that also fails (because the plugin and bridge have drifted out of sync), ask a Forge admin to run `forge invoke -f wipeRegistrationFn -e <env>`, then re-run `/confluence install cloud`.", httpErr.StatusCode))
 	case http.StatusNotFound, http.StatusServiceUnavailable:
 		fp.alertOnce(alertKeyNotRegd, fmt.Sprintf("Confluence Forge bridge reports it is not registered (HTTP %d). Forge events are not being delivered. Re-run `/confluence install cloud` to re-register the bridge.", httpErr.StatusCode))
 	default:
