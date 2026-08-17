@@ -287,29 +287,9 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	userID := context.UserId
 	channelID := context.ChannelId
 
-	if !util.IsSystemAdmin(userID) {
-		postCommandResponse(context, commandsOnlySystemAdmin)
+	if access := p.checkSubscriptionAccess(userID); !access.Allowed {
+		postCommandResponse(context, access.Message)
 		return &model.CommandResponse{}
-	}
-
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				postCommandResponse(context, disconnectedUser)
-				return &model.CommandResponse{}
-			}
-
-			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
-			postCommandResponse(context, errorExecutingCommand)
-			return &model.CommandResponse{}
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			postCommandResponse(context, disconnectedUser)
-			return &model.CommandResponse{}
-		}
 	}
 
 	if len(args) == 0 {
@@ -334,26 +314,8 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 }
 
 func listChannelSubscription(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				postCommandResponse(context, disconnectedUser)
-				return &model.CommandResponse{}
-			}
-
-			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
-			postCommandResponse(context, errorExecutingCommand)
-			return &model.CommandResponse{}
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			postCommandResponse(context, disconnectedUser)
-			return &model.CommandResponse{}
-		}
-	} else if !util.IsSystemAdmin(context.UserId) {
-		postCommandResponse(context, commandsOnlySystemAdmin)
+	if access := p.checkSubscriptionAccess(context.UserId); !access.Allowed {
+		postCommandResponse(context, access.Message)
 		return &model.CommandResponse{}
 	}
 

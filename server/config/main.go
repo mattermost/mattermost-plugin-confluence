@@ -80,6 +80,10 @@ func (c *Configuration) Sanitize() {
 	c.ConfluenceOAuthClientSecret = strings.TrimSpace(c.ConfluenceOAuthClientSecret)
 }
 
+func (c *Configuration) HasPerUserConfluenceAuth() bool {
+	return c.IsCloud || c.ServerVersionGreaterthan9
+}
+
 func (c *Configuration) IsOAuthConfigured() bool {
 	return (c.ConfluenceOAuthClientID != "" && c.ConfluenceOAuthClientSecret != "")
 }

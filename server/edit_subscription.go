@@ -11,7 +11,6 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
-	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 )
 
 var editChannelSubscription = &Endpoint{
@@ -31,9 +30,9 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 	var subscription serializer.Subscription
 	var err error
 
-	if !util.IsSystemAdmin(userID) {
-		p.client.Log.Error("Non admin user does not have access to edit subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "only system admin can edit a subscription", http.StatusForbidden)
+	if access := p.checkSubscriptionAccess(userID); !access.Allowed {
+		p.client.Log.Error("User does not have access to edit subscription for this channel", "UserID", userID, "ChannelID", channelID, "reason", access.Reason)
+		http.Error(w, access.Message, access.StatusCode)
 		return
 	}
 
@@ -61,7 +60,7 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 	}
 
 	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
+	if pluginConfig.HasPerUserConfluenceAuth() {
 		var statusCode int
 		if statusCode, err = p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
 			p.client.Log.Error("Error validating the user's Confluence access", "Error", err.Error())

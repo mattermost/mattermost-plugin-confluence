@@ -58,6 +58,11 @@ const SYSTEM_ADMIN_ROLE = 'system_admin';
 const DISCONNECTED_USER = 'User not connected. Please use `/confluence connect`.';
 const ERROR_EXECUTING_COMMAND = 'An error occurred while executing the command. Please try again later.';
 
+const SUBSCRIBE_DENIED_REASON = {
+    ADMIN_ONLY: 'admin_only',
+    NOT_CONNECTED: 'not_connected',
+};
+
 export default {
     ACTION_TYPES,
     CONFLUENCE_EVENTS,
@@ -70,4 +75,5 @@ export default {
     SUBSCRIPTION_TYPE,
     DISCONNECTED_USER,
     ERROR_EXECUTING_COMMAND,
+    SUBSCRIBE_DENIED_REASON,
 };

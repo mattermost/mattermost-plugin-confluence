@@ -25,6 +25,7 @@ type Connection struct {
 	DefaultProjectKey string `json:"default_project_key,omitempty"`
 	IsAdmin           bool   `json:"is_admin,omitempty"`
 	MattermostUserID  string `json:"mattermost_user_id,omitempty"`
+	CloudID           string `json:"cloud_id,omitempty"`
 }
 
 func (c *Connection) ConfluenceAccountID() string {
