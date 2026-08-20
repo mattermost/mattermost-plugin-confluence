@@ -37,6 +37,9 @@ type cloudCurrentUser struct {
 // which would need a re-consent from every existing install.
 const cloudAPIPrefix = "/wiki"
 
+// getJSON GETs path relative to the Cloud API base and decodes the JSON
+// response body into out. A non-200 response yields an *APIError so callers can
+// act on the upstream status.
 func (c *confluenceCloudClient) getJSON(path string, out interface{}) error {
 	req, err := http.NewRequest(http.MethodGet, c.APIBase+cloudAPIPrefix+path, nil)
 	if err != nil {
