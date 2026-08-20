@@ -51,7 +51,7 @@ func (c *confluenceCloudClient) getJSON(path string, out interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("cloud request for %s returned %d", path, resp.StatusCode)
+		return &APIError{StatusCode: resp.StatusCode, Path: path}
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {

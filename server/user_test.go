@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
@@ -21,6 +24,45 @@ func marshalConnection(t *testing.T, connection *types.Connection) []byte {
 	b, err := json.Marshal(connection)
 	require.NoError(t, err)
 	return b
+}
+
+func TestClassifyConfluenceAccessError(t *testing.T) {
+	for name, tc := range map[string]struct {
+		err                error
+		expectedStatusCode int
+	}{
+		"not found is treated as hidden from the user": {
+			err:                &APIError{StatusCode: http.StatusNotFound, Path: "/space/MM"},
+			expectedStatusCode: http.StatusForbidden,
+		},
+		"forbidden denies access": {
+			err:                &APIError{StatusCode: http.StatusForbidden, Path: "/space/MM"},
+			expectedStatusCode: http.StatusForbidden,
+		},
+		"rate limit is retryable, not a denial": {
+			err:                &APIError{StatusCode: http.StatusTooManyRequests, Path: "/space/MM"},
+			expectedStatusCode: http.StatusTooManyRequests,
+		},
+		"upstream outage is not a denial": {
+			err:                &APIError{StatusCode: http.StatusServiceUnavailable, Path: "/space/MM"},
+			expectedStatusCode: http.StatusBadGateway,
+		},
+		"wrapped status is still recognized": {
+			err:                errors.Wrap(&APIError{StatusCode: http.StatusBadGateway, Path: "/space/MM"}, "upstream failed"),
+			expectedStatusCode: http.StatusBadGateway,
+		},
+		"transport failure without a response is not a denial": {
+			err:                errors.New("dial tcp: connection refused"),
+			expectedStatusCode: http.StatusBadGateway,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			statusCode, err := classifyConfluenceAccessError(tc.err, "space")
+
+			assert.Equal(t, tc.expectedStatusCode, statusCode)
+			assert.Error(t, err)
+		})
+	}
 }
 
 func TestCheckSubscriptionAccess(t *testing.T) {

@@ -516,6 +516,23 @@ func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	return err == nil
 }
 
+func classifyConfluenceAccessError(err error, resource string) (int, error) {
+	unreachable := errors.Errorf("Confluence could not be reached to verify your access to this %s. Please try again later", resource)
+
+	var apiErr *APIError
+	switch {
+	case !errors.As(err, &apiErr):
+		// Nothing came back from Confluence, so access is unproven, not refused.
+		return http.StatusBadGateway, unreachable
+	case apiErr.IsAccessDenied():
+		return http.StatusForbidden, errors.Errorf("User does not have an access to this Confluence %s", resource)
+	case apiErr.StatusCode == http.StatusTooManyRequests:
+		return http.StatusTooManyRequests, errors.New("Confluence is rate limiting requests. Please try again in a few minutes")
+	default:
+		return http.StatusBadGateway, unreachable
+	}
+}
+
 func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptionType string, subscription serializer.Subscription) (int, error) {
 	conn, err := store.LoadConnection(confluenceURL, userID)
 	if err != nil {
@@ -544,8 +561,8 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 			return http.StatusBadRequest, errors.New("invalid space subscription details provided")
 		}
 		if _, err = client.GetSpaceData(spaceSub.SpaceKey); err != nil {
-			p.client.Log.Error("User does not have access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
-			return http.StatusForbidden, errors.New("User does not have an access to this Confluence space")
+			p.client.Log.Error("Unable to confirm the user's access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
+			return classifyConfluenceAccessError(err, "space")
 		}
 
 	case serializer.SubscriptionTypePage:
@@ -561,8 +578,8 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 		}
 
 		if _, err := client.GetPageData(pageID); err != nil {
-			p.client.Log.Error("User does not have access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
-			return http.StatusForbidden, errors.New("User does not have an access to this Confluence page")
+			p.client.Log.Error("Unable to confirm the user's access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
+			return classifyConfluenceAccessError(err, "page")
 		}
 
 	default:

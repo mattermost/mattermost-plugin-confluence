@@ -170,8 +170,9 @@ func (csc *confluenceServerClient) GetCommentData(webhookPayload *serializer.Con
 
 func (csc *confluenceServerClient) GetPageData(pageID int) (*PageResponse, error) {
 	pageResponse := &PageResponse{}
-	if _, _, err := service.CallJSONWithURL(csc.URL, fmt.Sprintf("%s%s?status=any&expand=body.view,container,space,history", PathContentData, strconv.Itoa(pageID)), http.MethodGet, nil, pageResponse, csc.HTTPClient); err != nil {
-		return nil, err
+	path := fmt.Sprintf("%s%s?status=any&expand=body.view,container,space,history", PathContentData, strconv.Itoa(pageID))
+	if _, statusCode, err := service.CallJSONWithURL(csc.URL, path, http.MethodGet, nil, pageResponse, csc.HTTPClient); err != nil {
+		return nil, withAPIStatus(err, path, statusCode)
 	}
 
 	pageResponse.Body.View.Value = util.GetBodyForExcerpt(pageResponse.Body.View.Value)
@@ -181,8 +182,9 @@ func (csc *confluenceServerClient) GetPageData(pageID int) (*PageResponse, error
 
 func (csc *confluenceServerClient) GetSpaceData(spaceKey string) (*SpaceResponse, error) {
 	spaceResponse := &SpaceResponse{}
-	if _, _, err := service.CallJSONWithURL(csc.URL, fmt.Sprintf("%s%s?status=any", PathSpaceData, spaceKey), http.MethodGet, nil, spaceResponse, csc.HTTPClient); err != nil {
-		return nil, err
+	path := fmt.Sprintf("%s%s?status=any", PathSpaceData, spaceKey)
+	if _, statusCode, err := service.CallJSONWithURL(csc.URL, path, http.MethodGet, nil, spaceResponse, csc.HTTPClient); err != nil {
+		return nil, withAPIStatus(err, path, statusCode)
 	}
 
 	return spaceResponse, nil
