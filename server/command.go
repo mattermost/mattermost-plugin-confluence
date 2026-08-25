@@ -50,9 +50,11 @@ const (
 	installOnlySystemAdmin      = "`/confluence install` can only be run by a system administrator."
 	commandsOnlySystemAdmin     = "`/confluence` commands can only be run by a system administrator."
 	errorUserLacksChannelAccess = "Cannot perform operation: user does not have access to the channel."
-	disconnectedUser            = "User not connected. Please use `/confluence connect`."
-	errorExecutingCommand       = "Error executing the command, please retry."
-	oauth2ConnectPath           = "%s/oauth2/connect"
+
+	errorUserCannotManageSubscription = "Only the user who created this subscription or a channel admin can modify it."
+	disconnectedUser                  = "User not connected. Please use `/confluence connect`."
+	errorExecutingCommand             = "Error executing the command, please retry."
+	oauth2ConnectPath                 = "%s/oauth2/connect"
 
 	generalDeleteError = "error occurred while deleting subscription with name **%s**"
 )
@@ -303,6 +305,18 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	}
 
 	alias := strings.Join(args, " ")
+	subscription, _, err := service.GetChannelSubscription(channelID, alias)
+	if err != nil {
+		p.client.Log.Error("Error getting the subscription to delete", "subscription alias", alias, "error", err.Error())
+		postCommandResponse(context, fmt.Sprintf(generalDeleteError, alias))
+		return &model.CommandResponse{}
+	}
+
+	if !p.canManageSubscription(userID, channelID, subscription) {
+		postCommandResponse(context, errorUserCannotManageSubscription)
+		return &model.CommandResponse{}
+	}
+
 	if err := service.DeleteSubscription(channelID, alias); err != nil {
 		p.client.Log.Error("Error deleting the subscription", "subscription alias", alias, "error", err.Error())
 		postCommandResponse(context, fmt.Sprintf(generalDeleteError, alias))

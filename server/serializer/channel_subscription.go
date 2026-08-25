@@ -88,6 +88,9 @@ type Subscription interface {
 	Edit(*Subscriptions) error
 	Name() string
 	GetAlias() string
+	GetOldAlias() string
+	GetCreatedBy() string
+	WithCreatedBy(string) Subscription
 	GetFormattedSubscription() string
 	IsValid() error
 	ValidateSubscription(*Subscriptions) error
@@ -100,6 +103,15 @@ type BaseSubscription struct {
 	Events    []string `json:"events"`
 	ChannelID string   `json:"channelID"`
 	Type      string   `json:"subscriptionType"`
+	CreatedBy string   `json:"createdBy,omitempty"`
+}
+
+func (bs BaseSubscription) GetOldAlias() string {
+	return bs.OldAlias
+}
+
+func (bs BaseSubscription) GetCreatedBy() string {
+	return bs.CreatedBy
 }
 
 type StringSubscription map[string]Subscription

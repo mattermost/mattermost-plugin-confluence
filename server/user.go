@@ -516,6 +516,15 @@ func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	return err == nil
 }
 
+func (p *Plugin) canManageSubscription(userID, channelID string, subscription serializer.Subscription) bool {
+	if p.API.HasPermissionToChannel(userID, channelID, model.PermissionManageChannelRoles) {
+		return true
+	}
+
+	createdBy := subscription.GetCreatedBy()
+	return createdBy != "" && createdBy == userID
+}
+
 func classifyConfluenceAccessError(err error, resource string) (int, error) {
 	unreachable := errors.Errorf("Confluence could not be reached to verify your access to this %s. Please try again later", resource)
 
@@ -524,6 +533,8 @@ func classifyConfluenceAccessError(err error, resource string) (int, error) {
 	case !errors.As(err, &apiErr):
 		// Nothing came back from Confluence, so access is unproven, not refused.
 		return http.StatusBadGateway, unreachable
+	case apiErr.StatusCode == http.StatusUnauthorized:
+		return http.StatusUnauthorized, errors.New("Your Confluence session is no longer valid. Please reconnect with `/confluence connect`")
 	case apiErr.IsAccessDenied():
 		return http.StatusForbidden, errors.Errorf("User does not have an access to this Confluence %s", resource)
 	case apiErr.StatusCode == http.StatusTooManyRequests:

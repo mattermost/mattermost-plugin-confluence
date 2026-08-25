@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
+	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -58,8 +59,10 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	}
 
+	subscription = subscription.WithCreatedBy(userID)
+
 	pluginConfig := config.GetConfig()
-	if pluginConfig.HasPerUserConfluenceAuth() {
+	if pluginConfig.HasPerUserConfluenceAuth() && !util.IsSystemAdmin(userID) {
 		if statusCode, err := p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
 			p.client.Log.Error("Error validating the user's Confluence access", "error", err.Error())
 			http.Error(w, err.Error(), statusCode) // safe to return the error string directly, as this function ensures all returned errors are user-friendly

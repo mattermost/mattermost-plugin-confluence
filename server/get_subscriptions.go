@@ -36,6 +36,14 @@ func handleGetChannelSubscriptions(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
+	if !p.hasChannelAccess(mattermostUserID, channelID) {
+		p.client.Log.Debug("User does not have access to this channel", "UserID", mattermostUserID, "ChannelID", channelID)
+		b, _ := json.Marshal([]model.AutocompleteListItem{})
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(b)
+		return
+	}
+
 	subscriptions, err := service.GetSubscriptionsByChannelID(channelID)
 	if err != nil {
 		p.client.Log.Error("Error retrieving subscriptions. ChannelID: %s. Error: %s", channelID, err.Error())

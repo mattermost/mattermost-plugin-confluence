@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
+	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
 
@@ -38,6 +39,10 @@ func TestClassifyConfluenceAccessError(t *testing.T) {
 		"forbidden denies access": {
 			err:                &APIError{StatusCode: http.StatusForbidden, Path: "/space/MM"},
 			expectedStatusCode: http.StatusForbidden,
+		},
+		"unauthorized asks the user to reconnect": {
+			err:                &APIError{StatusCode: http.StatusUnauthorized, Path: "/space/MM"},
+			expectedStatusCode: http.StatusUnauthorized,
 		},
 		"rate limit is retryable, not a denial": {
 			err:                &APIError{StatusCode: http.StatusTooManyRequests, Path: "/space/MM"},
@@ -135,6 +140,54 @@ func TestCheckSubscriptionAccess(t *testing.T) {
 			if !tc.expectedAllowed {
 				assert.NotEmpty(t, access.Message)
 			}
+		})
+	}
+}
+
+func TestCanManageSubscription(t *testing.T) {
+	subscriptionCreatedBy := func(userID string) serializer.Subscription {
+		return serializer.SpaceSubscription{
+			SpaceKey:         "MM",
+			BaseSubscription: serializer.BaseSubscription{Alias: "test", CreatedBy: userID},
+		}
+	}
+
+	for name, tc := range map[string]struct {
+		subscription   serializer.Subscription
+		isChannelAdmin bool
+		expected       bool
+	}{
+		"creator manages their own subscription": {
+			subscription: subscriptionCreatedBy("user-id"),
+			expected:     true,
+		},
+		"member cannot manage someone else's subscription": {
+			subscription: subscriptionCreatedBy("another-user-id"),
+			expected:     false,
+		},
+		"member cannot manage a subscription without a creator": {
+			subscription: subscriptionCreatedBy(""),
+			expected:     false,
+		},
+		"channel admin manages someone else's subscription": {
+			subscription:   subscriptionCreatedBy("another-user-id"),
+			isChannelAdmin: true,
+			expected:       true,
+		},
+		"channel admin manages a subscription without a creator": {
+			subscription:   subscriptionCreatedBy(""),
+			isChannelAdmin: true,
+			expected:       true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mockAPI := &plugintest.API{}
+			mockAPI.On("HasPermissionToChannel", "user-id", "channel-id", model.PermissionManageChannelRoles).Return(tc.isChannelAdmin)
+
+			p := &Plugin{}
+			p.API = mockAPI
+
+			assert.Equal(t, tc.expected, p.canManageSubscription("user-id", "channel-id", tc.subscription))
 		})
 	}
 }

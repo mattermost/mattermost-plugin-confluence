@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
 	"github.com/mattermost/mattermost-plugin-confluence/server/serializer"
 	"github.com/mattermost/mattermost-plugin-confluence/server/service"
+	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 )
 
 var editChannelSubscription = &Endpoint{
@@ -59,8 +60,28 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
+	alias := subscription.GetOldAlias()
+	if alias == "" {
+		alias = subscription.GetAlias()
+	}
+
+	existing, errCode, err := service.GetChannelSubscription(channelID, alias)
+	if err != nil {
+		p.client.Log.Error("Error getting the subscription to edit", "ChannelID", channelID, "Alias", alias, "error", err.Error())
+		http.Error(w, "Failed to get subscription for this channel.", errCode)
+		return
+	}
+
+	if !p.canManageSubscription(userID, channelID, existing) {
+		p.client.Log.Error("User cannot edit a subscription created by another user", "UserID", userID, "ChannelID", channelID, "Alias", alias)
+		http.Error(w, errorUserCannotManageSubscription, http.StatusForbidden)
+		return
+	}
+
+	subscription = subscription.WithCreatedBy(existing.GetCreatedBy())
+
 	pluginConfig := config.GetConfig()
-	if pluginConfig.HasPerUserConfluenceAuth() {
+	if pluginConfig.HasPerUserConfluenceAuth() && !util.IsSystemAdmin(userID) {
 		var statusCode int
 		if statusCode, err = p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
 			p.client.Log.Error("Error validating the user's Confluence access", "Error", err.Error())

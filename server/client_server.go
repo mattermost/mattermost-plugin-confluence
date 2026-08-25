@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -182,9 +183,13 @@ func (csc *confluenceServerClient) GetPageData(pageID int) (*PageResponse, error
 
 func (csc *confluenceServerClient) GetSpaceData(spaceKey string) (*SpaceResponse, error) {
 	spaceResponse := &SpaceResponse{}
-	path := fmt.Sprintf("%s%s?status=any", PathSpaceData, spaceKey)
+	path := fmt.Sprintf("%s%s?status=any", PathSpaceData, url.PathEscape(spaceKey))
 	if _, statusCode, err := service.CallJSONWithURL(csc.URL, path, http.MethodGet, nil, spaceResponse, csc.HTTPClient); err != nil {
 		return nil, withAPIStatus(err, path, statusCode)
+	}
+
+	if !strings.EqualFold(spaceResponse.Key, spaceKey) {
+		return nil, errors.Errorf("unexpected space %q returned for key %q", spaceResponse.Key, spaceKey)
 	}
 
 	return spaceResponse, nil
