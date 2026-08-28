@@ -6,6 +6,15 @@ import {splitArgs} from '../utils';
 import {getSubscriptionAccess, sendEphemeralPost} from '../actions/subscription_modal';
 import Constants from '../constants';
 
+const SUBSCRIBE_DENIED_MESSAGES = {
+    [Constants.SUBSCRIBE_DENIED_REASON.ADMIN_ONLY]: Constants.COMMAND_ADMIN_ONLY,
+    [Constants.SUBSCRIBE_DENIED_REASON.NOT_CONNECTED]: Constants.DISCONNECTED_USER,
+};
+
+const subscribeDeniedMessage = (subscriptionAccessData) => (
+    SUBSCRIBE_DENIED_MESSAGES[subscriptionAccessData?.subscribe_denied_reason] || Constants.ERROR_EXECUTING_COMMAND
+);
+
 export default class Hooks {
     constructor(store) {
         this.store = store;
@@ -36,8 +45,7 @@ export default class Hooks {
             }
 
             if (!subscriptionAccessData?.can_run_subscribe_command) {
-                const errorMsg = subscriptionAccessData?.server_version_greater_than_9 ? Constants.DISCONNECTED_USER : Constants.COMMAND_ADMIN_ONLY;
-                this.store.dispatch(sendEphemeralPost(errorMsg, contextArgs.channel_id, user.id));
+                this.store.dispatch(sendEphemeralPost(subscribeDeniedMessage(subscriptionAccessData), contextArgs.channel_id, user.id));
                 return Promise.resolve({});
             }
 
@@ -52,8 +60,7 @@ export default class Hooks {
             }
 
             if (!subscriptionAccessData?.can_run_subscribe_command) {
-                const errorMsg = subscriptionAccessData?.server_version_greater_than_9 ? Constants.DISCONNECTED_USER : Constants.COMMAND_ADMIN_ONLY;
-                this.store.dispatch(sendEphemeralPost(errorMsg, contextArgs.channel_id, user.id));
+                this.store.dispatch(sendEphemeralPost(subscribeDeniedMessage(subscriptionAccessData), contextArgs.channel_id, user.id));
                 return Promise.resolve({});
             }
 

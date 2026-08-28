@@ -93,6 +93,11 @@ func (ss SpaceSubscription) GetAlias() string {
 	return ss.Alias
 }
 
+func (ss SpaceSubscription) WithCreatedBy(userID string) Subscription {
+	ss.CreatedBy = userID
+	return ss
+}
+
 func (ss SpaceSubscription) GetFormattedSubscription() string {
 	var events []string
 	for _, event := range ss.Events {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -342,7 +343,7 @@ func (p *Plugin) GetPageDataWithAPIToken(pageID int, pluginConfig *config.Config
 
 func (p *Plugin) GetSpaceDataWithAPIToken(spaceKey string, pluginConfig *config.Configuration) (*SpaceResponse, error) {
 	spaceResponse := &SpaceResponse{}
-	path := fmt.Sprintf("%s%s", pluginConfig.ConfluenceURL, fmt.Sprintf("%s%s?status=any", PathSpaceData, spaceKey))
+	path := fmt.Sprintf("%s%s", pluginConfig.ConfluenceURL, fmt.Sprintf("%s%s?status=any", PathSpaceData, url.PathEscape(spaceKey)))
 
 	body, statusCode, err := p.MakeHTTPCallWithAPIToken(path)
 	if err != nil || statusCode != http.StatusOK {
@@ -351,6 +352,10 @@ func (p *Plugin) GetSpaceDataWithAPIToken(spaceKey string, pluginConfig *config.
 
 	if err := json.Unmarshal(body, spaceResponse); err != nil {
 		return nil, errors.Wrapf(err, "error getting space data with APIToken")
+	}
+
+	if !strings.EqualFold(spaceResponse.Key, spaceKey) {
+		return nil, errors.Errorf("unexpected space %q returned for key %q", spaceResponse.Key, spaceKey)
 	}
 
 	return spaceResponse, nil

@@ -31,9 +31,9 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 	var subscription serializer.Subscription
 	var err error
 
-	if !util.IsSystemAdmin(userID) {
-		p.client.Log.Error("Non admin user does not have access to edit subscription for this channel", "UserID", userID, "ChannelID", channelID)
-		http.Error(w, "only system admin can edit a subscription", http.StatusForbidden)
+	if access := p.checkSubscriptionAccess(userID); !access.Allowed {
+		p.client.Log.Error("User does not have access to edit subscription for this channel", "UserID", userID, "ChannelID", channelID, "reason", access.Reason)
+		http.Error(w, access.Message, access.StatusCode)
 		return
 	}
 
@@ -60,8 +60,28 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
+	alias := subscription.GetOldAlias()
+	if alias == "" {
+		alias = subscription.GetAlias()
+	}
+
+	existing, errCode, err := service.GetChannelSubscription(channelID, alias)
+	if err != nil {
+		p.client.Log.Error("Error getting the subscription to edit", "ChannelID", channelID, "Alias", alias, "error", err.Error())
+		http.Error(w, "Failed to get subscription for this channel.", errCode)
+		return
+	}
+
+	if !p.canManageSubscription(userID, channelID, existing) {
+		p.client.Log.Error("User cannot edit a subscription created by another user", "UserID", userID, "ChannelID", channelID, "Alias", alias)
+		http.Error(w, errorUserCannotManageSubscription, http.StatusForbidden)
+		return
+	}
+
+	subscription = subscription.WithCreatedBy(existing.GetCreatedBy())
+
 	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
+	if pluginConfig.HasPerUserConfluenceAuth() && !util.IsSystemAdmin(userID) {
 		var statusCode int
 		if statusCode, err = p.validateUserConfluenceAccess(userID, pluginConfig.ConfluenceURL, subscriptionType, subscription); err != nil {
 			p.client.Log.Error("Error validating the user's Confluence access", "Error", err.Error())

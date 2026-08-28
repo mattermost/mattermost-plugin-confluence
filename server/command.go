@@ -50,9 +50,11 @@ const (
 	installOnlySystemAdmin      = "`/confluence install` can only be run by a system administrator."
 	commandsOnlySystemAdmin     = "`/confluence` commands can only be run by a system administrator."
 	errorUserLacksChannelAccess = "Cannot perform operation: user does not have access to the channel."
-	disconnectedUser            = "User not connected. Please use `/confluence connect`."
-	errorExecutingCommand       = "Error executing the command, please retry."
-	oauth2ConnectPath           = "%s/oauth2/connect"
+
+	errorUserCannotManageSubscription = "Only the user who created this subscription or a channel admin can modify it."
+	disconnectedUser                  = "User not connected. Please use `/confluence connect`."
+	errorExecutingCommand             = "Error executing the command, please retry."
+	oauth2ConnectPath                 = "%s/oauth2/connect"
 
 	generalDeleteError = "error occurred while deleting subscription with name **%s**"
 )
@@ -287,29 +289,9 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	userID := context.UserId
 	channelID := context.ChannelId
 
-	if !util.IsSystemAdmin(userID) {
-		postCommandResponse(context, commandsOnlySystemAdmin)
+	if access := p.checkSubscriptionAccess(userID); !access.Allowed {
+		postCommandResponse(context, access.Message)
 		return &model.CommandResponse{}
-	}
-
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, userID)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				postCommandResponse(context, disconnectedUser)
-				return &model.CommandResponse{}
-			}
-
-			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
-			postCommandResponse(context, errorExecutingCommand)
-			return &model.CommandResponse{}
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			postCommandResponse(context, disconnectedUser)
-			return &model.CommandResponse{}
-		}
 	}
 
 	if len(args) == 0 {
@@ -323,6 +305,18 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 	}
 
 	alias := strings.Join(args, " ")
+	subscription, _, err := service.GetChannelSubscription(channelID, alias)
+	if err != nil {
+		p.client.Log.Error("Error getting the subscription to delete", "subscription alias", alias, "error", err.Error())
+		postCommandResponse(context, fmt.Sprintf(generalDeleteError, alias))
+		return &model.CommandResponse{}
+	}
+
+	if !p.canManageSubscription(userID, channelID, subscription) {
+		postCommandResponse(context, errorUserCannotManageSubscription)
+		return &model.CommandResponse{}
+	}
+
 	if err := service.DeleteSubscription(channelID, alias); err != nil {
 		p.client.Log.Error("Error deleting the subscription", "subscription alias", alias, "error", err.Error())
 		postCommandResponse(context, fmt.Sprintf(generalDeleteError, alias))
@@ -334,26 +328,8 @@ func deleteSubscription(p *Plugin, context *model.CommandArgs, args ...string) *
 }
 
 func listChannelSubscription(p *Plugin, context *model.CommandArgs, _ ...string) *model.CommandResponse {
-	pluginConfig := config.GetConfig()
-	if pluginConfig.ServerVersionGreaterthan9 {
-		conn, err := store.LoadConnection(pluginConfig.ConfluenceURL, context.UserId)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				postCommandResponse(context, disconnectedUser)
-				return &model.CommandResponse{}
-			}
-
-			p.client.Log.Error("Error loading the connection for the user", "UserID", context.UserId, "error", err.Error())
-			postCommandResponse(context, errorExecutingCommand)
-			return &model.CommandResponse{}
-		}
-
-		if len(conn.ConfluenceAccountID()) == 0 {
-			postCommandResponse(context, disconnectedUser)
-			return &model.CommandResponse{}
-		}
-	} else if !util.IsSystemAdmin(context.UserId) {
-		postCommandResponse(context, commandsOnlySystemAdmin)
+	if access := p.checkSubscriptionAccess(context.UserId); !access.Allowed {
+		postCommandResponse(context, access.Message)
 		return &model.CommandResponse{}
 	}
 

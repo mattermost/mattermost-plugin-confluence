@@ -14,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/mattermost/mattermost-plugin-confluence/server/config"
+	"github.com/mattermost/mattermost-plugin-confluence/server/store"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
@@ -125,4 +126,55 @@ func (p *Plugin) GetCloudClient(instanceURL, cloudID string, connection *types.C
 	httpClient.Timeout = 10 * time.Second
 
 	return newCloudClient(fmt.Sprintf(cloudAPIBaseFmt, cloudID), httpClient), nil
+}
+
+func (p *Plugin) GetClient(instanceID, mattermostUserID string, connection *types.Connection) (Client, error) {
+	if !config.GetConfig().IsCloud {
+		return p.GetServerClient(instanceID, connection)
+	}
+
+	cloudID, err := p.resolveCloudID(instanceID, mattermostUserID, connection)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.GetCloudClient(instanceID, cloudID, connection)
+}
+
+// Backfills connections stored before the cloudId was persisted, so existing
+// users do not have to reconnect.
+func (p *Plugin) resolveCloudID(instanceID, mattermostUserID string, connection *types.Connection) (string, error) {
+	if connection.CloudID != "" {
+		return connection.CloudID, nil
+	}
+
+	oconf, err := p.GetCloudOAuth2Config(connection.IsAdmin)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := p.refreshAndStoreToken(connection, instanceID, oconf)
+	if err != nil {
+		return "", err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resources, err := p.GetCloudAccessibleResources(ctx, token)
+	if err != nil {
+		return "", errors.Wrap(err, "cloud accessible-resources lookup failed")
+	}
+
+	cloudID := matchCloudResource(resources, instanceID)
+	if cloudID == "" {
+		return "", errors.Errorf("authenticated user has no access to %s", instanceID)
+	}
+
+	connection.CloudID = cloudID
+	if err := store.StoreConnection(instanceID, mattermostUserID, connection); err != nil {
+		p.client.Log.Warn("Failed to persist the resolved Confluence cloud ID", "UserID", mattermostUserID, "error", err.Error())
+	}
+
+	return cloudID, nil
 }

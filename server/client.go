@@ -1,6 +1,38 @@
 package main
 
-import "github.com/mattermost/mattermost-plugin-confluence/server/util/types"
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
+)
+
+type APIError struct {
+	StatusCode int
+	Path       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("confluence request for %s returned %d", e.Path, e.StatusCode)
+}
+
+func (e *APIError) IsAccessDenied() bool {
+	switch e.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+func withAPIStatus(err error, path string, statusCode int) error {
+	if err == nil || statusCode == 0 {
+		return err
+	}
+	return errors.Wrap(&APIError{StatusCode: statusCode, Path: path}, err.Error())
+}
 
 // Client is the combined interface for all upstream APIs and convenience methods.
 type Client interface {

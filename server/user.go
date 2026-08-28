@@ -234,6 +234,7 @@ func (p *Plugin) completeCloudOAuth2(mmuser *model.User, mattermostUserID, code,
 		OAuth2Token:      encryptedToken,
 		IsAdmin:          isAdmin,
 		MattermostUserID: mattermostUserID,
+		CloudID:          cloudID,
 	}
 
 	client, err := p.GetCloudClient(instanceID, cloudID, connection)
@@ -414,8 +415,74 @@ func (p *Plugin) refreshAndStoreToken(connection *types.Connection, instanceID s
 }
 
 type UserConnectionInfo struct {
-	CanRunSubscribeCommand    bool `json:"can_run_subscribe_command"`
-	ServerVersionGreaterthan9 bool `json:"server_version_greater_than_9"`
+	CanRunSubscribeCommand bool   `json:"can_run_subscribe_command"`
+	SubscribeDeniedReason  string `json:"subscribe_denied_reason,omitempty"`
+}
+
+// Mirrored in webapp/src/constants.
+const (
+	subscribeDeniedAdminOnly    = "admin_only"
+	subscribeDeniedNotConnected = "not_connected"
+	subscribeDeniedError        = "error"
+)
+
+type subscriptionAccess struct {
+	Allowed    bool
+	Reason     string
+	Message    string
+	StatusCode int
+}
+
+// Admins always pass. Where each user authenticates against Confluence
+// individually, so does any connected user, with their Confluence permissions
+// enforced per-subscription by validateUserConfluenceAccess.
+func (p *Plugin) checkSubscriptionAccess(mattermostUserID string) subscriptionAccess {
+	if util.IsSystemAdmin(mattermostUserID) {
+		return subscriptionAccess{Allowed: true, StatusCode: http.StatusOK}
+	}
+
+	pluginConfig := config.GetConfig()
+	if !pluginConfig.HasPerUserConfluenceAuth() {
+		return subscriptionAccess{
+			Reason:     subscribeDeniedAdminOnly,
+			Message:    commandsOnlySystemAdmin,
+			StatusCode: http.StatusForbidden,
+		}
+	}
+
+	internalError := subscriptionAccess{
+		Reason:     subscribeDeniedError,
+		Message:    errorExecutingCommand,
+		StatusCode: http.StatusInternalServerError,
+	}
+
+	instanceURL := pluginConfig.GetConfluenceBaseURL()
+	if instanceURL == "" {
+		p.client.Log.Error("Confluence base URL is not configured")
+		return internalError
+	}
+
+	notConnected := subscriptionAccess{
+		Reason:     subscribeDeniedNotConnected,
+		Message:    disconnectedUser,
+		StatusCode: http.StatusUnauthorized,
+	}
+
+	connection, err := store.LoadConnection(instanceURL, mattermostUserID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return notConnected
+		}
+
+		p.client.Log.Error("Error loading the Confluence connection for the user", "UserID", mattermostUserID, "error", err.Error())
+		return internalError
+	}
+
+	if connection.ConfluenceAccountID() == "" {
+		return notConnected
+	}
+
+	return subscriptionAccess{Allowed: true, StatusCode: http.StatusOK}
 }
 
 func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
@@ -427,48 +494,16 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 	}
 
 	mattermostUserID := r.Header.Get(config.HeaderMattermostUserID)
-	serverVersionGreaterThan9 := config.GetConfig().ServerVersionGreaterthan9
+	access := p.checkSubscriptionAccess(mattermostUserID)
 
-	if !serverVersionGreaterThan9 {
-		info := &UserConnectionInfo{
-			CanRunSubscribeCommand:    util.IsSystemAdmin(mattermostUserID),
-			ServerVersionGreaterthan9: serverVersionGreaterThan9,
-		}
-		b, _ := json.Marshal(info)
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(b)
-		return
-	}
-
-	instanceURL := config.GetConfig().GetConfluenceBaseURL()
-	if instanceURL == "" {
-		err := errors.New("missing Confluence base URL")
-		p.client.Log.Error("Confluence base URL is not configured. Error: %s", err.Error())
-		http.Error(w, "Confluence is not properly configured. Please contact the system administrator.", http.StatusInternalServerError)
-		return
-	}
-
-	connection, err := store.LoadConnection(instanceURL, mattermostUserID)
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			info := &UserConnectionInfo{
-				CanRunSubscribeCommand:    false,
-				ServerVersionGreaterthan9: serverVersionGreaterThan9,
-			}
-			b, _ := json.Marshal(info)
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write(b)
-			return
-		}
-
-		p.client.Log.Error("Failed to load user Confluence connection. MattermostUserID: %s. Error: %s", mattermostUserID, err.Error())
+	if access.StatusCode == http.StatusInternalServerError {
 		http.Error(w, "Failed to retrieve user connection status. Please retry after some time.", http.StatusInternalServerError)
 		return
 	}
 
 	info := &UserConnectionInfo{
-		CanRunSubscribeCommand:    len(connection.ConfluenceAccountID()) != 0,
-		ServerVersionGreaterthan9: serverVersionGreaterThan9,
+		CanRunSubscribeCommand: access.Allowed,
+		SubscribeDeniedReason:  access.Reason,
 	}
 
 	b, _ := json.Marshal(info)
@@ -479,6 +514,34 @@ func httpGetUserInfo(w http.ResponseWriter, r *http.Request, p *Plugin) {
 func (p *Plugin) hasChannelAccess(userID, channelID string) bool {
 	_, err := p.API.GetChannelMember(channelID, userID)
 	return err == nil
+}
+
+func (p *Plugin) canManageSubscription(userID, channelID string, subscription serializer.Subscription) bool {
+	if p.API.HasPermissionToChannel(userID, channelID, model.PermissionManageChannelRoles) {
+		return true
+	}
+
+	createdBy := subscription.GetCreatedBy()
+	return createdBy != "" && createdBy == userID
+}
+
+func classifyConfluenceAccessError(err error, resource string) (int, error) {
+	unreachable := errors.Errorf("Confluence could not be reached to verify your access to this %s. Please try again later", resource)
+
+	var apiErr *APIError
+	switch {
+	case !errors.As(err, &apiErr):
+		// Nothing came back from Confluence, so access is unproven, not refused.
+		return http.StatusBadGateway, unreachable
+	case apiErr.StatusCode == http.StatusUnauthorized:
+		return http.StatusUnauthorized, errors.New("Your Confluence session is no longer valid. Please reconnect with `/confluence connect`")
+	case apiErr.IsAccessDenied():
+		return http.StatusForbidden, errors.Errorf("User does not have an access to this Confluence %s", resource)
+	case apiErr.StatusCode == http.StatusTooManyRequests:
+		return http.StatusTooManyRequests, errors.New("Confluence is rate limiting requests. Please try again in a few minutes")
+	default:
+		return http.StatusBadGateway, unreachable
+	}
 }
 
 func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptionType string, subscription serializer.Subscription) (int, error) {
@@ -495,16 +558,10 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 		return http.StatusUnauthorized, errors.New("User needs to connect their Confluence account")
 	}
 
-	client, err := p.GetServerClient(confluenceURL, conn)
+	client, err := p.GetClient(confluenceURL, userID, conn)
 	if err != nil {
 		p.client.Log.Error("Error getting Confluence client. UserID: %s. Error: %s", userID, err.Error())
 		return http.StatusInternalServerError, errors.New("An error occurred while connecting to Confluence. Please try again later")
-	}
-
-	serverClient, ok := client.(*confluenceServerClient)
-	if !ok {
-		p.client.Log.Error("Invalid Confluence server client type while validating user's Confluence access. UserID: %s", userID)
-		return http.StatusInternalServerError, errors.New("an unexpected error occurred. Please try again later")
 	}
 
 	switch subscriptionType {
@@ -514,9 +571,9 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 			p.client.Log.Error("Failed to parse space subscription. UserID: %s", userID)
 			return http.StatusBadRequest, errors.New("invalid space subscription details provided")
 		}
-		if _, err = serverClient.GetSpaceData(spaceSub.SpaceKey); err != nil {
-			p.client.Log.Error("User does not have access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
-			return http.StatusForbidden, errors.New("User does not have an access to this Confluence space")
+		if _, err = client.GetSpaceData(spaceSub.SpaceKey); err != nil {
+			p.client.Log.Error("Unable to confirm the user's access to the space. UserID: %s, SpaceKey: %s. Error: %s", userID, spaceSub.SpaceKey, err.Error())
+			return classifyConfluenceAccessError(err, "space")
 		}
 
 	case serializer.SubscriptionTypePage:
@@ -531,9 +588,9 @@ func (p *Plugin) validateUserConfluenceAccess(userID, confluenceURL, subscriptio
 			return http.StatusInternalServerError, errors.New("an error occurred while processing the page details. Please try again later")
 		}
 
-		if _, err := serverClient.GetPageData(pageID); err != nil {
-			p.client.Log.Error("User does not have access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
-			return http.StatusForbidden, errors.New("User does not have an access to this Confluence page")
+		if _, err := client.GetPageData(pageID); err != nil {
+			p.client.Log.Error("Unable to confirm the user's access to the page. UserID: %s, PageID: %d. Error: %s", userID, pageID, err.Error())
+			return classifyConfluenceAccessError(err, "page")
 		}
 
 	default:
