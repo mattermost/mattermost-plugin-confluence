@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-For Confluence Plugin, Mattermost server v5.19+ is required. Confluence Server version 7.x+ is supported. Confluence Data Center is not certified.
+For Confluence Plugin, Mattermost server v12.0+ is required. Confluence Server version 7.x+ is supported. Confluence Data Center is not certified.
 
 ### Installation
 
