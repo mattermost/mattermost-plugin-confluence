@@ -87,6 +87,9 @@ test('has no accessibility violations in the subscription modal and page notific
     await expect(page.getByRole('dialog')).toBeVisible();
     await (await channelsPage.centerView.getPostById(created.id)).toBeVisible();
 
+    // Mid fade-in the modal text is translucent, which axe reports as low contrast.
+    await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined))));
+
     // # Scan the modal and the notification
     const results = await axe.builder(page, {disableLinkInTextBlock: true}).include('.modal-content').include(`#post_${created.id} .post__body`).analyze();
 
