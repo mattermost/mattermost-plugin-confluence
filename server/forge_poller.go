@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -28,10 +29,23 @@ import (
 const forgePollerJobKey = "forge_drain_poller"
 
 const (
-	forgePollInterval = 30 * time.Second
-	forgePollTimeout  = 20 * time.Second
-	forgeDrainBatch   = 100
+	forgePollTimeout = 20 * time.Second
+	forgeDrainBatch  = 100
 )
+
+// Empty in release builds. E2E sets it with -ldflags -X; a time.Duration cannot be set that way.
+var forgePollIntervalSeconds = ""
+
+func forgePollInterval() time.Duration {
+	if forgePollIntervalSeconds == "" {
+		return 30 * time.Second
+	}
+	seconds, err := strconv.Atoi(forgePollIntervalSeconds)
+	if err != nil || seconds < 1 {
+		return 30 * time.Second
+	}
+	return time.Duration(seconds) * time.Second
+}
 
 const (
 	alertKeySecretEmpty = "secret_empty"
@@ -74,7 +88,7 @@ func (fp *ForgePoller) Start() {
 	job, err := cluster.Schedule(
 		fp.plugin.API,
 		forgePollerJobKey,
-		cluster.MakeWaitForInterval(forgePollInterval),
+		cluster.MakeWaitForInterval(forgePollInterval()),
 		func() {
 			if err := fp.drainOnce(context.Background()); err != nil {
 				fp.handleDrainError(err)
