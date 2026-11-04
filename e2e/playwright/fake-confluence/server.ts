@@ -65,16 +65,20 @@ export async function startFakeConfluence({port, siteURL, forgeSecret}: {port: n
         const normalized = specPath(url.pathname);
         if (normalized && req.method) {
             state.contractViolations.push(...contract.validateRequest(req.method, normalized, entry.body));
-            captureResponse(res, (status, payload) => {
-                state.contractViolations.push(...contract.validateResponse(req.method ?? '', normalized, status, payload));
-            });
         }
 
+        // Injected faults are deliberate test input, so their responses are not checked against the spec.
         const faultKey = `${req.method} ${url.pathname}`;
         const fault = state.faults.get(faultKey);
         if (fault) {
             sendJSON(res, fault, {message: `fault injected for ${faultKey}`});
             return;
+        }
+
+        if (normalized && req.method) {
+            captureResponse(res, (status, payload) => {
+                state.contractViolations.push(...contract.validateResponse(req.method ?? '', normalized, status, payload));
+            });
         }
 
         if (handleOAuth(ctx, siteURL) || handleREST(ctx)) {

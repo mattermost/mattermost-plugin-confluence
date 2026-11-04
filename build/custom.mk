@@ -1,7 +1,9 @@
 # Include custom targets and environment variables here
 
 E2E_DIR = e2e/playwright
-E2E_FAKE_ATLASSIAN_URL ?= http://fake-confluence:8092
+# Same port the Playwright run starts fake-confluence on: shell, then e2e/playwright/.env, then 8092.
+FAKE_CONFLUENCE_PORT ?= $(or $(shell sed -n 's/^FAKE_CONFLUENCE_PORT=//p' $(E2E_DIR)/.env 2>/dev/null),8092)
+E2E_FAKE_ATLASSIAN_URL ?= http://fake-confluence:$(FAKE_CONFLUENCE_PORT)
 
 # Command-line GO_BUILD_LDFLAGS wins over the Makefile default.
 .PHONY: e2e-dist

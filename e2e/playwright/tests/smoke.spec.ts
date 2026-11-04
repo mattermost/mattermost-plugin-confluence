@@ -21,13 +21,13 @@ test('reports plugin server as running', {tag: '@confluence_plugin'}, async ({co
  * @objective Verify the plugin's webapp bundle registers without page or console errors.
  */
 test('loads webapp bundle without errors', {tag: '@confluence_plugin'}, async ({pw, confluence}) => {
-    // # Collect page errors and Confluence console errors while a channel loads
+    // # Collect page errors and console errors raised from the plugin's bundle while a channel loads
     const {page} = await pw.testBrowser.login(confluence.user);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(`pageerror: ${err.message}`));
     page.on('console', (msg) => {
-        if (msg.type() === 'error' && msg.text().toLowerCase().includes('confluence')) {
-            errors.push(`console: ${msg.text()}`);
+        if (msg.type() === 'error' && (msg.location().url.includes(`/plugins/${pluginId}/`) || msg.text().toLowerCase().includes('confluence'))) {
+            errors.push(`console: ${msg.text()} (${msg.location().url})`);
         }
     });
     await page.goto(`/${confluence.team.name}/channels/town-square`);

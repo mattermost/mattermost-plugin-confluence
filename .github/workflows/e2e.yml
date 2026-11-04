@@ -168,13 +168,6 @@ jobs:
       MM_IMAGE: mattermost/mattermost-enterprise-edition:release-12.0
       # Must match the callback URL registered in the Atlassian OAuth app.
       MM_PORT: 8070
-      CONFLUENCE_CLOUD_URL: ${{ secrets.CONFLUENCE_CLOUD_URL }}
-      CONFLUENCE_SPACE_KEY: ${{ vars.CONFLUENCE_SPACE_KEY }}
-      CONFLUENCE_CLOUD_USER_EMAIL: ${{ secrets.CONFLUENCE_CLOUD_USER_EMAIL }}
-      CONFLUENCE_CLOUD_USER_PASSWORD: ${{ secrets.CONFLUENCE_CLOUD_USER_PASSWORD }}
-      CONFLUENCE_CLOUD_USER_TOTP_SECRET: ${{ secrets.CONFLUENCE_CLOUD_USER_TOTP_SECRET }}
-      CONFLUENCE_CLOUD_OAUTH_CLIENT_ID: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_ID }}
-      CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -211,3 +204,11 @@ jobs:
       - name: Run real Confluence journey
         working-directory: e2e/playwright
         run: npm run test:real
+        env:
+          CONFLUENCE_CLOUD_URL: ${{ secrets.CONFLUENCE_CLOUD_URL }}
+          CONFLUENCE_SPACE_KEY: ${{ vars.CONFLUENCE_SPACE_KEY }}
+          CONFLUENCE_CLOUD_USER_EMAIL: ${{ secrets.CONFLUENCE_CLOUD_USER_EMAIL }}
+          CONFLUENCE_CLOUD_USER_PASSWORD: ${{ secrets.CONFLUENCE_CLOUD_USER_PASSWORD }}
+          CONFLUENCE_CLOUD_USER_TOTP_SECRET: ${{ secrets.CONFLUENCE_CLOUD_USER_TOTP_SECRET }}
+          CONFLUENCE_CLOUD_OAUTH_CLIENT_ID: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_ID }}
+          CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET }}
