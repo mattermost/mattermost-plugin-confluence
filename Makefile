@@ -238,7 +238,7 @@ endif
 
 ## Generates a tar bundle of the plugin for install.
 .PHONY: bundle
-bundle:
+bundle: server
 	rm -rf dist/
 	mkdir -p dist/$(PLUGIN_ID)
 	./build/bin/manifest dist
@@ -280,7 +280,7 @@ endif
 
 ## Installs a previous built plugin with updated webpack assets to a server.
 .PHONY: deploy-from-watch
-deploy-from-watch: server bundle
+deploy-from-watch: bundle
 	./build/bin/pluginctl deploy $(PLUGIN_ID) dist/$(BUNDLE_NAME)
 
 ## Setup dlv for attaching, identifying the plugin PID for other targets.
