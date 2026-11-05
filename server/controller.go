@@ -78,7 +78,7 @@ func (p *Plugin) wrapHandler(handler func(http.ResponseWriter, *http.Request, *P
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if x := recover(); x != nil {
-				// Log only the path: the query string may carry the webhook secret.
+				// Query parameters are intentionally excluded from logs.
 				p.client.Log.Error("Recovered from a panic",
 					"path", r.URL.Path,
 					"error", x,
