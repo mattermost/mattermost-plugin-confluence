@@ -126,7 +126,10 @@ export default class ConfluenceField extends React.PureComponent {
             );
         }
         return (
-            <FormGroup style={formGroupStyle}>
+            <FormGroup
+                style={formGroupStyle}
+                controlId={testId}
+            >
                 <ControlLabel>{label}</ControlLabel>
                 {required &&
                 <span

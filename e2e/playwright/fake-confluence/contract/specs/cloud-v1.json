@@ -1,0 +1,2230 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "The Confluence Cloud REST API"
+  },
+  "paths": {
+    "/wiki/rest/api/user/current": {
+      "get": {
+        "parameters": [
+          {
+            "name": "expand",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "operations",
+                  "personalSpace",
+                  "isExternalCollaborator"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {}
+          }
+        }
+      }
+    },
+    "/wiki/rest/api/user": {
+      "get": {
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "operations",
+                  "personalSpace",
+                  "isExternalCollaborator"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {}
+          },
+          "403": {
+            "content": {}
+          },
+          "404": {
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ButtonLookAndFeel": {
+        "required": [
+          "backgroundColor",
+          "color"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "backgroundColor": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      },
+      "Container": {
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": true
+      },
+      "ContainerLookAndFeel": {
+        "required": [
+          "background",
+          "backgroundColor",
+          "backgroundImage",
+          "backgroundSize",
+          "borderRadius",
+          "padding"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "background": {
+            "type": "string"
+          },
+          "backgroundAttachment": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundBlendMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundClip": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundImage": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundOrigin": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundRepeat": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundSize": {
+            "type": "string",
+            "nullable": true
+          },
+          "padding": {
+            "type": "string"
+          },
+          "borderRadius": {
+            "type": "string"
+          }
+        }
+      },
+      "Content": {
+        "required": [
+          "status",
+          "type"
+        ],
+        "nullable": true,
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "space": {
+            "$ref": "#/components/schemas/Space"
+          },
+          "history": {
+            "$ref": "#/components/schemas/ContentHistory"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "ancestors": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Content"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationCheckResult"
+            }
+          },
+          "children": {
+            "$ref": "#/components/schemas/ContentChildren"
+          },
+          "childTypes": {
+            "$ref": "#/components/schemas/ContentChildType"
+          },
+          "descendants": {
+            "$ref": "#/components/schemas/ContentChildren"
+          },
+          "container": {
+            "$ref": "#/components/schemas/Container"
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "view": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "export_view": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "styled_view": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "storage": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "wiki": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "editor": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "editor2": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "anonymous_export_view": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "atlas_doc_format": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "dynamic": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "raw": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "view": {
+                    "type": "string"
+                  },
+                  "export_view": {
+                    "type": "string"
+                  },
+                  "styled_view": {
+                    "type": "string"
+                  },
+                  "storage": {
+                    "type": "string"
+                  },
+                  "editor2": {
+                    "type": "string"
+                  },
+                  "anonymous_export_view": {
+                    "type": "string"
+                  },
+                  "atlas_doc_format": {
+                    "type": "string"
+                  },
+                  "wiki": {
+                    "type": "string"
+                  },
+                  "dynamic": {
+                    "type": "string"
+                  },
+                  "raw": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "restrictions": {
+            "type": "object",
+            "properties": {
+              "read": {
+                "$ref": "#/components/schemas/ContentRestriction"
+              },
+              "update": {
+                "$ref": "#/components/schemas/ContentRestriction"
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "read": {
+                    "type": "string"
+                  },
+                  "update": {
+                    "type": "string"
+                  }
+                }
+              },
+              "_links": {
+                "$ref": "#/components/schemas/GenericLinks"
+              }
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ContentMetadata"
+          },
+          "macroRenderedOutput": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "extensions": {
+            "type": "object"
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "childTypes": {
+                "type": "string"
+              },
+              "container": {
+                "type": "string"
+              },
+              "metadata": {
+                "type": "string"
+              },
+              "operations": {
+                "type": "string"
+              },
+              "children": {
+                "type": "string"
+              },
+              "restrictions": {
+                "type": "string"
+              },
+              "history": {
+                "type": "string"
+              },
+              "ancestors": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "descendants": {
+                "type": "string"
+              },
+              "space": {
+                "type": "string"
+              },
+              "extensions": {
+                "type": "string"
+              },
+              "schedulePublishDate": {
+                "type": "string"
+              },
+              "schedulePublishInfo": {
+                "type": "string"
+              },
+              "macroRenderedOutput": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentArray": {
+        "required": [
+          "_links",
+          "results",
+          "size"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Content"
+            }
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentBody": {
+        "required": [
+          "representation",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "representation": {
+            "type": "string",
+            "enum": [
+              "view",
+              "export_view",
+              "styled_view",
+              "storage",
+              "editor",
+              "editor2",
+              "anonymous_export_view",
+              "wiki",
+              "atlas_doc_format",
+              "raw"
+            ]
+          },
+          "embeddedContent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmbeddedContent"
+            }
+          },
+          "webresource": {
+            "$ref": "#/components/schemas/WebResourceDependencies"
+          },
+          "mediaToken": {
+            "type": "object",
+            "properties": {
+              "collectionIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "contentId": {
+                "type": "string"
+              },
+              "expiryDateTime": {
+                "type": "string"
+              },
+              "fileIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "token": {
+                "type": "string"
+              }
+            }
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "embeddedContent": {
+                "type": "string"
+              },
+              "webresource": {
+                "type": "string"
+              },
+              "mediaToken": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentChildren": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "attachment": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "comment": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "page": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "whiteboard": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "database": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "embed": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "folder": {
+            "$ref": "#/components/schemas/ContentArray"
+          },
+          "_expandable": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "attachment": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "page": {
+                "type": "string"
+              },
+              "whiteboard": {
+                "type": "string"
+              },
+              "database": {
+                "type": "string"
+              },
+              "embed": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentChildType": {
+        "type": "object",
+        "properties": {
+          "attachment": {
+            "required": [
+              "_links",
+              "value"
+            ],
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "boolean"
+              },
+              "_links": {
+                "$ref": "#/components/schemas/GenericLinks"
+              }
+            }
+          },
+          "comment": {
+            "required": [
+              "_links",
+              "value"
+            ],
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "boolean"
+              },
+              "_links": {
+                "$ref": "#/components/schemas/GenericLinks"
+              }
+            }
+          },
+          "page": {
+            "required": [
+              "_links",
+              "value"
+            ],
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "boolean"
+              },
+              "_links": {
+                "$ref": "#/components/schemas/GenericLinks"
+              }
+            }
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "string"
+              },
+              "attachment": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "page": {
+                "type": "string"
+              },
+              "whiteboard": {
+                "type": "string"
+              },
+              "database": {
+                "type": "string"
+              },
+              "embed": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ContentHistory": {
+        "required": [
+          "latest"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "latest": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/User"
+          },
+          "ownedBy": {
+            "$ref": "#/components/schemas/User"
+          },
+          "lastOwnedBy": {
+            "$ref": "#/components/schemas/User"
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUpdated": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "previousVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "contributors": {
+            "type": "object",
+            "properties": {
+              "publishers": {
+                "$ref": "#/components/schemas/UsersUserKeys"
+              }
+            }
+          },
+          "nextVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "lastUpdated": {
+                "type": "string"
+              },
+              "previousVersion": {
+                "type": "string"
+              },
+              "contributors": {
+                "type": "string"
+              },
+              "nextVersion": {
+                "type": "string"
+              },
+              "ownedBy": {
+                "type": "string"
+              },
+              "lastOwnedBy": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentLookAndFeel": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/ScreenLookAndFeel"
+          },
+          "container": {
+            "$ref": "#/components/schemas/ContainerLookAndFeel"
+          },
+          "header": {
+            "$ref": "#/components/schemas/ContainerLookAndFeel"
+          },
+          "body": {
+            "$ref": "#/components/schemas/ContainerLookAndFeel"
+          }
+        }
+      },
+      "ContentMetadata": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "currentuser": {
+            "type": "object",
+            "properties": {
+              "favourited": {
+                "type": "object",
+                "properties": {
+                  "isFavourite": {
+                    "type": "boolean"
+                  },
+                  "favouritedDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "lastmodified": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "$ref": "#/components/schemas/Version"
+                  },
+                  "friendlyLastModified": {
+                    "type": "string"
+                  }
+                }
+              },
+              "lastcontributed": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "when": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "viewed": {
+                "type": "object",
+                "properties": {
+                  "lastSeen": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "friendlyLastSeen": {
+                    "type": "string"
+                  }
+                }
+              },
+              "scheduled": {
+                "type": "object"
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "favourited": {
+                    "type": "string"
+                  },
+                  "lastmodified": {
+                    "type": "string"
+                  },
+                  "lastcontributed": {
+                    "type": "string"
+                  },
+                  "viewed": {
+                    "type": "string"
+                  },
+                  "scheduled": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/GenericLinks"
+          },
+          "frontend": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "labels": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LabelArray"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Label"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ContentRestriction": {
+        "required": [
+          "_expandable",
+          "_links",
+          "operation"
+        ],
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "administer",
+              "copy",
+              "create",
+              "delete",
+              "export",
+              "move",
+              "purge",
+              "purge_version",
+              "read",
+              "restore",
+              "update",
+              "use"
+            ]
+          },
+          "restrictions": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/UserArray"
+              },
+              "group": {
+                "$ref": "#/components/schemas/GroupArray"
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "content": {
+            "$ref": "#/components/schemas/Content"
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "restrictions": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "Embeddable": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "EmbeddedContent": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "entityId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/Embeddable"
+          }
+        }
+      },
+      "GenericAccountId": {
+        "type": "string",
+        "nullable": true
+      },
+      "GenericLinks": {
+        "type": "object",
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "GenericUserKey": {
+        "type": "string",
+        "nullable": true
+      },
+      "GenericUserName": {
+        "type": "string",
+        "nullable": true
+      },
+      "Group": {
+        "required": [
+          "name",
+          "type",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "default": "group",
+            "enum": [
+              "group"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "usageType": {
+            "type": "string",
+            "default": "USERBASE_GROUP",
+            "enum": [
+              "USERBASE_GROUP",
+              "TEAM_COLLABORATION"
+            ]
+          },
+          "managedBy": {
+            "type": "string",
+            "default": "ADMINS",
+            "enum": [
+              "ADMINS",
+              "EXTERNAL",
+              "TEAM_MEMBERS",
+              "OPEN"
+            ]
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "GroupArray": {
+        "required": [
+          "limit",
+          "results",
+          "size",
+          "start"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Group"
+            }
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HeaderLookAndFeel": {
+        "required": [
+          "backgroundColor",
+          "button",
+          "primaryNavigation",
+          "search",
+          "secondaryNavigation"
+        ],
+        "type": "object",
+        "properties": {
+          "backgroundColor": {
+            "type": "string"
+          },
+          "button": {
+            "$ref": "#/components/schemas/ButtonLookAndFeel"
+          },
+          "primaryNavigation": {
+            "$ref": "#/components/schemas/NavigationLookAndFeel"
+          },
+          "secondaryNavigation": {
+            "$ref": "#/components/schemas/NavigationLookAndFeel"
+          },
+          "search": {
+            "$ref": "#/components/schemas/SearchFieldLookAndFeel"
+          }
+        }
+      },
+      "HorizontalHeaderLookAndFeel": {
+        "required": [
+          "backgroundColor",
+          "primaryNavigation"
+        ],
+        "type": "object",
+        "properties": {
+          "backgroundColor": {
+            "type": "string"
+          },
+          "button": {
+            "$ref": "#/components/schemas/ButtonLookAndFeel"
+          },
+          "primaryNavigation": {
+            "$ref": "#/components/schemas/TopNavigationLookAndFeel"
+          },
+          "secondaryNavigation": {
+            "$ref": "#/components/schemas/NavigationLookAndFeel"
+          },
+          "search": {
+            "$ref": "#/components/schemas/SearchFieldLookAndFeel"
+          }
+        }
+      },
+      "Icon": {
+        "required": [
+          "height",
+          "isDefault",
+          "path",
+          "width"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Label": {
+        "required": [
+          "id",
+          "label",
+          "name",
+          "prefix"
+        ],
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "LabelArray": {
+        "required": [
+          "results",
+          "size"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            }
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "LookAndFeel": {
+        "required": [
+          "bordersAndDividers",
+          "content",
+          "header",
+          "headings",
+          "links",
+          "menus"
+        ],
+        "type": "object",
+        "properties": {
+          "headings": {
+            "required": [
+              "color"
+            ],
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "links": {
+            "required": [
+              "color"
+            ],
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "menus": {
+            "$ref": "#/components/schemas/MenusLookAndFeel"
+          },
+          "header": {
+            "$ref": "#/components/schemas/HeaderLookAndFeel"
+          },
+          "horizontalHeader": {
+            "$ref": "#/components/schemas/HorizontalHeaderLookAndFeel"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentLookAndFeel"
+          },
+          "bordersAndDividers": {
+            "required": [
+              "color"
+            ],
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "spaceReference": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "MenusLookAndFeel": {
+        "required": [
+          "color",
+          "hoverOrFocus"
+        ],
+        "type": "object",
+        "properties": {
+          "hoverOrFocus": {
+            "required": [
+              "backgroundColor"
+            ],
+            "type": "object",
+            "properties": {
+              "backgroundColor": {
+                "type": "string"
+              }
+            }
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      },
+      "NavigationLookAndFeel": {
+        "required": [
+          "color",
+          "hoverOrFocus"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "highlightColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hoverOrFocus": {
+            "required": [
+              "backgroundColor",
+              "color"
+            ],
+            "type": "object",
+            "properties": {
+              "backgroundColor": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "OperationCheckResult": {
+        "required": [
+          "operation",
+          "targetType"
+        ],
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "administer",
+              "archive",
+              "clear_permissions",
+              "copy",
+              "create",
+              "create_space",
+              "delete",
+              "export",
+              "move",
+              "purge",
+              "purge_version",
+              "read",
+              "restore",
+              "restrict_content",
+              "update",
+              "use"
+            ]
+          },
+          "targetType": {
+            "type": "string"
+          }
+        }
+      },
+      "ScreenLookAndFeel": {
+        "required": [
+          "background"
+        ],
+        "type": "object",
+        "properties": {
+          "background": {
+            "type": "string"
+          },
+          "backgroundAttachment": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundBlendMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundClip": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundImage": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundOrigin": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundRepeat": {
+            "type": "string",
+            "nullable": true
+          },
+          "backgroundSize": {
+            "type": "string",
+            "nullable": true
+          },
+          "layer": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "string"
+              },
+              "height": {
+                "type": "string"
+              }
+            },
+            "nullable": true
+          },
+          "gutterTop": {
+            "type": "string",
+            "nullable": true
+          },
+          "gutterRight": {
+            "type": "string",
+            "nullable": true
+          },
+          "gutterBottom": {
+            "type": "string",
+            "nullable": true
+          },
+          "gutterLeft": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SearchFieldLookAndFeel": {
+        "required": [
+          "backgroundColor",
+          "color"
+        ],
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "backgroundColor": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      },
+      "Space": {
+        "required": [
+          "_expandable",
+          "_links",
+          "key",
+          "name",
+          "status",
+          "type"
+        ],
+        "nullable": true,
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "key": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "$ref": "#/components/schemas/Icon"
+          },
+          "description": {
+            "type": "object",
+            "properties": {
+              "plain": {
+                "$ref": "#/components/schemas/SpaceDescription"
+              },
+              "view": {
+                "$ref": "#/components/schemas/SpaceDescription"
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "view": {
+                    "type": "string"
+                  },
+                  "plain": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "homepage": {
+            "$ref": "#/components/schemas/Content"
+          },
+          "type": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "labels": {
+                "$ref": "#/components/schemas/LabelArray"
+              },
+              "_expandable": {
+                "type": "object"
+              }
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationCheckResult"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpacePermission"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/SpaceSettings"
+          },
+          "theme": {
+            "$ref": "#/components/schemas/Theme"
+          },
+          "lookAndFeel": {
+            "$ref": "#/components/schemas/LookAndFeel"
+          },
+          "history": {
+            "required": [
+              "createdDate"
+            ],
+            "type": "object",
+            "properties": {
+              "createdDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdBy": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "settings": {
+                "type": "string"
+              },
+              "metadata": {
+                "type": "string"
+              },
+              "operations": {
+                "type": "string"
+              },
+              "lookAndFeel": {
+                "type": "string"
+              },
+              "permissions": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "theme": {
+                "type": "string"
+              },
+              "history": {
+                "type": "string"
+              },
+              "homepage": {
+                "type": "string"
+              },
+              "identifiers": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "SpaceDescription": {
+        "required": [
+          "embeddedContent",
+          "representation",
+          "value"
+        ],
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "representation": {
+            "type": "string",
+            "enum": [
+              "plain",
+              "view"
+            ]
+          },
+          "embeddedContent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      },
+      "SpacePermission": {
+        "required": [
+          "anonymousAccess",
+          "operation",
+          "unlicensedAccess"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "subjects": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "required": [
+                  "results",
+                  "size"
+                ],
+                "type": "object",
+                "properties": {
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  },
+                  "size": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "start": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
+              },
+              "group": {
+                "required": [
+                  "results",
+                  "size"
+                ],
+                "type": "object",
+                "properties": {
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  },
+                  "size": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "start": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
+              },
+              "_expandable": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "operation": {
+            "$ref": "#/components/schemas/OperationCheckResult"
+          },
+          "anonymousAccess": {
+            "type": "boolean",
+            "default": false
+          },
+          "unlicensedAccess": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "SpaceSettings": {
+        "nullable": true,
+        "required": [
+          "_links",
+          "routeOverrideEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "routeOverrideEnabled": {
+            "type": "boolean"
+          },
+          "editor": {
+            "required": [
+              "page",
+              "blogpost",
+              "default"
+            ],
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "string"
+              },
+              "blogpost": {
+                "type": "string"
+              },
+              "default": {
+                "type": "string"
+              }
+            }
+          },
+          "contentMode": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "standard",
+              "compact"
+            ]
+          },
+          "spaceKey": {
+            "type": "string"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "SuperBatchWebResources": {
+        "type": "object",
+        "properties": {
+          "uris": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "css": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "js": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          },
+          "tags": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "string"
+              },
+              "css": {
+                "type": "string"
+              },
+              "data": {
+                "type": "string"
+              },
+              "js": {
+                "type": "string"
+              }
+            }
+          },
+          "metatags": {
+            "type": "string"
+          },
+          "_expandable": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Theme": {
+        "required": [
+          "themeKey"
+        ],
+        "type": "object",
+        "properties": {
+          "themeKey": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "$ref": "#/components/schemas/Icon"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "TopNavigationLookAndFeel": {
+        "required": [
+          "highlightColor"
+        ],
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "highlightColor": {
+            "type": "string"
+          },
+          "hoverOrFocus": {
+            "type": "object",
+            "properties": {
+              "backgroundColor": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "User": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "additionalProperties": true,
+        "nullable": true,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "known",
+              "unknown",
+              "anonymous",
+              "user"
+            ]
+          },
+          "username": {
+            "$ref": "#/components/schemas/GenericUserName"
+          },
+          "userKey": {
+            "$ref": "#/components/schemas/GenericUserKey"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/GenericAccountId"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": [
+              "atlassian",
+              "app",
+              ""
+            ]
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "publicName": {
+            "type": "string"
+          },
+          "profilePicture": {
+            "$ref": "#/components/schemas/Icon"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "timeZone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "externalCollaborator": {
+            "type": "boolean"
+          },
+          "isExternalCollaborator": {
+            "type": "boolean"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "operations": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationCheckResult"
+            }
+          },
+          "details": {
+            "$ref": "#/components/schemas/UserDetails"
+          },
+          "personalSpace": {
+            "$ref": "#/components/schemas/Space"
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "operations": {
+                "type": "string"
+              },
+              "details": {
+                "type": "string"
+              },
+              "personalSpace": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "UserArray": {
+        "required": [
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSize": {
+            "type": "integer",
+            "format": "int64",
+            "default": 0
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "UserDetails": {
+        "type": "object",
+        "properties": {
+          "business": {
+            "type": "object",
+            "properties": {
+              "position": {
+                "type": "string"
+              },
+              "department": {
+                "type": "string"
+              },
+              "location": {
+                "type": "string"
+              }
+            }
+          },
+          "personal": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "im": {
+                "type": "string"
+              },
+              "website": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "UsersUserKeys": {
+        "required": [
+          "userAccountIds"
+        ],
+        "nullable": true,
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "userKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "Version": {
+        "required": [
+          "minorEdit",
+          "number",
+          "when"
+        ],
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": true,
+        "properties": {
+          "by": {
+            "$ref": "#/components/schemas/User"
+          },
+          "when": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "friendlyWhen": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minorEdit": {
+            "type": "boolean"
+          },
+          "content": {
+            "$ref": "#/components/schemas/Content"
+          },
+          "collaborators": {
+            "$ref": "#/components/schemas/UsersUserKeys"
+          },
+          "_expandable": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "collaborators": {
+                "type": "string"
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          },
+          "contentTypeModified": {
+            "type": "boolean"
+          },
+          "confRev": {
+            "type": "string",
+            "nullable": true
+          },
+          "syncRev": {
+            "type": "string",
+            "nullable": true
+          },
+          "syncRevSource": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "WebResourceDependencies": {
+        "type": "object",
+        "properties": {
+          "_expandable": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "uris": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                ]
+              }
+            }
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uris": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "css": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "js": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "_expandable": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "css": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "js": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "string"
+              },
+              "css": {
+                "type": "string"
+              },
+              "data": {
+                "type": "string"
+              },
+              "js": {
+                "type": "string"
+              },
+              "_expandable": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "superbatch": {
+            "$ref": "#/components/schemas/SuperBatchWebResources"
+          }
+        }
+      }
+    }
+  }
+}

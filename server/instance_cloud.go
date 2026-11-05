@@ -22,12 +22,20 @@ import (
 // Atlassian Cloud 3LO endpoints.
 // Docs: https://developer.atlassian.com/cloud/confluence/oauth-2-authorization-code-grants-3lo-for-apps/
 const (
-	cloudAuthURL                = "https://auth.atlassian.com/authorize"
-	cloudTokenURL               = "https://auth.atlassian.com/oauth/token" //nolint:gosec
+	defaultAtlassianAuthBaseURL = "https://auth.atlassian.com"
+	defaultAtlassianAPIBaseURL  = "https://api.atlassian.com"
 	cloudAudience               = "api.atlassian.com"
-	cloudAccessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
-	cloudAPIBaseFmt             = "https://api.atlassian.com/ex/confluence/%s"
 )
+
+// Only E2E builds override these (via -ldflags -X) to point at a fake Atlassian; -X requires string initializers.
+var (
+	atlassianAuthBaseURL = defaultAtlassianAuthBaseURL
+	atlassianAPIBaseURL  = defaultAtlassianAPIBaseURL
+)
+
+func atlassianURLsOverridden() bool {
+	return atlassianAuthBaseURL != defaultAtlassianAuthBaseURL || atlassianAPIBaseURL != defaultAtlassianAPIBaseURL
+}
 
 type AccessibleResource struct {
 	ID   string `json:"id"`
@@ -58,8 +66,8 @@ func (p *Plugin) GetCloudOAuth2Config(isAdmin bool) (*oauth2.Config, error) {
 		RedirectURL:  fmt.Sprintf("%s%s", util.GetPluginURL(), routeUserComplete),
 		Scopes:       scopes,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  cloudAuthURL,
-			TokenURL: cloudTokenURL,
+			AuthURL:  atlassianAuthBaseURL + "/authorize",
+			TokenURL: atlassianAuthBaseURL + "/oauth/token", //nolint:gosec
 		},
 	}, nil
 }
@@ -88,7 +96,7 @@ func (p *Plugin) GetCloudAccessibleResources(ctx context.Context, token *oauth2.
 	httpClient := oconf.Client(ctx, token)
 	httpClient.Timeout = 10 * time.Second
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cloudAccessibleResourcesURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, atlassianAPIBaseURL+"/oauth/token/accessible-resources", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build accessible-resources request")
 	}
@@ -125,7 +133,7 @@ func (p *Plugin) GetCloudClient(instanceURL, cloudID string, connection *types.C
 	httpClient := oconf.Client(context.Background(), token)
 	httpClient.Timeout = 10 * time.Second
 
-	return newCloudClient(fmt.Sprintf(cloudAPIBaseFmt, cloudID), httpClient), nil
+	return newCloudClient(atlassianAPIBaseURL+"/ex/confluence/"+cloudID, httpClient), nil
 }
 
 func (p *Plugin) GetClient(instanceID, mattermostUserID string, connection *types.Connection) (Client, error) {
