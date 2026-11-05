@@ -49,7 +49,7 @@ In GitHub Actions these are repository secrets, except `CONFLUENCE_SPACE_KEY`, w
 
 - fake-confluence implements the calls the plugin makes: Cloud 3LO (`/authorize`, `/oauth/token`, accessible-resources), Data Center OAuth (`/rest/oauth2/latest/...`), the v1 REST reads, and the Forge drain.
 - Mattermost resolves `fake-confluence` and `e2e.atlassian.net` via `extra_hosts`. Chromium uses `--host-resolver-rules`.
-- Tests drive it through `support/fake_confluence.ts`: `reset()`, `requests()`, `enqueueForgeEvent()`, `fault()`, and `postDrain()` (HMAC).
+- Tests drive it through `support/fake_confluence.ts`: `reset()`, `requests()`, `enqueueForgeEvent()`, `pendingForgeEvents()`, `fault()`, and `postDrain()` (HMAC). The Forge shared secret is derived from the Mattermost URL, so another E2E stack polling the same fake port is refused instead of draining this run's events.
 - Inbound events (Forge drain, Data Center webhooks) are synthetic; those tests are tagged `@synthetic-inbound`.
 - Only `connect.spec.ts` drives the browser OAuth flow. Other specs connect with `seedConnection()` (`support/kv.ts`). Keep it in sync with `server/store/store.go` and `server/auth_token.go`.
 

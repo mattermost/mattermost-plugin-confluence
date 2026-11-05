@@ -3,6 +3,7 @@
 
 /* eslint-disable no-process-env */
 
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -36,7 +37,10 @@ export const forgeDrainURL = `${fakeServerURL}/forge/drain`;
 // Generated plugin settings must be exactly 32 characters or the plugin replaces them on activate.
 export const webhookSecret = 'e2e-confluence-webhook-secret!!!';
 export const encryptionKey = 'e2e-encryption-key-0123456789abc';
-export const forgeSharedSecret = 'e2e-forge-shared-secret-01234567';
+
+// Every running E2E stack polls the same fake-confluence host port. A per-stack secret makes the drain refuse the
+// other stacks, which would otherwise drain and ack this run's events.
+export const forgeSharedSecret = createHash('sha256').update(`forge:${mattermostURL}`).digest('hex').slice(0, 32);
 
 export const oauthClientId = 'e2e-confluence-client-id';
 export const oauthClientSecret = 'e2e-confluence-client-secret';

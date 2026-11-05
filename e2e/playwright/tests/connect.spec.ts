@@ -21,3 +21,22 @@ test('connects Confluence account through OAuth from the slash command', {tag: '
     await expect(popup.getByRole('heading', {name: 'Mattermost user is now connected to Confluence'})).toBeVisible();
     await expect(popup.getByText('E2E User')).toBeVisible();
 });
+
+/**
+ * @objective Verify /confluence disconnect unlinks the account, so subscribing asks the user to connect again.
+ */
+test('disconnects Confluence account with /confluence disconnect', {tag: '@confluence_plugin'}, async ({pw, confluence}) => {
+    // # Run /confluence disconnect as a connected user
+    confluence.connect();
+    const {channelsPage} = await openChannel(pw, confluence.user, confluence.team.name);
+    await runSlashCommand(channelsPage, '/confluence disconnect');
+
+    // * Verify the disconnection is confirmed with the Confluence user's name
+    await (await channelsPage.centerView.getLastPost()).toContainText('You have successfully disconnected your Confluence account (E2E User).');
+
+    // # Run /confluence subscribe
+    await runSlashCommand(channelsPage, '/confluence subscribe');
+
+    // * Verify the user is asked to connect
+    await (await channelsPage.centerView.getLastPost()).toContainText('User not connected. Please use /confluence connect.');
+});

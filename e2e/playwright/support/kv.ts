@@ -25,7 +25,7 @@ export function seedConnection(mattermostUserId: string, user: SeededUser, acces
     upsert({
         [`${instanceURL}_${mattermostUserId}`]: connection,
         [`${instanceURL}_${user.accountId}`]: mattermostUserId,
-        [`user_${mattermostUserId}`]: {mattermost_user_id: mattermostUserId, instance_url: instanceURL},
+        [`user__${mattermostUserId}`]: {mattermost_user_id: mattermostUserId, instance_url: instanceURL},
     });
 }
 

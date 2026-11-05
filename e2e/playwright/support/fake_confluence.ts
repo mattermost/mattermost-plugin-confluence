@@ -27,7 +27,8 @@ export const fakeConfluence = {
     reset: () => control('POST', '/reset'),
     requests: (): Promise<JournalEntry[]> => control('GET', '/requests'),
     contractViolations: (): Promise<string[]> => control('GET', '/contract-violations'),
-    enqueueForgeEvent: (event: ForgeEvent) => control('POST', '/forge-event', event),
+    enqueueForgeEvent: (event: ForgeEvent): Promise<{key: string}> => control('POST', '/forge-event', event),
+    pendingForgeEvents: (): Promise<string[]> => control('GET', '/forge-events'),
     fault: (method: string, path: string, status: number) => control('POST', '/fault', {method, path, status}),
 
     // Calls the drain the way the plugin does, so a test can prove a bad signature is rejected.

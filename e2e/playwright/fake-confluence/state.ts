@@ -29,8 +29,11 @@ export type ForgeEvent = {
         status: string;
         space: {key: string; name: string};
         container?: {id: string; type: string; title: string; space: {key: string; name: string}};
+        extensions?: {location: string};
     };
 };
+
+export type PageAction = 'created' | 'updated' | 'trashed' | 'restored';
 
 export type PageRecord = {
     id: string;
@@ -90,17 +93,39 @@ export function defaultState(): FakeConfluenceState {
     };
 }
 
-export function pageCreatedEvent(title = 'Release notes', id = '1001'): ForgeEvent {
+export function pageEvent(action: PageAction, title = 'Release notes', id = '1001'): ForgeEvent {
     return {
-        eventType: 'avi:confluence:created:page',
+        eventType: `avi:confluence:${action}:page`,
         atlassianId: defaultUser().accountId,
         context: {cloudId, moduleKey: 'e2e'},
         content: {
             id,
             type: 'page',
             title,
-            status: 'current',
+            status: action === 'trashed' ? 'trashed' : 'current',
             space: {key: teamSpace.key, name: teamSpace.name},
+        },
+    };
+}
+
+export function pageCreatedEvent(title = 'Release notes', id = '1001'): ForgeEvent {
+    return pageEvent('created', title, id);
+}
+
+export function commentCreatedEvent(pageTitle = 'Release notes', pageID = '1001', commentID = '3001'): ForgeEvent {
+    const space = {key: teamSpace.key, name: teamSpace.name};
+    return {
+        eventType: 'avi:confluence:created:comment',
+        atlassianId: defaultUser().accountId,
+        context: {cloudId, moduleKey: 'e2e'},
+        content: {
+            id: commentID,
+            type: 'comment',
+            title: `Re: ${pageTitle}`,
+            status: 'current',
+            space,
+            container: {id: pageID, type: 'page', title: pageTitle, space},
+            extensions: {location: 'footer'},
         },
     };
 }

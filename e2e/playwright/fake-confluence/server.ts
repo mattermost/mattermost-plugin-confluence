@@ -135,6 +135,10 @@ function handleControl({req, res, url, body, state}: Ctx) {
         sendJSON(res, 200, {key});
         return;
     }
+    if (route === 'GET /__control/forge-events') {
+        sendJSON(res, 200, state.forgeEvents.map((event) => event.key));
+        return;
+    }
     sendJSON(res, 404, {message: `no control route ${route}`});
 }
 
