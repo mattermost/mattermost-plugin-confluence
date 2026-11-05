@@ -37,6 +37,7 @@ type FlowManager struct {
 	cloudFlow           *flow.Flow
 	completionFlow      *flow.Flow
 	cloudCompletionFlow *flow.Flow
+	userCompletionFlow  *flow.Flow
 	announcementFlow    *flow.Flow
 }
 
@@ -116,6 +117,16 @@ func (p *Plugin) NewFlowManager() (*FlowManager, error) {
 		fm.stepCancel("cloud-completion"),
 	)
 	fm.cloudCompletionFlow = cloudCompletionFlow
+
+	userCompletionFlow, err := fm.newFlow("user-completion")
+	if err != nil {
+		p.client.Log.Error("Error creating new flow for user completion", "error", err.Error())
+		return nil, err
+	}
+	userCompletionFlow.WithSteps(
+		fm.stepUserCompletionDone(),
+	)
+	fm.userCompletionFlow = userCompletionFlow
 
 	announcementFlow, err := fm.newFlow("announcement")
 	if err != nil {
@@ -238,9 +249,14 @@ func (fm *FlowManager) StartCloudSetupWizard(userID string) error {
 func (fm *FlowManager) StartCompletionWizard(userID string) error {
 	state := fm.getBaseState()
 
-	wizard := fm.completionFlow
-	if config.GetConfig().IsCloud {
+	var wizard *flow.Flow
+	switch {
+	case config.GetConfig().IsCloud:
 		wizard = fm.cloudCompletionFlow
+	case util.IsSystemAdmin(userID):
+		wizard = fm.completionFlow
+	default:
+		wizard = fm.userCompletionFlow
 	}
 
 	if err := wizard.ForUser(userID).Start(state); err != nil {
@@ -603,6 +619,14 @@ func (fm *FlowManager) stepCloudCompletionDone() flow.Step {
 		Terminal().
 		WithPretext("##### :white_check_mark: Confluence Cloud account connected").
 		WithText(":tada: You're all set. Events from Confluence will arrive through the Forge bridge — no webhook configuration needed on your Atlassian side.\n\n" +
+			"Run `/confluence subscribe` from any channel to start receiving notifications.")
+}
+
+func (fm *FlowManager) stepUserCompletionDone() flow.Step {
+	return flow.NewStep(stepDone).
+		Terminal().
+		WithPretext("##### :white_check_mark: Confluence account connected").
+		WithText(":tada: You successfully connected your Mattermost account to Confluence.\n\n" +
 			"Run `/confluence subscribe` from any channel to start receiving notifications.")
 }
 
