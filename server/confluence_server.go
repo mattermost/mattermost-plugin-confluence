@@ -58,6 +58,11 @@ func handleConfluenceServerWebhook(w http.ResponseWriter, r *http.Request, p *Pl
 			http.Error(w, "Failed to unmarshal Confluence server webhook payload", http.StatusInternalServerError)
 			return
 		}
+		if event == nil {
+			p.client.Log.Error("Received empty Confluence server webhook payload")
+			http.Error(w, "Empty Confluence server webhook payload", http.StatusBadRequest)
+			return
+		}
 
 		pluginConfig := config.GetConfig()
 		instanceID := pluginConfig.ConfluenceURL

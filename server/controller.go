@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -75,6 +76,17 @@ func (p *Plugin) checkAuth(handler http.HandlerFunc) http.HandlerFunc {
 // wrapHandler ensures the plugin is passed to the handler
 func (p *Plugin) wrapHandler(handler func(http.ResponseWriter, *http.Request, *Plugin)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if x := recover(); x != nil {
+				// Log only the path: the query string may carry the webhook secret.
+				p.client.Log.Error("Recovered from a panic",
+					"path", r.URL.Path,
+					"error", x,
+					"stack", string(debug.Stack()))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+			}
+		}()
+
 		handler(w, r, p)
 	}
 }
