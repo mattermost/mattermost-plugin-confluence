@@ -1,0 +1,11 @@
+{
+  "cloud-v1": {
+    "url": "https://developer.atlassian.com/cloud/confluence/swagger.v3.json",
+    "operations": [
+      "GET /wiki/rest/api/user/current",
+      "GET /wiki/rest/api/user",
+      "GET /wiki/rest/api/space/{spaceKey}/settings",
+      "GET /wiki/rest/api/content/{id}/restriction"
+    ]
+  }
+}

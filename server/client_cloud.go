@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-confluence/server/util"
 	"github.com/mattermost/mattermost-plugin-confluence/server/util/types"
 )
 
@@ -84,24 +84,30 @@ func (c *confluenceCloudClient) GetSelf() (*types.ConfluenceUser, error) {
 	}, nil
 }
 
+// Cloud answers 410 for GET /space/{key} and /content/{id} over OAuth, and their v2 replacements need granular
+// scopes that existing installs never granted. Only access checks call these, so they read the space settings
+// and the page restrictions instead: both need view permission and accept the classic scopes.
 func (c *confluenceCloudClient) GetSpaceData(spaceKey string) (*SpaceResponse, error) {
-	spaceResponse := &SpaceResponse{}
-	if err := c.getJSON(fmt.Sprintf("%s%s?status=any", PathSpaceData, url.PathEscape(spaceKey)), spaceResponse); err != nil {
+	var settings struct {
+		SpaceKey string `json:"spaceKey"`
+	}
+	if err := c.getJSON(fmt.Sprintf("%s%s/settings", PathSpaceData, url.PathEscape(spaceKey)), &settings); err != nil {
 		return nil, err
 	}
 
-	return spaceResponse, nil
+	if settings.SpaceKey == "" {
+		settings.SpaceKey = spaceKey
+	}
+	return &SpaceResponse{Key: settings.SpaceKey}, nil
 }
 
 func (c *confluenceCloudClient) GetPageData(pageID int) (*PageResponse, error) {
-	pageResponse := &PageResponse{}
-	if err := c.getJSON(fmt.Sprintf("%s%d?status=any&expand=body.view,space,history", PathContentData, pageID), pageResponse); err != nil {
+	var restrictions json.RawMessage
+	if err := c.getJSON(fmt.Sprintf("%s%d/restriction", PathContentData, pageID), &restrictions); err != nil {
 		return nil, err
 	}
 
-	pageResponse.Body.View.Value = util.GetBodyForExcerpt(pageResponse.Body.View.Value)
-
-	return pageResponse, nil
+	return &PageResponse{ID: strconv.Itoa(pageID)}, nil
 }
 
 // Cloud events arrive through the Forge bridge already carrying the space key.

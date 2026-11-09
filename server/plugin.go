@@ -48,6 +48,11 @@ func (p *Plugin) OnActivate() error {
 	config.Mattermost = p.API
 	p.client = pluginapi.NewClient(p.API, p.Driver)
 
+	if atlassianURLsOverridden() {
+		p.client.Log.Warn("Confluence Cloud OAuth endpoints are overridden; this build is for E2E testing only",
+			"auth_base_url", atlassianAuthBaseURL, "api_base_url", atlassianAPIBaseURL)
+	}
+
 	if err := p.setUpBotUser(); err != nil {
 		config.Mattermost.LogError("Failed to create a bot user", "Error", err.Error())
 		return err

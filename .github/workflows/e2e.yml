@@ -1,0 +1,214 @@
+name: e2e
+on:
+  schedule:
+    - cron: "0 2 * * *"
+    # Real-site journey, offset from the Jira suite's 02:00 run that signs in the same account.
+    - cron: "30 3 * * *"
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: playwright (${{ matrix.name }}, ${{ matrix.confluence }})
+    if: github.event.schedule != '30 3 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: min-server
+            image: mattermost/mattermost-enterprise-edition:release-12.0
+            confluence: cloud
+          - name: master
+            image: mattermostdevelopment/mattermost-enterprise-edition:master
+            confluence: cloud
+          - name: master
+            image: mattermostdevelopment/mattermost-enterprise-edition:master
+            confluence: server
+    env:
+      CI: true
+      MM_IMAGE: ${{ matrix.image }}
+      CONFLUENCE_FLAVOR: ${{ matrix.confluence }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            webapp/package-lock.json
+            e2e/playwright/package-lock.json
+
+      - name: Build E2E plugin bundle
+        run: make e2e-dist
+        env:
+          # Builds only for the runner's OS/arch.
+          MM_SERVICESETTINGS_ENABLEDEVELOPER: true
+
+      - name: Install e2e dependencies
+        working-directory: e2e/playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Type-check e2e
+        working-directory: e2e/playwright
+        run: npm run tsc
+
+      - name: Start Mattermost
+        working-directory: e2e/playwright
+        run: docker compose up -d --wait
+
+      - name: Run Playwright
+        working-directory: e2e/playwright
+        run: npm run test:ci
+
+      - name: Collect server logs
+        if: failure()
+        working-directory: e2e/playwright
+        run: docker compose logs mattermost > playwright-report/mattermost.log 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.name }}-${{ matrix.confluence }}
+          path: e2e/playwright/playwright-report
+          retention-days: 14
+
+  # Non-blocking: core CSS changes in the server image can shift the baselines too.
+  visual:
+    name: playwright visual
+    if: github.event.schedule != '30 3 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            webapp/package-lock.json
+            e2e/playwright/package-lock.json
+
+      - name: Build E2E plugin bundle
+        run: make e2e-dist
+        env:
+          MM_SERVICESETTINGS_ENABLEDEVELOPER: true
+
+      - name: Install e2e dependencies
+        working-directory: e2e/playwright
+        run: npm ci
+
+      - name: Compare screenshots
+        working-directory: e2e/playwright
+        run: npm run test:visual
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-visual-diffs
+          path: |
+            e2e/playwright/playwright-report
+            e2e/playwright/test-results
+          retention-days: 14
+
+  contract-drift:
+    name: fake-confluence contract drift
+    if: github.event.schedule == '0 2 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Compare committed specs with Atlassian's published OpenAPI
+        working-directory: e2e/playwright
+        run: npm run contract:check
+
+  # Browser journey against the real test site. Off until vars.CONFLUENCE_REAL_E2E_ENABLED is set.
+  # No report or logs are uploaded: they can contain real tokens and Atlassian cookies.
+  real-confluence:
+    name: playwright (real Confluence Cloud)
+    if: github.event.schedule == '30 3 * * *' && vars.CONFLUENCE_REAL_E2E_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      MM_IMAGE: mattermost/mattermost-enterprise-edition:release-12.0
+      # Must match the callback URL registered in the Atlassian OAuth app.
+      MM_PORT: 8070
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            webapp/package-lock.json
+            e2e/playwright/package-lock.json
+
+      - name: Build plugin bundle
+        run: make dist
+        env:
+          MM_SERVICESETTINGS_ENABLEDEVELOPER: true
+
+      - name: Install e2e dependencies
+        working-directory: e2e/playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start Mattermost
+        working-directory: e2e/playwright
+        run: docker compose up -d --wait
+
+      - name: Run real Confluence journey
+        working-directory: e2e/playwright
+        run: npm run test:real
+        env:
+          CONFLUENCE_CLOUD_URL: ${{ secrets.CONFLUENCE_CLOUD_URL }}
+          CONFLUENCE_SPACE_KEY: ${{ vars.CONFLUENCE_SPACE_KEY }}
+          CONFLUENCE_CLOUD_USER_EMAIL: ${{ secrets.CONFLUENCE_CLOUD_USER_EMAIL }}
+          CONFLUENCE_CLOUD_USER_PASSWORD: ${{ secrets.CONFLUENCE_CLOUD_USER_PASSWORD }}
+          CONFLUENCE_CLOUD_USER_TOTP_SECRET: ${{ secrets.CONFLUENCE_CLOUD_USER_TOTP_SECRET }}
+          CONFLUENCE_CLOUD_OAUTH_CLIENT_ID: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_ID }}
+          CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET: ${{ secrets.CONFLUENCE_CLOUD_OAUTH_CLIENT_SECRET }}
