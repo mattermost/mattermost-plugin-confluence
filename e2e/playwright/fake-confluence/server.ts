@@ -75,6 +75,12 @@ export async function startFakeConfluence({port, siteURL, forgeSecret}: {port: n
             return;
         }
 
+        // Like real Cloud, the gateway answers 410 for the removed v1 reads; only the Data Center client may use them.
+        if (gateway.test(url.pathname) && normalized && contract.coverage(req.method ?? '', normalized) === 'allowlisted') {
+            sendJSON(res, 410, {message: 'this v1 API has been removed'});
+            return;
+        }
+
         if (normalized && req.method) {
             captureResponse(res, (status, payload) => {
                 state.contractViolations.push(...contract.validateResponse(req.method ?? '', normalized, status, payload));
@@ -208,6 +214,27 @@ function handleREST(ctx: Ctx): boolean {
 
     if (path === '/wiki/rest/api/user/current' || path === '/wiki/rest/api/user') {
         sendJSON(res, 200, state.user);
+        return true;
+    }
+
+    const settingsKey = path.match(/^\/wiki\/rest\/api\/space\/([^/]+)\/settings$/)?.[1];
+    if (settingsKey) {
+        const key = decodeURIComponent(settingsKey);
+        if (!state.spaces.some((item) => item.key === key)) {
+            sendJSON(res, 404, {message: 'space not found'});
+            return true;
+        }
+        sendJSON(res, 200, {spaceKey: key, routeOverrideEnabled: false, _links: {}});
+        return true;
+    }
+
+    const restrictedID = path.match(/^\/wiki\/rest\/api\/content\/([^/]+)\/restriction$/)?.[1];
+    if (restrictedID) {
+        if (!state.pages[restrictedID]) {
+            sendJSON(res, 404, {message: 'content not found'});
+            return true;
+        }
+        sendJSON(res, 200, {results: [], start: 0, limit: 100, size: 0, restrictionsHash: '', _links: {}});
         return true;
     }
 

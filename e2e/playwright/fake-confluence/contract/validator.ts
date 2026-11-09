@@ -19,7 +19,7 @@ type Operation = {
 const specsDir = path.join(__dirname, 'specs');
 
 // v1 content and space reads were removed from the published Cloud spec (deprecated, and 410 for OAuth).
-// The plugin still calls them. Anything else not in operations.json fails the suite.
+// The Data Center client still calls them; on Cloud the fake answers 410. Anything else not in operations.json fails the suite.
 const allowlistedGaps = [
     {method: 'GET', pattern: /^\/wiki\/rest\/api\/content\/[^/]+$/},
     {method: 'GET', pattern: /^\/wiki\/rest\/api\/space\/?$/},

@@ -91,6 +91,106 @@
           }
         }
       }
+    },
+    "/wiki/rest/api/space/{spaceKey}/settings": {
+      "get": {
+        "parameters": [
+          {
+            "name": "spaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpaceSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {}
+          },
+          "404": {
+            "content": {}
+          }
+        }
+      }
+    },
+    "/wiki/rest/api/content/{id}/restriction": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "restrictions.user",
+                  "read.restrictions.user",
+                  "update.restrictions.user",
+                  "restrictions.group",
+                  "read.restrictions.group",
+                  "update.restrictions.group",
+                  "content"
+                ]
+              }
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRestrictionArray"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {}
+          }
+        }
+      }
     }
   },
   "components": {
@@ -897,6 +997,43 @@
                 "type": "string"
               }
             }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GenericLinks"
+          }
+        }
+      },
+      "ContentRestrictionArray": {
+        "required": [
+          "_links",
+          "limit",
+          "restrictionsHash",
+          "results",
+          "size",
+          "start"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentRestriction"
+            }
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restrictionsHash": {
+            "type": "string"
           },
           "_links": {
             "$ref": "#/components/schemas/GenericLinks"
