@@ -18,7 +18,7 @@ export default async function globalSetup() {
     });
 
     const adminClient = await loginAdmin();
-    await installPlugin(adminClient);
+    await installPlugin(adminClient, 'e2e');
 
     return fake.close;
 }

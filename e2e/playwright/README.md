@@ -10,7 +10,7 @@ make e2e-env-down
 make e2e-real      # normal bundle, against the test site. Needs e2e/playwright/.env
 ```
 
-`make e2e-dist` points the Cloud OAuth hosts at fake-confluence and shortens the Forge poll. The plugin logs a warning on activation. Never ship that bundle.
+`make e2e-dist` points the Cloud OAuth hosts at fake-confluence and shortens the Forge poll. It writes `dist/e2e/<id>-<version>-e2e.tar.gz`, apart from release bundles, and the plugin logs a warning on activation. Never ship that bundle.
 
 ## Environment variables
 

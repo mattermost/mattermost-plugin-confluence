@@ -6,9 +6,13 @@ FAKE_CONFLUENCE_PORT ?= $(or $(shell sed -n 's/^FAKE_CONFLUENCE_PORT=//p' $(E2E_
 E2E_FAKE_ATLASSIAN_URL ?= http://fake-confluence:$(FAKE_CONFLUENCE_PORT)
 
 # Command-line GO_BUILD_LDFLAGS wins over the Makefile default.
+# The bundle leaves dist/ under an -e2e name so it can't be mistaken for, or deployed as, a release bundle.
 .PHONY: e2e-dist
-e2e-dist: ## Builds dist/ with Confluence Cloud OAuth endpoints pointed at the E2E fake. Never ship this bundle.
+e2e-dist: ## Builds dist/e2e/ with Confluence Cloud OAuth endpoints pointed at the E2E fake. Never ship this bundle.
 	$(MAKE) dist GO_BUILD_LDFLAGS='-ldflags="-s -w -X main.atlassianAuthBaseURL=$(E2E_FAKE_ATLASSIAN_URL) -X main.atlassianAPIBaseURL=$(E2E_FAKE_ATLASSIAN_URL) -X main.forgePollIntervalSeconds=1"'
+	mkdir -p dist/e2e
+	mv dist/$(BUNDLE_NAME) dist/e2e/$(PLUGIN_ID)-$(PLUGIN_VERSION)-e2e.tar.gz
+	rm -rf dist/$(PLUGIN_ID)
 
 .PHONY: e2e-real
 e2e-real: dist $(E2E_DIR)/node_modules ## Runs the real Confluence Cloud journey (needs e2e/playwright/.env).

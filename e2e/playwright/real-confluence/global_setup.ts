@@ -18,7 +18,7 @@ export default async function globalSetup() {
     await baseGlobalSetup();
 
     const adminClient = await loginAdmin();
-    await installPlugin(adminClient, {
+    await installPlugin(adminClient, 'release', {
         confluenceurl: realConfluence.siteURL,
         confluenceoauthclientid: realConfluence.oauth.clientId,
         confluenceoauthclientsecret: realConfluence.oauth.clientSecret,
