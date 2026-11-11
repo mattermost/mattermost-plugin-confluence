@@ -61,7 +61,11 @@ ensure_tsx() {
     command -v tsx >/dev/null 2>&1 && return 0
     log "tsx is missing; installing it."
     sudo env "PATH=$PATH" npm install -g --silent "tsx@$(image_arg TSX_VERSION)"
-    sudo ln -sf "$(npm prefix -g)/bin/tsx" /usr/local/bin/tsx
+    local src
+    src="$(npm prefix -g)/bin/tsx"
+    if [[ "$(realpath -m "$src")" != "$(realpath -m /usr/local/bin/tsx)" ]]; then
+        sudo ln -sf "$src" /usr/local/bin/tsx
+    fi
 }
 
 ensure_docker() {

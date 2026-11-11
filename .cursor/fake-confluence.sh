@@ -7,7 +7,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../e2e/playwright"
 
-PORT="${FAKE_CONFLUENCE_PORT:-8092}"
+# Same resolution as support/constants.ts and build/custom.mk: shell, then .env, then 8092.
+PORT="${FAKE_CONFLUENCE_PORT:-$(sed -n 's/^FAKE_CONFLUENCE_PORT=//p' .env 2>/dev/null || true)}"
+export FAKE_CONFLUENCE_PORT="${PORT:=8092}"
 PID_FILE=/tmp/fake-confluence.pid
 LOG_FILE=/tmp/fake-confluence.log
 
