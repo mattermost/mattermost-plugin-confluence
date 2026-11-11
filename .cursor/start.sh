@@ -62,7 +62,7 @@ ensure_tsx() {
     log "tsx is missing; installing it."
     sudo env "PATH=$PATH" npm install -g --silent "tsx@$(image_arg TSX_VERSION)"
     local src
-    src="$(npm prefix -g)/bin/tsx"
+    src="$(sudo env "PATH=$PATH" npm prefix -g)/bin/tsx"
     if [[ "$(realpath -m "$src")" != "$(realpath -m /usr/local/bin/tsx)" ]]; then
         sudo ln -sf "$src" /usr/local/bin/tsx
     fi
