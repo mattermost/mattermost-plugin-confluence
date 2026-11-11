@@ -1,0 +1,22 @@
+{
+  "name": "mattermost-plugin-confluence",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "user": "ubuntu",
+  "install": ".cursor/install.sh",
+  "start": ".cursor/start.sh",
+  "terminals": [
+    {
+      "name": "mattermost",
+      "command": "make e2e-env-up && .cursor/dev-setup.sh && echo 'Mattermost is ready at http://127.0.0.1:8065' && cd e2e/playwright && docker compose logs -f --tail 0 mattermost",
+      "description": "Runs Mattermost with the plugin built from this checkout (the E2E bundle from `make e2e-dist`), Postgres, and fake-confluence (e2e/playwright/fake-confluence, in the background on :8092), then follows Mattermost's logs. Wait for 'Mattermost is ready'. Open http://127.0.0.1:8065 in the browser (not localhost: it must match the SiteURL) and log in as sysadmin / Sys@dmin-sample1 (team 'agent'). The plugin is set up for Confluence Cloud against the fake, so `/confluence connect` completes the OAuth flow without any sign-in and connects as 'E2E User'. The fake has space TEAM with pages 1001 and 1002. To simulate a Confluence event for a subscribed channel, POST a Forge event to http://127.0.0.1:8092/__control/forge-event (shape: pageEvent() and commentCreatedEvent() in e2e/playwright/fake-confluence/state.ts); the plugin drains it within a second. Use this to reproduce a bug in the browser, change the code, and check the fix. After changing the plugin, run `.cursor/dev-setup.sh` to rebuild and reinstall it (also after `make e2e-env-down && make e2e-env-up`, which wipes all data). Server and plugin logs: `cd e2e/playwright && docker compose logs mattermost`. fake-confluence logs: /tmp/fake-confluence.log; the calls the plugin made: http://127.0.0.1:8092/__control/requests (contract violations: /__control/contract-violations). Automated tests start their own fake on the same port, so run `.cursor/fake-confluence.sh stop && make e2e` from the repo root, then `.cursor/dev-setup.sh --no-build` to get back to the hands-on setup; filter with `cd e2e/playwright && npx playwright test tests/<spec>.spec.ts`. For Data Center instead of Cloud, export CONFLUENCE_FLAVOR=server before both. See e2e/playwright/README.md for writing tests. There are no real Confluence credentials: do not run `make e2e-real`, `npm run real:login` or `npm run test:real`. The visual specs (@visual) are not set up here."
+    }
+  ],
+  "ports": [
+    {
+      "name": "Mattermost",
+      "port": 8065
+    }
+  ]
+}
