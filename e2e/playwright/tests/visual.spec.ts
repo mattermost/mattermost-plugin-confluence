@@ -61,7 +61,7 @@ test.describe('visual', {tag: '@visual'}, () => {
     async function openSubscribeModal(pw: PlaywrightExtended, confluence: ConfluenceFixture, command = '/confluence subscribe') {
         const {channelsPage, page} = await openChannel(pw, confluence.user, confluence.team.name);
         await runSlashCommand(channelsPage, command);
-        const modal = page.locator('.modal-content');
+        const modal = page.getByRole('dialog');
         await expect(modal).toBeVisible();
         return {page, modal};
     }
