@@ -126,7 +126,7 @@ export default class ConfluenceField extends React.PureComponent {
                     value={value}
                     readOnly={readOnly}
                     required={required}
-                    invalid={invalid}
+                    message={invalid ? REQUIRED_MESSAGE : null}
                     onChange={this.handleChange}
                     data-testid={testId}
                 />
@@ -175,7 +175,7 @@ export default class ConfluenceField extends React.PureComponent {
         return (
             <div className='confluence-field'>
                 {this.renderField(invalid)}
-                {invalid && <ErrorMessage message={REQUIRED_MESSAGE}/>}
+                {invalid && this.props.fieldType !== 'input' && <ErrorMessage message={REQUIRED_MESSAGE}/>}
             </div>
         );
     }
