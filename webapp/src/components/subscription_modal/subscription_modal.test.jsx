@@ -1,7 +1,7 @@
 /*eslint max-nested-callbacks: ["error", 4]*/
 
 import React from 'react';
-import {render, screen, waitFor, waitForElementToBeRemoved, act} from '@testing-library/react';
+import {render, screen, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import Constants from '../../constants';
@@ -235,7 +235,9 @@ describe('components/SubscriptionModal', () => {
         expect(await screen.findByRole('listbox')).toBeInTheDocument();
         await userEvent.keyboard('{Escape}');
 
-        await waitForElementToBeRemoved(() => screen.queryByRole('listbox'));
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        });
         expect(baseProps.close).not.toHaveBeenCalled();
     });
 
