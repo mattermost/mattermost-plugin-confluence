@@ -1,3 +1,5 @@
+import '@mattermost/compass-ui/styles';
+
 import manifest from './manifest';
 
 import Hooks from './hooks';

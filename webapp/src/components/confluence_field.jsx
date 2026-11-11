@@ -1,9 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {ControlLabel, FormControl, FormGroup} from 'react-bootstrap';
-import Select from 'react-select';
 
-import {getStyleForReactSelect} from '../utils/react_select_styles';
+import {Combobox} from '@mattermost/compass-ui/components/combobox';
+import {ErrorMessage} from '@mattermost/compass-ui/components/error-message';
+import {Select} from '@mattermost/compass-ui/components/select';
+import {TextInput} from '@mattermost/compass-ui/components/text-input';
+
+import Constants from '../constants';
+
+import './confluence_field.css';
+
+const REQUIRED_MESSAGE = 'This field is required.';
 
 export default class ConfluenceField extends React.PureComponent {
     static propTypes = {
@@ -18,24 +25,19 @@ export default class ConfluenceField extends React.PureComponent {
         onChange: PropTypes.func.isRequired,
         addValidation: PropTypes.func.isRequired,
         removeValidation: PropTypes.func.isRequired,
-        theme: PropTypes.object,
         fieldType: PropTypes.string.isRequired,
         readOnly: PropTypes.bool,
-        formGroupStyle: PropTypes.object,
-        formControlStyle: PropTypes.object,
         type: PropTypes.string,
         placeholder: PropTypes.string,
         name: PropTypes.string,
         options: PropTypes.array,
         isMulti: PropTypes.bool,
-        isSearchable: PropTypes.bool,
         testId: PropTypes.string,
     };
 
     static defaultProps = {
         readOnly: false,
-        formGroupStyle: {},
-        formControlStyle: {},
+        options: [],
     };
 
     constructor(props) {
@@ -51,20 +53,28 @@ export default class ConfluenceField extends React.PureComponent {
         }
     }
 
-    handleChange = (e) => {
-        if (!this.state.valid) {
-            this.setState({
-                valid: true,
-            });
-        }
-        this.props.onChange(e);
-    };
-
     componentWillUnmount() {
         if (this.props.removeValidation) {
             this.props.removeValidation(this.isValid);
         }
     }
+
+    handleChange = (value) => {
+        if (!this.state.valid) {
+            this.setState({
+                valid: true,
+            });
+        }
+        this.props.onChange(value);
+    };
+
+    handleSelectChange = (value) => {
+        this.handleChange(this.props.options.find((option) => option.value === value) || null);
+    };
+
+    handleMultiChange = (values) => {
+        this.handleChange(this.props.options.filter((option) => values.includes(option.value)));
+    };
 
     isValid = () => {
         const {fieldType, value, required} = this.props;
@@ -82,65 +92,91 @@ export default class ConfluenceField extends React.PureComponent {
         return true;
     };
 
-    render() {
-        const {
-            required, fieldType, theme, label, formGroupStyle, formControlStyle,
-            value, type, placeholder, name, readOnly, options, isMulti, isSearchable, testId,
-        } = this.props;
-        const requiredErrorMsg = 'This field is required.';
-        let requiredError = null;
-        if (required && !this.state.valid) {
-            requiredError = (
-                <p className='help-text error-text'>
-                    <span>{requiredErrorMsg}</span>
-                </p>
-            );
+    renderLabel() {
+        const {label, required} = this.props;
+        if (!required) {
+            return label;
         }
-        let field = null;
+
+        return (
+            <>
+                {label}
+                <span
+                    className='confluence-field__required'
+                    aria-hidden={true}
+                >
+                    {' *'}
+                </span>
+            </>
+        );
+    }
+
+    renderField(invalid) {
+        const {
+            fieldType, value, type, placeholder, name, readOnly, options, isMulti, testId, required, label,
+        } = this.props;
+
         if (fieldType === 'input') {
-            field = (
-                <FormControl
-                    style={formControlStyle}
+            return (
+                <TextInput
+                    id={testId}
+                    label={this.renderLabel()}
                     type={type}
                     placeholder={placeholder}
                     value={value}
                     readOnly={readOnly}
+                    required={required}
+                    invalid={invalid}
                     onChange={this.handleChange}
                     data-testid={testId}
                 />
             );
-        } else if (fieldType === 'dropDown') {
-            field = (
-                <Select
+        }
+
+        if (isMulti) {
+            const selected = value || [];
+            return (
+                <Combobox
+                    id={testId}
                     name={name}
-                    value={value}
+                    label={this.renderLabel()}
+                    listboxLabel={label}
                     options={options}
-                    isMulti={isMulti}
-                    isSearchable={isSearchable}
-                    menuPortalTarget={document.body}
-                    menuPlacement='auto'
-                    styles={getStyleForReactSelect(theme)}
-                    onChange={this.handleChange}
-                    inputId={testId}
+                    selectedOptions={selected}
+                    value={selected.map((option) => option.value)}
+                    multiple={true}
+                    required={required}
+                    invalid={invalid}
+                    onChange={this.handleMultiChange}
+                    submitOnEnter={false}
+                    zIndex={Constants.Z_INDEX_MENU_PORTAL}
                 />
             );
         }
+
         return (
-            <FormGroup
-                style={formGroupStyle}
-                controlId={testId}
-            >
-                <ControlLabel>{label}</ControlLabel>
-                {required &&
-                <span
-                    className='error-text'
-                    style={{marginLeft: '3px'}}
-                >
-                    {'*'}
-                </span> }
-                {field}
-                {requiredError}
-            </FormGroup>
+            <Select
+                id={testId}
+                name={name}
+                label={this.renderLabel()}
+                listboxLabel={label}
+                options={options}
+                value={value ? value.value : ''}
+                invalid={invalid}
+                onChange={this.handleSelectChange}
+                zIndex={Constants.Z_INDEX_MENU_PORTAL}
+            />
+        );
+    }
+
+    render() {
+        const invalid = this.props.required && !this.state.valid;
+
+        return (
+            <div className='confluence-field'>
+                {this.renderField(invalid)}
+                {invalid && <ErrorMessage message={REQUIRED_MESSAGE}/>}
+            </div>
         );
     }
 }

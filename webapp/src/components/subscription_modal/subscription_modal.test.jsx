@@ -8,16 +8,7 @@ import Constants from '../../constants';
 import SubscriptionModal from './subscription_modal';
 
 describe('components/ChannelSettingsModal', () => {
-    const mockTheme = {
-        centerChannelColor: '#3d3c40',
-        centerChannelBg: '#ffffff',
-        buttonBg: '#166de0',
-        buttonColor: '#ffffff',
-        linkColor: '#2389d7',
-    };
-
     const baseProps = {
-        theme: mockTheme,
         visibility: false,
         subscription: {},
         close: jest.fn(),
@@ -46,12 +37,12 @@ describe('components/ChannelSettingsModal', () => {
         });
 
         expect(screen.getByText('Edit Your Confluence Subscription')).toBeInTheDocument();
-        expect(screen.getByText('Name')).toBeInTheDocument();
-        expect(screen.getByText('Confluence Base URL')).toBeInTheDocument();
-        expect(screen.getByText('Subscribe To')).toBeInTheDocument();
-        expect(screen.getByText('Events')).toBeInTheDocument();
-        expect(screen.getByText('Save Subscription')).toBeInTheDocument();
-        expect(screen.getByText('Cancel')).toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Name'})).toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Confluence Base URL'})).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Subscribe To'})).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Events'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Save Subscription'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
     });
 
     test('new space subscription', async () => {
@@ -164,11 +155,8 @@ describe('components/ChannelSettingsModal', () => {
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
 
-        const subscribeToDropdown = screen.getByText('Space');
-        fireEvent.mouseDown(subscribeToDropdown);
-
-        const pageOption = await screen.findByText('Page');
-        fireEvent.click(pageOption);
+        fireEvent.click(screen.getByRole('combobox', {name: 'Subscribe To'}));
+        fireEvent.pointerUp(await screen.findByRole('option', {name: 'Page'}));
 
         const pageIDInput = await screen.findByTestId('subscription-page-id-input');
         fireEvent.change(pageIDInput, {target: {value: '1234'}});
@@ -218,11 +206,8 @@ describe('components/ChannelSettingsModal', () => {
         fireEvent.change(nameInput, {target: {value: 'Abc'}});
         fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
 
-        const subscribeToDropdown = screen.getByText('Space');
-        fireEvent.mouseDown(subscribeToDropdown);
-
-        const pageOption = await screen.findByText('Page');
-        fireEvent.click(pageOption);
+        fireEvent.click(screen.getByRole('combobox', {name: 'Subscribe To'}));
+        fireEvent.pointerUp(await screen.findByRole('option', {name: 'Page'}));
 
         const pageIDInput = await screen.findByTestId('subscription-page-id-input');
         fireEvent.change(pageIDInput, {target: {value: '1234'}});
@@ -290,6 +275,23 @@ describe('components/ChannelSettingsModal', () => {
         });
 
         expect(props.editChannelSubscription).not.toHaveBeenCalled();
+    });
+
+    test('blocks saving and flags empty required fields', async () => {
+        await act(async () => {
+            render(
+                <SubscriptionModal
+                    {...baseProps}
+                    visibility={true}
+                />,
+            );
+        });
+
+        fireEvent.click(screen.getByRole('button', {name: 'Save Subscription'}));
+
+        expect(await screen.findAllByText('This field is required.')).toHaveLength(3);
+        expect(screen.getByRole('textbox', {name: 'Name'})).toHaveAttribute('aria-invalid', 'true');
+        expect(baseProps.saveChannelSubscription).not.toHaveBeenCalled();
     });
 
     test('cancel closes the modal', async () => {

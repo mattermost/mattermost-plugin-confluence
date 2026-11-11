@@ -1,0 +1,13 @@
+.confluence-subscription__type-row {
+    display: flex;
+    gap: var(--spacing-l);
+}
+
+.confluence-subscription__type-row > .confluence-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.confluence-subscription__notice {
+    margin-bottom: var(--spacing-l);
+}

@@ -8,12 +8,6 @@ const baseProps = {
     onChange: jest.fn(),
     addValidation: jest.fn(),
     removeValidation: jest.fn(),
-    theme: {
-        centerChannelColor: '#3d3c40',
-        centerChannelBg: '#ffffff',
-        buttonBg: '#166de0',
-        linkColor: '#2389d7',
-    },
 };
 
 describe('components/ConfluenceField', () => {
@@ -28,11 +22,11 @@ describe('components/ConfluenceField', () => {
             />,
         );
 
-        expect(screen.getByLabelText('Space Key')).toBe(screen.getByTestId('subscription-space-key-input'));
+        expect(screen.getByRole('textbox', {name: 'Space Key'})).toBe(screen.getByTestId('subscription-space-key-input'));
     });
 
     test('labels a dropdown input with its visible label', () => {
-        const {container} = render(
+        render(
             <ConfluenceField
                 {...baseProps}
                 label='Events'
@@ -45,6 +39,6 @@ describe('components/ConfluenceField', () => {
             />,
         );
 
-        expect(screen.getByLabelText('Events')).toBe(container.querySelector('#subscription-events-select'));
+        expect(screen.getByRole('combobox', {name: 'Events'})).toHaveAttribute('id', 'subscription-events-select');
     });
 });

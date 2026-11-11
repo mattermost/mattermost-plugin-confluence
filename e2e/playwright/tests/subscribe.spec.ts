@@ -44,7 +44,7 @@ test('stops notifying for an event removed in the edit modal', {tag: ['@confluen
     await expect(dialog.getByTestId('subscription-name-input')).toHaveValue('team-space');
 
     // # Remove Page Update from the events and save
-    await dialog.getByRole('button', {name: 'Remove Page Update'}).click();
+    await dialog.getByRole('button', {name: 'Page Update. Press Delete to remove.'}).press('Delete');
     await dialog.getByRole('button', {name: 'Save Subscription'}).click();
 
     // * Verify the edit is confirmed
