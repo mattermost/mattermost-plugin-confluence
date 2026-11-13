@@ -1,9 +1,14 @@
 import request from 'superagent';
-import Cookies from 'js-cookie';
 
 import Constants from '../constants';
 
 import manifest from '../manifest';
+
+const getCookie = (name) => {
+    const prefix = `${name}=`;
+    const cookie = document.cookie.split('; ').find((c) => c.startsWith(prefix));
+    return cookie && decodeURIComponent(cookie.slice(prefix.length));
+};
 
 /**
  *  Add web utilities for interacting with servers here
@@ -56,7 +61,7 @@ export default class Client {
 
     doPost = async (url, body, headers = {}) => {
         headers['X-Requested-With'] = 'XMLHttpRequest';
-        headers['X-CSRF-Token'] = Cookies.get(Constants.MATTERMOST_CSRF_COOKIE);
+        headers['X-CSRF-Token'] = getCookie(Constants.MATTERMOST_CSRF_COOKIE);
 
         const response = await request.
             post(url).
@@ -70,7 +75,7 @@ export default class Client {
 
     doPut = async (url, body, headers = {}) => {
         headers['X-Requested-With'] = 'XMLHttpRequest';
-        headers['X-CSRF-Token'] = Cookies.get(Constants.MATTERMOST_CSRF_COOKIE);
+        headers['X-CSRF-Token'] = getCookie(Constants.MATTERMOST_CSRF_COOKIE);
 
         const response = await request.
             put(url).
