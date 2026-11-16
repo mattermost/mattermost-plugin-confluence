@@ -64,7 +64,6 @@
   },
   "dependencies": {
     "core-js": "3.6.5",
-    "js-cookie": "2.2.1",
     "mattermost-redux": "11.4.0",
     "react": "19.2.8",
     "react-bootstrap": "github:mattermost/react-bootstrap#d693ec8082954f0e6d3e826ca6161979b29001cd",
