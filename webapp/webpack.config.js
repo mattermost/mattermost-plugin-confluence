@@ -61,6 +61,13 @@ module.exports = {
                 },
             },
             {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader',
+                ],
+            },
+            {
                 test: /\.scss$/,
                 use: [
                     'style-loader',
@@ -88,7 +95,6 @@ module.exports = {
         redux: 'Redux',
         'react-redux': 'ReactRedux',
         'prop-types': 'PropTypes',
-        'react-bootstrap': 'ReactBootstrap',
         'react-router-dom': 'ReactRouterDom',
     },
     output: {

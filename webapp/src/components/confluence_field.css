@@ -1,0 +1,7 @@
+.confluence-field {
+    margin-bottom: var(--spacing-l);
+}
+
+.confluence-field__required {
+    color: var(--error-text);
+}
