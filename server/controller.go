@@ -120,18 +120,38 @@ func ReturnStatusOK(w io.Writer) {
 	_, _ = w.Write([]byte(model.MapToJSON(m)))
 }
 
+const maxSecretDecodeDepth = 3
+
 func verifyHTTPSecret(expected, got string) (status int, err error) {
-	// The loop ensures that the provided 'got' string matches the 'expected' string
-	// using a constant-time comparison to prevent timing attacks. If 'got' does not
-	// match, it is repeatedly unescaped until it either matches or cannot be further
-	// unescaped, at which point an error is returned.
-	for subtle.ConstantTimeCompare([]byte(got), []byte(expected)) != 1 {
-		unescaped, _ := url.QueryUnescape(got)
-		if unescaped == got {
-			return http.StatusForbidden, errors.New("request URL: secret did not match")
+	// The provided 'got' string is compared to the 'expected' string using a
+	// constant-time comparison to prevent timing attacks. If 'got' does not match,
+	// it is unescaped at most maxSecretDecodeDepth times. Values longer than the
+	// longest possible encoding of 'expected' at that depth (each escaping pass
+	// expands a byte to at most 3 bytes) are rejected before any decoding.
+	errMismatch := errors.New("request URL: secret did not match")
+	if expected == "" {
+		return http.StatusForbidden, errMismatch
+	}
+
+	maxLen := len(expected)
+	for i := 0; i < maxSecretDecodeDepth; i++ {
+		maxLen *= 3
+	}
+	if len(got) > maxLen {
+		return http.StatusForbidden, errMismatch
+	}
+
+	for i := 0; ; i++ {
+		if subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1 {
+			return 0, nil
+		}
+		if i == maxSecretDecodeDepth {
+			return http.StatusForbidden, errMismatch
+		}
+		unescaped, unescapeErr := url.QueryUnescape(got)
+		if unescapeErr != nil || unescaped == got {
+			return http.StatusForbidden, errMismatch
 		}
 		got = unescaped
 	}
-
-	return 0, nil
 }
