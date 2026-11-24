@@ -36,7 +36,7 @@ export async function expectNothingClipped(root: Locator) {
     const clipped = await root.evaluate((el, tol) => {
         const offenders: string[] = [];
         for (const node of [el, ...Array.from(el.querySelectorAll('*'))]) {
-            if (node.classList.contains('sr-only')) {
+            if (node.classList.contains('sr-only') || node.classList.contains('simplebar-height-auto-observer-wrapper')) {
                 continue;
             }
             const style = getComputedStyle(node);

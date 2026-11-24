@@ -63,6 +63,9 @@ const SUBSCRIBE_DENIED_REASON = {
     NOT_CONNECTED: 'not_connected',
 };
 
+// Compass menus take a numeric zIndex (no token); it must stay above the modal layer (--z-modal, 1050).
+const Z_INDEX_MENU_PORTAL = 1070;
+
 export default {
     ACTION_TYPES,
     CONFLUENCE_EVENTS,
@@ -76,4 +79,5 @@ export default {
     DISCONNECTED_USER,
     ERROR_EXECUTING_COMMAND,
     SUBSCRIBE_DENIED_REASON,
+    Z_INDEX_MENU_PORTAL,
 };

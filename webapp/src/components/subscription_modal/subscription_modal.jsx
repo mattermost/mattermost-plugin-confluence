@@ -1,14 +1,17 @@
 import React from 'react';
-import {
-    Modal,
-    Button,
-} from 'react-bootstrap';
-
 import PropTypes from 'prop-types';
+
+import {Button} from '@mattermost/compass-ui/components/button';
+import {Modal, ModalOverlay} from '@mattermost/compass-ui/components/modal';
+import {SectionNotice} from '@mattermost/compass-ui/components/section-notice';
 
 import Constants from '../../constants';
 import ConfluenceField from '../confluence_field';
 import Validator from '../validator';
+
+import './subscription_modal.css';
+
+const FORM_ID = 'confluence-subscription-form';
 
 const initialState = {
     alias: '',
@@ -27,7 +30,6 @@ export default class SubscriptionModal extends React.PureComponent {
         visibility: PropTypes.bool,
         subscription: PropTypes.object,
         close: PropTypes.func.isRequired,
-        theme: PropTypes.object.isRequired,
         saveChannelSubscription: PropTypes.func.isRequired,
         currentChannelID: PropTypes.string.isRequired,
         editChannelSubscription: PropTypes.func.isRequired,
@@ -139,7 +141,10 @@ export default class SubscriptionModal extends React.PureComponent {
         });
     };
 
-    handleSubmit = async () => {
+    handleSubmit = async (e) => {
+        if (e && e.preventDefault) {
+            e.preventDefault();
+        }
         if (!this.validator.validate()) {
             return;
         }
@@ -187,13 +192,11 @@ export default class SubscriptionModal extends React.PureComponent {
         const {error, saving, subscriptionType, supportedEvents, events} = this.state;
         let typeField = (
             <ConfluenceField
-                formGroupStyle={getStyle.typeValue}
-                formControlStyle={getStyle.typeFormControl}
-                label={'Space Key'}
+                label={'Space key'}
                 type={'text'}
                 fieldType={'input'}
                 required={true}
-                placeholder={'Enter the Confluence Space Key.'}
+                placeholder={'Enter the Confluence space key'}
                 value={this.state.spaceKey}
                 addValidation={this.validator.addValidation}
                 removeValidation={this.validator.removeValidation}
@@ -204,13 +207,11 @@ export default class SubscriptionModal extends React.PureComponent {
         if (subscriptionType === Constants.SUBSCRIPTION_TYPE[1]) {
             typeField = (
                 <ConfluenceField
-                    formGroupStyle={getStyle.typeValue}
-                    formControlStyle={getStyle.typeFormControl}
                     label={'Page ID'}
                     type={'text'}
                     fieldType={'input'}
                     required={true}
-                    placeholder={'Enter the page id.'}
+                    placeholder={'Enter the page ID'}
                     value={this.state.pageID}
                     addValidation={this.validator.addValidation}
                     removeValidation={this.validator.removeValidation}
@@ -220,16 +221,13 @@ export default class SubscriptionModal extends React.PureComponent {
             );
         }
         const innerFields = (
-            <div style={getStyle.innerFields}>
+            <div className='confluence-subscription__type-row'>
                 <ConfluenceField
-                    formGroupStyle={getStyle.subscriptionType}
-                    isSearchable={false}
                     isMulti={false}
-                    label={'Subscribe To'}
+                    label={'Subscribe to'}
                     name={'type'}
                     fieldType={'dropDown'}
                     required={true}
-                    theme={this.props.theme}
                     options={Constants.SUBSCRIPTION_TYPE}
                     value={this.state.subscriptionType}
                     addValidation={this.validator.addValidation}
@@ -240,38 +238,56 @@ export default class SubscriptionModal extends React.PureComponent {
                 {typeField}
             </div>
         );
-        let createError = null;
-        if (error) {
-            createError = (
-                <p className='alert alert-danger'>
-                    <i
-                        className='fa fa-warning'
-                        title='Warning Icon'
-                    />
-                    <span> {error}</span>
-                </p>
-            );
-        }
+        const footer = (
+            <>
+                <Button
+                    emphasis='tertiary'
+                    onClick={this.handleClose}
+                >
+                    {'Cancel'}
+                </Button>
+                <Button
+                    type='submit'
+                    form={FORM_ID}
+                    emphasis='primary'
+                    loading={saving}
+                >
+                    {'Save subscription'}
+                </Button>
+            </>
+        );
 
         return (
-            <Modal
-                show={isModalVisible}
-                onHide={this.handleClose}
-                backdrop={'static'}
+            <ModalOverlay
+                open={isModalVisible}
+                onClose={this.handleClose}
             >
-                <Modal.Header closeButton={true}>
-                    <Modal.Title>
-                        {'Edit Your Confluence Subscription'}
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div>
+                <Modal
+                    open={isModalVisible}
+                    size='medium'
+                    title={editSubscription ? 'Edit subscription' : 'New Confluence subscription'}
+                    onClose={this.handleClose}
+                    footer={footer}
+                >
+                    <form
+                        id={FORM_ID}
+                        noValidate={true}
+                        onSubmit={this.handleSubmit}
+                    >
+                        {error && (
+                            <SectionNotice
+                                className='confluence-subscription__notice'
+                                role='alert'
+                                type='danger'
+                                title={error}
+                            />
+                        )}
                         <ConfluenceField
                             label={'Name'}
                             type={'text'}
                             fieldType={'input'}
                             required={true}
-                            placeholder={'Enter a name for this subscription.'}
+                            placeholder={'Enter a name for this subscription'}
                             value={this.state.alias}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
@@ -279,11 +295,11 @@ export default class SubscriptionModal extends React.PureComponent {
                             testId='subscription-name-input'
                         />
                         <ConfluenceField
-                            label={'Confluence Base URL'}
+                            label={'Confluence base URL'}
                             type={'text'}
                             fieldType={'input'}
                             required={true}
-                            placeholder={'Enter the Confluence Base URL.'}
+                            placeholder={'Enter the Confluence base URL'}
                             value={this.state.baseURL}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
@@ -297,7 +313,6 @@ export default class SubscriptionModal extends React.PureComponent {
                             name={'events'}
                             fieldType={'dropDown'}
                             required={true}
-                            theme={this.props.theme}
                             options={supportedEvents}
                             value={events}
                             addValidation={this.validator.addValidation}
@@ -305,44 +320,9 @@ export default class SubscriptionModal extends React.PureComponent {
                             onChange={this.handleEvents}
                             testId='subscription-events-select'
                         />
-                        {createError}
-                    </div>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        type='button'
-                        bsStyle='link'
-                        onClick={this.handleClose}
-                    >
-                        {'Cancel'}
-                    </Button>
-                    <Button
-                        type='submit'
-                        bsStyle='primary'
-                        onClick={this.handleSubmit}
-                        disabled={saving}
-                    >
-                        {saving && <span className='fa fa-spinner fa-fw fa-pulse spinner'/>}
-                        {'Save Subscription'}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+                    </form>
+                </Modal>
+            </ModalOverlay>
         );
     }
 }
-
-const getStyle = {
-    innerFields: {
-        display: 'flex',
-    },
-    subscriptionType: {
-        flex: '1',
-        marginRight: '20px',
-    },
-    typeValue: {
-        flex: '1',
-    },
-    typeFormControl: {
-        height: '38px',
-    },
-};

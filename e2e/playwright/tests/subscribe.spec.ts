@@ -23,7 +23,7 @@ test('saves space subscription from the subscribe modal', {tag: '@confluence_plu
     await dialog.getByTestId('subscription-name-input').fill('team-space');
     await dialog.getByTestId('subscription-url-input').fill(instanceURL);
     await dialog.getByTestId('subscription-space-key-input').fill(spaceKey);
-    await dialog.getByRole('button', {name: 'Save Subscription'}).click();
+    await dialog.getByRole('button', {name: 'Save subscription'}).click();
 
     // * Verify the save is confirmed
     await expect(page.getByText('Your subscription has been saved.', {exact: true})).toBeVisible();
@@ -44,8 +44,8 @@ test('stops notifying for an event removed in the edit modal', {tag: ['@confluen
     await expect(dialog.getByTestId('subscription-name-input')).toHaveValue('team-space');
 
     // # Remove Page Update from the events and save
-    await dialog.getByRole('button', {name: 'Remove Page Update'}).click();
-    await dialog.getByRole('button', {name: 'Save Subscription'}).click();
+    await dialog.getByRole('button', {name: 'Page Update. Press Delete to remove.'}).press('Delete');
+    await dialog.getByRole('button', {name: 'Save subscription'}).click();
 
     // * Verify the edit is confirmed
     await expect(page.getByText('Your subscription has been edited successfully.', {exact: true})).toBeVisible();
