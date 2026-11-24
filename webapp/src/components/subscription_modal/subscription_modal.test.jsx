@@ -39,11 +39,11 @@ describe('components/SubscriptionModal', () => {
     };
 
     const nameInput = () => screen.getByRole('textbox', {name: 'Name'});
-    const urlInput = () => screen.getByRole('textbox', {name: 'Confluence Base URL'});
-    const save = () => userEvent.click(screen.getByRole('button', {name: 'Save Subscription'}));
+    const urlInput = () => screen.getByRole('textbox', {name: 'Confluence base URL'});
+    const save = () => userEvent.click(screen.getByRole('button', {name: 'Save subscription'}));
 
     const chooseSubscriptionType = async (label) => {
-        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe To'}));
+        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe to'}));
         await userEvent.click(await screen.findByRole('option', {name: label}));
     };
 
@@ -54,11 +54,11 @@ describe('components/SubscriptionModal', () => {
     test('renders the subscription fields and actions', async () => {
         await renderModal({visibility: true});
 
-        expect(screen.getByRole('dialog', {name: 'Edit Your Confluence Subscription'})).toBeInTheDocument();
+        expect(screen.getByRole('dialog', {name: 'New Confluence subscription'})).toBeInTheDocument();
         expect(nameInput()).toBeInTheDocument();
         expect(urlInput()).toBeInTheDocument();
-        expect(screen.getByRole('combobox', {name: 'Subscribe To'})).toHaveTextContent('Space');
-        expect(screen.getByRole('textbox', {name: 'Space Key'})).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Subscribe to'})).toHaveTextContent('Space');
+        expect(screen.getByRole('textbox', {name: 'Space key'})).toBeInTheDocument();
         expect(screen.getByRole('combobox', {name: 'Events'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
     });
@@ -68,7 +68,7 @@ describe('components/SubscriptionModal', () => {
 
         await userEvent.type(nameInput(), '   Abc   ');
         await userEvent.type(urlInput(), 'https://teST.com');
-        await userEvent.type(screen.getByRole('textbox', {name: 'Space Key'}), 'test       ');
+        await userEvent.type(screen.getByRole('textbox', {name: 'Space key'}), 'test       ');
         await save();
 
         await waitFor(() => {
@@ -93,7 +93,7 @@ describe('components/SubscriptionModal', () => {
         await userEvent.type(urlInput(), 'https://test.com');
         await chooseSubscriptionType('Page');
 
-        expect(screen.queryByRole('textbox', {name: 'Space Key'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', {name: 'Space key'})).not.toBeInTheDocument();
         await userEvent.type(screen.getByRole('textbox', {name: 'Page ID'}), '1234');
         await save();
 
@@ -115,7 +115,7 @@ describe('components/SubscriptionModal', () => {
 
         await userEvent.type(nameInput(), 'Abc');
         await userEvent.type(urlInput(), 'https://test.com');
-        await userEvent.type(screen.getByRole('textbox', {name: 'Space Key'}), 'test');
+        await userEvent.type(screen.getByRole('textbox', {name: 'Space key'}), 'test');
         act(() => screen.getByRole('button', {name: 'Page Update. Press Delete to remove.'}).focus());
         await userEvent.keyboard('{Delete}');
         await save();
@@ -137,8 +137,9 @@ describe('components/SubscriptionModal', () => {
         };
         await renderModal({subscription});
 
+        expect(screen.getByRole('dialog', {name: 'Edit subscription'})).toBeInTheDocument();
         expect(nameInput()).toHaveValue('Abc');
-        expect(screen.getByRole('textbox', {name: 'Space Key'})).toHaveValue('test');
+        expect(screen.getByRole('textbox', {name: 'Space key'})).toHaveValue('test');
         expect(screen.getByRole('button', {name: 'Comment Create. Press Delete to remove.'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Page Update. Press Delete to remove.'})).not.toBeInTheDocument();
 
@@ -171,7 +172,7 @@ describe('components/SubscriptionModal', () => {
         };
         await renderModal({subscription});
 
-        expect(screen.getByRole('combobox', {name: 'Subscribe To'})).toHaveTextContent('Page');
+        expect(screen.getByRole('combobox', {name: 'Subscribe to'})).toHaveTextContent('Page');
         expect(screen.getByRole('textbox', {name: 'Page ID'})).toHaveValue('1234');
 
         await save();
@@ -212,10 +213,12 @@ describe('components/SubscriptionModal', () => {
 
         await userEvent.type(nameInput(), 'Abc');
         await userEvent.type(urlInput(), 'https://test.com');
-        await userEvent.type(screen.getByRole('textbox', {name: 'Space Key'}), 'test');
+        await userEvent.type(screen.getByRole('textbox', {name: 'Space key'}), 'test');
         await save();
 
-        expect(await screen.findByRole('alert')).toHaveTextContent('Subscription already exists');
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('Subscription already exists');
+        expect(alert.compareDocumentPosition(nameInput()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(baseProps.close).not.toHaveBeenCalled();
     });
 
@@ -228,10 +231,21 @@ describe('components/SubscriptionModal', () => {
         expect(baseProps.saveChannelSubscription).not.toHaveBeenCalled();
     });
 
+    test('clicking the backdrop closes the modal', async () => {
+        await renderModal({visibility: true});
+
+        await userEvent.click(nameInput());
+        expect(baseProps.close).not.toHaveBeenCalled();
+
+        await userEvent.click(screen.getByRole('dialog').closest('[class*="modal-overlay"]'));
+
+        expect(baseProps.close).toHaveBeenCalled();
+    });
+
     test('escape closes the subscription type menu before the modal', async () => {
         await renderModal({visibility: true});
 
-        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe To'}));
+        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe to'}));
         expect(await screen.findByRole('listbox')).toBeInTheDocument();
         await userEvent.keyboard('{Escape}');
 

@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {Combobox} from '@mattermost/compass-ui/components/combobox';
-import {ErrorMessage} from '@mattermost/compass-ui/components/error-message';
 import {Select} from '@mattermost/compass-ui/components/select';
 import {TextInput} from '@mattermost/compass-ui/components/text-input';
 
@@ -146,7 +145,7 @@ export default class ConfluenceField extends React.PureComponent {
                     value={selected.map((option) => option.value)}
                     multiple={true}
                     required={required}
-                    invalid={invalid}
+                    message={invalid ? REQUIRED_MESSAGE : null}
                     onChange={this.handleMultiChange}
                     submitOnEnter={false}
                     zIndex={Constants.Z_INDEX_MENU_PORTAL}
@@ -162,7 +161,8 @@ export default class ConfluenceField extends React.PureComponent {
                 listboxLabel={label}
                 options={options}
                 value={value ? value.value : ''}
-                invalid={invalid}
+                required={required}
+                message={invalid ? REQUIRED_MESSAGE : null}
                 onChange={this.handleSelectChange}
                 zIndex={Constants.Z_INDEX_MENU_PORTAL}
             />
@@ -175,7 +175,6 @@ export default class ConfluenceField extends React.PureComponent {
         return (
             <div className='confluence-field'>
                 {this.renderField(invalid)}
-                {invalid && this.props.fieldType !== 'input' && <ErrorMessage message={REQUIRED_MESSAGE}/>}
             </div>
         );
     }

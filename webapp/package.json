@@ -62,8 +62,8 @@
     "webpack-cli": "5.1.4"
   },
   "dependencies": {
-    "@mattermost/compass-icons": "0.1.64",
-    "@mattermost/compass-ui": "0.1.0-alpha.27",
+    "@mattermost/compass-icons": "0.1.65",
+    "@mattermost/compass-ui": "0.1.0-alpha.33",
     "core-js": "3.6.5",
     "js-cookie": "2.2.1",
     "mattermost-redux": "11.4.0",

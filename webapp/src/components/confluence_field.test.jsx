@@ -25,14 +25,14 @@ describe('components/ConfluenceField', () => {
         render(
             <ConfluenceField
                 {...baseProps}
-                label='Space Key'
+                label='Space key'
                 fieldType='input'
                 value=''
                 testId='subscription-space-key-input'
             />,
         );
 
-        const input = screen.getByRole('textbox', {name: 'Space Key'});
+        const input = screen.getByRole('textbox', {name: 'Space key'});
         expect(input).toBe(screen.getByTestId('subscription-space-key-input'));
 
         await userEvent.type(input, 'T');
@@ -65,7 +65,7 @@ describe('components/ConfluenceField', () => {
         render(
             <ConfluenceField
                 {...baseProps}
-                label='Subscribe To'
+                label='Subscribe to'
                 fieldType='dropDown'
                 name='type'
                 value={options[0]}
@@ -75,7 +75,7 @@ describe('components/ConfluenceField', () => {
             />,
         );
 
-        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe To'}));
+        await userEvent.click(screen.getByRole('combobox', {name: 'Subscribe to'}));
         await userEvent.click(await screen.findByRole('option', {name: 'Page Update'}));
         expect(baseProps.onChange).toHaveBeenCalledWith(options[1]);
     });
@@ -102,5 +102,35 @@ describe('components/ConfluenceField', () => {
 
         expect(valid).toBe(false);
         expect(screen.getByRole('textbox', {name: 'Name'})).toHaveAccessibleDescription('This field is required.');
+    });
+
+    test.each([
+        [false, 'Subscribe to'],
+        [true, 'Events'],
+    ])('marks an empty required select (isMulti=%s) as required and describes the error', (isMulti, label) => {
+        let validate;
+        render(
+            <ConfluenceField
+                {...baseProps}
+                addValidation={(fn) => {
+                    validate = fn;
+                }}
+                label={label}
+                fieldType='dropDown'
+                name='field'
+                value={isMulti ? [] : null}
+                options={options}
+                isMulti={isMulti}
+                testId='subscription-select'
+            />,
+        );
+
+        React.act(() => {
+            validate();
+        });
+
+        const combobox = screen.getByRole('combobox', {name: label});
+        expect(combobox).toHaveAttribute('aria-required', 'true');
+        expect(combobox).toHaveAccessibleDescription('This field is required.');
     });
 });

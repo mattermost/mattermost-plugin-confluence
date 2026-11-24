@@ -30,7 +30,7 @@ test('keeps subscription modal fields and actions inside the dialog at wide and 
     // # Open the subscription modal and fill it in
     const {page, dialog} = await openSubscribeModal(pw, confluence);
     const cancel = dialog.getByRole('button', {name: 'Cancel'});
-    const save = dialog.getByRole('button', {name: 'Save Subscription'});
+    const save = dialog.getByRole('button', {name: 'Save subscription'});
 
     for (const width of [1280, 900]) {
         // # Resize the window

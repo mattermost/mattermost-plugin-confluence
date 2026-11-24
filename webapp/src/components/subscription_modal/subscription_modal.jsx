@@ -192,11 +192,11 @@ export default class SubscriptionModal extends React.PureComponent {
         const {error, saving, subscriptionType, supportedEvents, events} = this.state;
         let typeField = (
             <ConfluenceField
-                label={'Space Key'}
+                label={'Space key'}
                 type={'text'}
                 fieldType={'input'}
                 required={true}
-                placeholder={'Enter the Confluence Space Key.'}
+                placeholder={'Enter the Confluence space key'}
                 value={this.state.spaceKey}
                 addValidation={this.validator.addValidation}
                 removeValidation={this.validator.removeValidation}
@@ -211,7 +211,7 @@ export default class SubscriptionModal extends React.PureComponent {
                     type={'text'}
                     fieldType={'input'}
                     required={true}
-                    placeholder={'Enter the page id.'}
+                    placeholder={'Enter the page ID'}
                     value={this.state.pageID}
                     addValidation={this.validator.addValidation}
                     removeValidation={this.validator.removeValidation}
@@ -224,7 +224,7 @@ export default class SubscriptionModal extends React.PureComponent {
             <div className='confluence-subscription__type-row'>
                 <ConfluenceField
                     isMulti={false}
-                    label={'Subscribe To'}
+                    label={'Subscribe to'}
                     name={'type'}
                     fieldType={'dropDown'}
                     required={true}
@@ -252,7 +252,7 @@ export default class SubscriptionModal extends React.PureComponent {
                     emphasis='primary'
                     loading={saving}
                 >
-                    {'Save Subscription'}
+                    {'Save subscription'}
                 </Button>
             </>
         );
@@ -260,12 +260,12 @@ export default class SubscriptionModal extends React.PureComponent {
         return (
             <ModalOverlay
                 open={isModalVisible}
-                zIndex={Constants.Z_INDEX_MODAL}
+                onClose={this.handleClose}
             >
                 <Modal
                     open={isModalVisible}
                     size='medium'
-                    title='Edit Your Confluence Subscription'
+                    title={editSubscription ? 'Edit subscription' : 'New Confluence subscription'}
                     onClose={this.handleClose}
                     footer={footer}
                 >
@@ -274,12 +274,20 @@ export default class SubscriptionModal extends React.PureComponent {
                         noValidate={true}
                         onSubmit={this.handleSubmit}
                     >
+                        {error && (
+                            <SectionNotice
+                                className='confluence-subscription__notice'
+                                role='alert'
+                                type='danger'
+                                title={error}
+                            />
+                        )}
                         <ConfluenceField
                             label={'Name'}
                             type={'text'}
                             fieldType={'input'}
                             required={true}
-                            placeholder={'Enter a name for this subscription.'}
+                            placeholder={'Enter a name for this subscription'}
                             value={this.state.alias}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
@@ -287,11 +295,11 @@ export default class SubscriptionModal extends React.PureComponent {
                             testId='subscription-name-input'
                         />
                         <ConfluenceField
-                            label={'Confluence Base URL'}
+                            label={'Confluence base URL'}
                             type={'text'}
                             fieldType={'input'}
                             required={true}
-                            placeholder={'Enter the Confluence Base URL.'}
+                            placeholder={'Enter the Confluence base URL'}
                             value={this.state.baseURL}
                             addValidation={this.validator.addValidation}
                             removeValidation={this.validator.removeValidation}
@@ -312,14 +320,6 @@ export default class SubscriptionModal extends React.PureComponent {
                             onChange={this.handleEvents}
                             testId='subscription-events-select'
                         />
-                        {error && (
-                            <SectionNotice
-                                className='confluence-subscription__notice'
-                                role='alert'
-                                type='danger'
-                                title={error}
-                            />
-                        )}
                     </form>
                 </Modal>
             </ModalOverlay>

@@ -198,7 +198,7 @@ test.describe('visual', {tag: '@visual'}, () => {
         // # Open the subscription modal, switch it to a page subscription and fill it in
         confluence.connect();
         const {page, modal} = await openSubscribeModal(pw, confluence);
-        await modal.getByRole('combobox', {name: 'Subscribe To'}).press('ArrowDown');
+        await modal.getByRole('combobox', {name: 'Subscribe to'}).press('ArrowDown');
         await page.getByRole('option', {name: 'Page', exact: true}).click();
         await modal.getByTestId('subscription-name-input').fill('release-page');
         await modal.getByTestId('subscription-url-input').fill(instanceURL);
@@ -219,7 +219,7 @@ test.describe('visual', {tag: '@visual'}, () => {
         // # Save the subscription modal with its text fields empty
         confluence.connect();
         const {modal} = await openSubscribeModal(pw, confluence);
-        await modal.getByRole('button', {name: 'Save Subscription'}).click();
+        await modal.getByRole('button', {name: 'Save subscription'}).click();
         await expect(modal.getByText('This field is required.')).toHaveCount(3);
         await settle(pw, modal);
 
