@@ -24,6 +24,24 @@ func GetChannelSubscriptionWithDeps(channelID, alias string, repo SubscriptionRe
 	return subscription, http.StatusOK, nil
 }
 
+// GetChannelSubscriptionByExactAliasWithDeps gets the channel subscription stored under exactly alias using injected dependencies
+func GetChannelSubscriptionByExactAliasWithDeps(channelID, alias string, repo SubscriptionRepository) (serializer.Subscription, int, error) {
+	subs, gErr := repo.GetSubscriptions()
+	if gErr != nil {
+		return nil, http.StatusInternalServerError, errors.New(generalError)
+	}
+	subscription, found := subs.ByChannelID[channelID][alias]
+	if !found {
+		return nil, http.StatusBadRequest, fmt.Errorf(subscriptionNotFound, alias)
+	}
+	return subscription, http.StatusOK, nil
+}
+
+// GetChannelSubscriptionByExactAlias gets the channel subscription stored under exactly alias using default dependencies
+func GetChannelSubscriptionByExactAlias(channelID, alias string) (serializer.Subscription, int, error) {
+	return GetChannelSubscriptionByExactAliasWithDeps(channelID, alias, NewDefaultSubscriptionRepository())
+}
+
 // GetChannelSubscription gets a channel subscription using default dependencies
 func GetChannelSubscription(channelID, alias string) (serializer.Subscription, int, error) {
 	return GetChannelSubscriptionWithDeps(channelID, alias, NewDefaultSubscriptionRepository())

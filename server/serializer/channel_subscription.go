@@ -85,12 +85,14 @@ var supportedEventsV9Map = func() map[string]bool {
 type Subscription interface {
 	Add(*Subscriptions) error
 	Remove(*Subscriptions) error
-	Edit(*Subscriptions) error
+	Edit(s *Subscriptions, existing Subscription) error
+	ValidateEdit(s *Subscriptions, existing Subscription) error
 	Name() string
 	GetAlias() string
 	GetOldAlias() string
 	GetCreatedBy() string
 	WithCreatedBy(string) Subscription
+	WithChannelID(string) Subscription
 	GetFormattedSubscription() string
 	IsValid() error
 	ValidateSubscription(*Subscriptions) error
@@ -240,6 +242,15 @@ func (s StringSubscription) GetInsensitiveCase(key string) (Subscription, bool) 
 		}
 	}
 	return nil, false
+}
+
+func (s StringSubscription) hasOtherAliasInsensitiveCase(alias, excludedAlias string) bool {
+	for k := range s {
+		if k != excludedAlias && strings.EqualFold(k, alias) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetSupportedEvents returns the list of supported events based on server version

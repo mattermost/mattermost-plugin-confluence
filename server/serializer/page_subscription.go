@@ -75,12 +75,29 @@ func (ps PageSubscription) Remove(s *Subscriptions) error {
 	return nil
 }
 
-func (ps PageSubscription) Edit(s *Subscriptions) error {
-	if err := ps.Remove(s); err != nil {
+func (ps PageSubscription) Edit(s *Subscriptions, existing Subscription) error {
+	if err := existing.Remove(s); err != nil {
 		return err
 	}
 	if err := ps.Add(s); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (ps PageSubscription) ValidateEdit(s *Subscriptions, existing Subscription) error {
+	if err := ps.IsValid(); err != nil {
+		return err
+	}
+	if ps.Alias != existing.GetAlias() && s.ByChannelID[ps.ChannelID].hasOtherAliasInsensitiveCase(ps.Alias, existing.GetAlias()) {
+		return errors.New(aliasAlreadyExist)
+	}
+	key := store.GetURLPageIDCombinationKey(ps.BaseURL, ps.PageID)
+	if current, ok := asPageSubscription(existing); ok && store.GetURLPageIDCombinationKey(current.BaseURL, current.PageID) == key {
+		return nil
+	}
+	if _, ok := s.ByURLPageID[key][ps.ChannelID]; ok {
+		return errors.New(urlPageIDAlreadyExist)
 	}
 	return nil
 }
@@ -95,6 +112,11 @@ func (ps PageSubscription) GetAlias() string {
 
 func (ps PageSubscription) WithCreatedBy(userID string) Subscription {
 	ps.CreatedBy = userID
+	return ps
+}
+
+func (ps PageSubscription) WithChannelID(channelID string) Subscription {
+	ps.ChannelID = channelID
 	return ps
 }
 
@@ -159,4 +181,14 @@ func (ps PageSubscription) ValidateSubscription(subs *Subscriptions) error {
 		}
 	}
 	return nil
+}
+
+func asPageSubscription(subscription Subscription) (PageSubscription, bool) {
+	switch sub := subscription.(type) {
+	case PageSubscription:
+		return sub, true
+	case *PageSubscription:
+		return *sub, true
+	}
+	return PageSubscription{}, false
 }
