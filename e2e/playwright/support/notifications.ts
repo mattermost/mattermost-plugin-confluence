@@ -12,9 +12,9 @@ import {postText, waitForPostText} from './ui';
 
 export const allEvents = ['page_created', 'page_updated', 'page_trashed', 'page_restored', 'comment_created', 'comment_updated'];
 
-export type SubscriptionOptions = {alias?: string; events?: string[]; page?: string};
+export type SubscriptionOptions = {alias?: string; events?: string[]; page?: string; bodyChannelId?: string};
 
-export async function subscribe(userClient: Client4, channelId: string, {alias = 'team-space', events = allEvents, page}: SubscriptionOptions = {}) {
+export async function subscribe(userClient: Client4, channelId: string, {alias = 'team-space', events = allEvents, page, bodyChannelId = channelId}: SubscriptionOptions = {}) {
     const subscriptionType = page ? 'page_subscription' : 'space_subscription';
     const res = await fetch(`${mattermostURL}/plugins/${pluginId}/api/v1/${channelId}/subscription/${subscriptionType}`, {
         method: 'POST',
@@ -24,7 +24,7 @@ export async function subscribe(userClient: Client4, channelId: string, {alias =
             baseURL: instanceURL,
             ...(page ? {pageID: page} : {spaceKey}),
             events,
-            channelID: channelId,
+            channelID: bodyChannelId,
             subscriptionType,
         }),
     });

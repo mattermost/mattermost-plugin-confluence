@@ -59,7 +59,7 @@ func handleSaveSubscription(w http.ResponseWriter, r *http.Request, p *Plugin) {
 		return
 	}
 
-	subscription = subscription.WithCreatedBy(userID)
+	subscription = subscription.WithChannelID(channelID).WithCreatedBy(userID)
 
 	pluginConfig := config.GetConfig()
 	if pluginConfig.HasPerUserConfluenceAuth() && !util.IsSystemAdmin(userID) {

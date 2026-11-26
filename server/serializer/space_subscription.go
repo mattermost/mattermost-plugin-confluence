@@ -75,12 +75,29 @@ func (ss SpaceSubscription) Remove(s *Subscriptions) error {
 	return nil
 }
 
-func (ss SpaceSubscription) Edit(s *Subscriptions) error {
-	if err := ss.Remove(s); err != nil {
+func (ss SpaceSubscription) Edit(s *Subscriptions, existing Subscription) error {
+	if err := existing.Remove(s); err != nil {
 		return err
 	}
 	if err := ss.Add(s); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (ss SpaceSubscription) ValidateEdit(s *Subscriptions, existing Subscription) error {
+	if err := ss.IsValid(); err != nil {
+		return err
+	}
+	if ss.Alias != existing.GetAlias() && s.ByChannelID[ss.ChannelID].hasOtherAliasInsensitiveCase(ss.Alias, existing.GetAlias()) {
+		return errors.New(aliasAlreadyExist)
+	}
+	key := store.GetURLSpaceKeyCombinationKey(ss.BaseURL, ss.SpaceKey)
+	if current, ok := asSpaceSubscription(existing); ok && store.GetURLSpaceKeyCombinationKey(current.BaseURL, current.SpaceKey) == key {
+		return nil
+	}
+	if _, ok := s.ByURLSpaceKey[key][ss.ChannelID]; ok {
+		return errors.New(urlSpaceKeyAlreadyExist)
 	}
 	return nil
 }
@@ -95,6 +112,11 @@ func (ss SpaceSubscription) GetAlias() string {
 
 func (ss SpaceSubscription) WithCreatedBy(userID string) Subscription {
 	ss.CreatedBy = userID
+	return ss
+}
+
+func (ss SpaceSubscription) WithChannelID(channelID string) Subscription {
+	ss.ChannelID = channelID
 	return ss
 }
 
@@ -159,4 +181,14 @@ func (ss SpaceSubscription) ValidateSubscription(subs *Subscriptions) error {
 		}
 	}
 	return nil
+}
+
+func asSpaceSubscription(subscription Subscription) (SpaceSubscription, bool) {
+	switch sub := subscription.(type) {
+	case SpaceSubscription:
+		return sub, true
+	case *SpaceSubscription:
+		return *sub, true
+	}
+	return SpaceSubscription{}, false
 }

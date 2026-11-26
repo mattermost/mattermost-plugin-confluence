@@ -60,12 +60,14 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
+	subscription = subscription.WithChannelID(channelID)
+
 	alias := subscription.GetOldAlias()
 	if alias == "" {
 		alias = subscription.GetAlias()
 	}
 
-	existing, errCode, err := service.GetChannelSubscription(channelID, alias)
+	existing, errCode, err := service.GetChannelSubscriptionByExactAlias(channelID, alias)
 	if err != nil {
 		p.client.Log.Error("Error getting the subscription to edit", "ChannelID", channelID, "Alias", alias, "error", err.Error())
 		http.Error(w, "Failed to get subscription for this channel.", errCode)
@@ -96,9 +98,9 @@ func handleEditChannelSubscription(w http.ResponseWriter, r *http.Request, p *Pl
 		return
 	}
 
-	if nErr := service.EditSubscription(subscription); nErr != nil {
+	if statusCode, nErr := service.EditSubscription(channelID, alias, subscription); nErr != nil {
 		config.Mattermost.LogError("Error occurred while editing subscription", "Subscription Name", subscription.Name(), "error", nErr.Error())
-		http.Error(w, "An error occurred attempting to edit a subscription", http.StatusInternalServerError)
+		http.Error(w, nErr.Error(), statusCode)
 		return
 	}
 
