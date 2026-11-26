@@ -6,7 +6,7 @@ import {defaultUser} from '../fake-confluence/state';
 import {confluenceFlavor, mattermostURL, pluginId} from '../support/constants';
 import {fakeConfluence} from '../support/fake_confluence';
 import {expect, test} from '../support/fixture';
-import {publishPage, subscribeToTeamSpace} from '../support/notifications';
+import {channelPostTexts, publishPage, subscribe, subscribeToTeamSpace} from '../support/notifications';
 
 /**
  * @objective Verify the Data Center webhook endpoint rejects requests without the shared secret.
@@ -56,4 +56,21 @@ test('notifies subscribed channel when a page is created', {tag: ['@confluence_p
 
     // * Verify the notification names the page
     expect(post.message + JSON.stringify(post.props ?? {})).toContain('Release notes');
+});
+
+/**
+ * @objective Verify notifications for a subscription are posted only to the channel it was saved in.
+ */
+test('notifies only the channel a subscription was saved in', {tag: ['@confluence_plugin', '@synthetic-inbound']}, async ({pw, confluence}) => {
+    // # Save a subscription in the channel with a request body that names another of the user's channels
+    const seeded = confluence.connect();
+    const otherChannel = await confluence.adminClient.createChannel(pw.random.channel({teamId: confluence.team.id, name: 'other', displayName: 'Other'}));
+    await confluence.adminClient.addToChannel(confluence.user.id, otherChannel.id);
+    await subscribe(confluence.userClient, confluence.channel.id, {bodyChannelId: otherChannel.id});
+
+    // # Publish a page in the subscribed space
+    await publishPage(confluence.userClient, confluence.channel.id, {userKey: seeded.accountId});
+
+    // * Verify the other channel gets no notification
+    expect((await channelPostTexts(confluence.userClient, otherChannel.id)).filter((text) => text.includes('Release notes'))).toEqual([]);
 });
